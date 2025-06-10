@@ -1,0 +1,30 @@
+Assembly code goes from top to bottom, (duh). Most CPUs begin by booting in 16 bits, then immediately switch to 32 or 64 bits depending on the OS, for example, Windows is a 64 bit OS, so an intel cpu in a windows machine might boot in 16 bits, then transition immediately to 64 bits. Since this assembly code is just for booting, we specify that we are coding in 16 bits.
+
+Next, for the BIOS to know when the OS wants to boots, it reads starting from memory address 0x7C00 and checks if there is any code there being run. If there is, great, it'll run it and, hopefully, boot up. Another thing is the BIOS requires that the last two lines of the boot code contain the word 0xAA55 and times 510 - ($ - $$) db 0, which tells the assembler to pad the remaining addresses up to 0xAA55 with null.
+
+Now, since assembly starts at the top and goes down to a HLT instruction, it enters the start function, which tells it to unconditionally jump to main, which it does and, (to my knowledge), saves the return address to some register. 
+
+In the main function, we fill the register AX with 0x0000. AX is a general purpose register that is used in the x86 ISA for numbers-based-things. So imagine multiplcation, division, but it can also be used to just hold numbers. We put 0 into the AX register so we can put 0 into the DS register, because the DS register cannot manually have integers inserted into it.
+
+Next, we have SI point to MESSAGE. MESSAGE is a static variable in the assembly code and it points to, actually, only the byte with ASCII value 'H'. So, in actuality, MESSAGE -> 'H'
+MESSAGE + 1 -> 'E'
+...
+up until 0, which we define as the sentinel. So technically, this is a big data segment (a DS, one could say!)
+
+Also, we use the DS register because the DS registers main purpose is to store the addresses of static variables and, hey, our MESSAGE variable is in fact a static variable. Eventually we want to print out the contents of the MESSAGE variable, and we do this through the instruction LODSB, which implicitly uses [DS:SI] and stores the contents of [DS:SI] into the AL register before incrementing SI to point to the next letter in the segment of code, (the letter 'E').
+
+Of course, we're getting ahead of ourselves right now though. The next thing we do is use MOV SS, AX and MOV SP, 0x7C00.
+
+SS and SP are similar to DS and SI in that they both use memory segmentation and both registers are basically used in pairs. They are used in pairs to point to the beginning of a segment. So, the memory segment DS:SI points to the beginning of the message "Hello World!". While SS:SP point to the beginning of the stack. Since SS is also equal to 0, and SP is equal to 0x7C00, our stack begins at 0x7C00. Sounds dangerous, right? Maybe, but the space behind 0x7C00 is safe until a limit. That is usable memory space, and since stacks are LIFO, everytime we push variables or functions into the stack, it will not actually interfere with the bootloader code. 
+
+Next up, we CALL the puts function (since we call it, that means we save the return address into the stack, I think). Puts pushes the CURRENT INFORMATION in the SI and AX registers (pointer to the letter 'H' and 0x0000 respectively) into the stack. Then, we go into the local function of puts, print_loop, which does the LODSB which loads [DS:SI] into the AL register. We then check to see if the value in AL is the sentinel, 0, which if it is, then we are finished. Otherwise, we must now interrupt the BIOS and tell it that we want to print to video. We do this through this code in particular:
+
+MOV AH, 0x0E
+INT 0X10
+
+The MOV AH, 0x0E tells the bios we want to interrupt, and it prepares the BIOS
+INT 0x10 is an interrupt code which tells the BIOS we want to display to video the contents in the AL register, (I THINK. I know the AL register is not actually its own register, but just the lower 8 bits of the AX register, so I don't fully know how it works...).
+
+Once we've fully displayed "HELLO WORLD!" and we hit the sentinel, the JE instruction jumps us to the done local function, which pops the AX and SI registers from the stack (thereby returning them to their original values), and then returns by also popping the saved return address from the stack.
+
+Afterwards, the next instruction is simply a HLT, which tells the assembler that we are done.
