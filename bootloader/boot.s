@@ -48,6 +48,9 @@ retry:
    STC
    INT 0x13             ; The final piece of the puzzle. Interrupt 0x13 is for the BIOS Disk Service
    JC DISK_READ_ERROR  ; BIOS sets the carry flag if the call failed. JC jumps if carry flag is set.
+   MOV AH, 0x0
+   MOV AL, 0x3
+   INT 0x10
    JMP enterProtectedMode
 
 .fail:
