@@ -9,4 +9,4 @@ Concepts 10th Edition), and anything else I can find on Google (the Stanford x86
 This OS has, as of writing this:
 1. A custom bootloader that switches from real mode to protected mode,
 2. Sets up the Global Descriptor Table
-3. Reads the disk through CHS addressing and loads the kernel into memory 
+3. Reads the disk through CHS addressing and loads the kernel into memory through a two-stage process (loads kernel to 0x10000 first, then loads kernel into 0x100000)
