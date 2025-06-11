@@ -7,6 +7,24 @@ KERNEL_START_ADDR equ 0x100000
 start:
     JMP main
 
+loadKernelToMem:
+    MOV DH, 0x0
+    MOV DL, 0x80
+    MOV CL, 0x03
+    MOV CH, 0x0
+    MOV AX, KERNEL_LOAD_SEG
+    MOV ES, AX
+    MOV BX, 0x0000
+    MOV AH, 0x02
+    MOV AL, 1
+    MOV DI, 3
+
+.retry
+    STC
+    INT 0x13             ; The final piece of the puzzle. Interrupt 0x13 is for the BIOS Disk Service
+    JC DISK_READ_ERROR  ; BIOS sets the carry flag if the call failed. JC jumps if carry flag is set.
+    RET
+
 puts:
     PUSH SI
     PUSH AX
@@ -37,11 +55,11 @@ main:
     MOV DL, 0x80        ; We want to read from  the first hard drive (0x80)
     MOV CL, 0x02        ; We want to start from the 2nd sector (first sector is bootloader)
     MOV CH, 0x0         ; We want to read from cylinder 0
-    MOV AX, KERNEL_LOAD_SEG
+    MOV AX, 0x800
     MOV ES, AX
     MOV BX, 0x0000
     MOV AH, 0x02
-    MOV AL, 1          ; The number of sectors we want to read (1).
+    MOV AL, 1          ; The number of sectors we want to read (20).
     MOV DI, 3
 
 retry:
@@ -51,6 +69,8 @@ retry:
    MOV AH, 0x0
    MOV AL, 0x3
    INT 0x10
+
+   CALL loadKernelToMem
    JMP enterProtectedMode
 
 .fail:
@@ -111,6 +131,8 @@ gdtrd:
     DW gdt_end -  gdt_start - 1
     DD gdt_start
 
+msg_read_failed:        db 'Read From Disk Failed', 0
+
 BITS 32                ; protected mode is 32 bits, so we must specify we are now in 32 bits.
 PModeMain:
     MOV AX, 0x10       ; We called PModeMain with 0x08 to set CS to the correct offset. We must now do the same for DS
@@ -124,12 +146,7 @@ PModeMain:
     MOV AH, 0x4F
     MOV [0xB8000], AX
 
-    JMP 0x08: 0x10000 ; this is temporary. Real mode isn't able to load the kernel into 0x100000, so we use this for now.
-
-
-    ; once I start trying to jump to kernel, I need to (I think) remember to set EAX to 0x2BADB002
-
-msg_read_failed:        db 'Read From Disk Failed', 0
+    JMP 0x08: 0x8000 ;
 
 times 510-($ - $$) db 0     ; this is stuff we use to signal to the BIOS that we want to talk with it
 dw 0xAA55
