@@ -41,7 +41,7 @@ main:
     MOV ES, AX
     MOV BX, 0x0000
     MOV AH, 0x02
-    MOV AL, 20          ; The number of sectors we want to read (20).
+    MOV AL, 1          ; The number of sectors we want to read (1).
     MOV DI, 3
 
 retry:
@@ -124,7 +124,7 @@ PModeMain:
     MOV AH, 0x4F
     MOV [0xB8000], AX
 
-    JMP 0x08: KERNEL_START_ADDR
+    JMP 0x08: 0x10000 ; this is temporary. Real mode isn't able to load the kernel into 0x100000, so we use this for now.
 
 
     ; once I start trying to jump to kernel, I need to (I think) remember to set EAX to 0x2BADB002
