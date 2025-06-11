@@ -16,8 +16,14 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
+
+        # Bootloader (boot.bin) loaded into sector 0 
         dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/os-image.img bs=512 count=1 conv=notrunc
+
+        #2nd Stage Bootloader (boot2.bin) loaded into sector 1
         dd if=$(BUILD_DIR)/boot2.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=1 conv=notrunc
+
+        #Kernel (kernel.bin) loaded into sector 3
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=2 count=$(KERNEL_SECTORS) conv=notrunc
 
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
