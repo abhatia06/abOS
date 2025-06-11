@@ -1,3 +1,6 @@
+# Because I do not have a lot of knowledge working with Makefiles (besides 1 course I took in university), a LOT of this code is from Nanobyte's OS. There are some changes
+# I made, though, and I have slowly come around to understanding this Makefile code.
+
 ASM=nasm
 SRC_DIR=bootloader
 SRC_DIR2=kernel
