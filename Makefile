@@ -40,11 +40,11 @@ $(BUILD_DIR)/boot.bin: always
         $(ASM) $(SRC_DIR)/boot2.s -f bin -o $(BUILD_DIR)/boot2.bin
 
 
-kernel: $(BUILD_DIR)/kernel.bin
-
 #
 #kernel
 #
+kernel: $(BUILD_DIR)/kernel.bin
+
 $(BUILD_DIR)/kernel.bin: always
         $(ASM) $(SRC_DIR3)/kernel.s -f elf32 -o $(BUILD_DIR)/kernel.o
         $(CCOMP) -m32 -ffreestanding -fno-pic -fno-pie -nostdlib -c $(SRC_DIR3)/kernel.c -o $(BUILD_DIR)/kernelC.o
@@ -56,10 +56,6 @@ $(BUILD_DIR)/kernel.bin: always
 #
 always:
         mkdir -p $(BUILD_DIR)
-
-
-clean:
-        rm -rf $(BUILD_DIR)/*
 
 
 clean:
