@@ -73,3 +73,11 @@ the kernel into where we want, (0x100000), because of the fact that 16-bit addre
 (even with the segmentation technique I talked about earlier, the max it can go to is 0x10000). SO, to get around this, 
 I made a second stage bootloader that the first bootloader jumps to once it enters protected mode, and then in the 
 second stage bootloader, since we're in 32 bits now, we are able to move the contents in 0x10000 (where the kernel temporarily is) to 0x100000, and then jump to 0x100000.
+
+2. I've finally entered C! 
+I still need to learn more about this process, and how link loaders exactly work, as I mostly did this step through tutorials.
+On a later day, (probably tomorrow, as I am reserving tomorrow for catch-up-study-day, I will come back and explain everything
+in much greater detail, and probably even fix some mistakes in my explanations). But yeah! We've finally entered C, and this
+is also where, unfortunately, most tutorials end. As all that is left to do now is dive into the more "complex" stuff, and
+also design the kernel to OUR fitting. It's a bit worrying, but again, I will try whatever I can. If it doesn't work, then 
+I'll try to make it later. That's all for today.
