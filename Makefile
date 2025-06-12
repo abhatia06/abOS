@@ -5,6 +5,9 @@ ASM=nasm
 SRC_DIR=bootloader
 SRC_DIR3=kernel
 BUILD_DIR=build
+CCOMP=gcc
+LD = ld
+
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 
 .PHONY: all floppy_image kernel bootloader clean always run
@@ -16,14 +19,11 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
-
-        # Bootloader (boot.bin) loaded into sector 0 
+        #Loads the bootloader (boot.bin) into sector 0
         dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/os-image.img bs=512 count=1 conv=notrunc
-
-        #2nd Stage Bootloader (boot2.bin) loaded into sector 1
+        #Loads the 2nd stage bootloader into sector 1
         dd if=$(BUILD_DIR)/boot2.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=1 conv=notrunc
-
-        #Kernel (kernel.bin) loaded into sector 3
+        #Loads the kernel into sector 2
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=2 count=$(KERNEL_SECTORS) conv=notrunc
 
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
@@ -46,7 +46,9 @@ kernel: $(BUILD_DIR)/kernel.bin
 #kernel
 #
 $(BUILD_DIR)/kernel.bin: always
-        $(ASM) $(SRC_DIR3)/kernel.s -f bin -o $(BUILD_DIR)/kernel.bin
+        $(ASM) $(SRC_DIR3)/kernel.s -f elf32 -o $(BUILD_DIR)/kernel.o
+        $(CCOMP) -m32 -ffreestanding -fno-pic -fno-pie -nostdlib -c $(SRC_DIR3)/kernel.c -o $(BUILD_DIR)/kernelC.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.bin --oformat binary $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o
 
 
 #
@@ -54,6 +56,10 @@ $(BUILD_DIR)/kernel.bin: always
 #
 always:
         mkdir -p $(BUILD_DIR)
+
+
+clean:
+        rm -rf $(BUILD_DIR)/*
 
 
 clean:
