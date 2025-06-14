@@ -1,5 +1,7 @@
+#include "stdint.h"
+#include "stdio.c"
 
 void main() {
-	*(char*)0xb8000 = 'Q';
+	puts("Hello World from C!");
 	return;
 }
