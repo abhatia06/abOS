@@ -1,16 +1,28 @@
-Hello, if you are reading this, this is a bit of like a personal diary I am keeping to help me, (and anyone else who stumbles upon this repository) understand what is going on in my code. They are sectioned into days, though I do not always remember to update this txt file each day.
+Hello, if you are reading this, this is a bit of like a personal diary I am keeping to help me, (and anyone else who 
+stumbles upon this repository) understand what is going on in my code. They are sectioned into days, though I do not always
+remember to update this txt file each day.
 
 DAY 1
 ----------------------------------
-Assembly code goes from top to bottom, (duh). Most CPUs begin by booting in 16 bits, then immediately switch to 32 or 64 bits depending on the OS, for example, Windows is a 64 bit OS, so an intel cpu in a windows machine might boot in 16 bits, then transition immediately to 64 bits. Since this assembly code is just for booting, we specify that we are coding in 16 bits.
+Assembly code goes from top to bottom, (duh). Most CPUs begin by booting in 16 bits, then immediately switch to 32 or 64 
+bits depending on the OS, for example, Windows is a 64 bit OS, so an intel cpu in a windows machine might boot in 16 bits,
+then transition immediately to 64 bits. Since this assembly code is just for booting, we specify that we are coding in 16
+bits.
 
-Next, for the BIOS to know when the OS wants to boots, it reads starting from memory address 0x7C00 and checks if there is any code there being run. If there is, great, it'll run it and, hopefully, boot up. Another thing is the BIOS requires that the last two lines of the boot code contain the word 0xAA55 and times 510 - ($ - $$) db 0, which tells the assembler to pad the remaining addresses up to 0xAA55 with null.
+Next, for the BIOS to know when the OS wants to boots, it reads starting from memory address 0x7C00 and checks if there is
+any code there being run. If there is, great, it'll run it and, hopefully, boot up. Another thing is the BIOS requires that
+the last two lines of the boot code contain the word 0xAA55 and times 510 - ($ - $$) db 0, which tells the assembler to pad 
+the remaining addresses up to 0xAA55 with null.
 
-Now, since assembly starts at the top and goes down to a HLT instruction, it enters the start function, which tells it to unconditionally jump to main, which it does and, (to my knowledge), saves the return address to some register. 
+Now, since assembly starts at the top and goes down to a HLT instruction, it enters the start function, which tells it to
+unconditionally jump to main, which it does and, (to my knowledge), saves the return address to some register. 
 
-In the main function, we fill the register AX with 0x0000. AX is a general purpose register that is used in the x86 ISA for numbers-based-things. So imagine multiplcation, division, but it can also be used to just hold numbers. We put 0 into the AX register so we can put 0 into the DS register, because the DS register cannot manually have integers inserted into it.
+In the main function, we fill the register AX with 0x0000. AX is a general purpose register that is used in the x86 ISA for 
+numbers-based-things. So imagine multiplcation, division, but it can also be used to just hold numbers. We put 0 into the AX 
+register so we can put 0 into the DS register, because the DS register cannot manually have integers inserted into it.
 
-Next, we have SI point to MESSAGE. MESSAGE is a static variable in the assembly code and it points to, actually, only the byte with ASCII value 'H'. So, in actuality, MESSAGE -> 'H'
+Next, we have SI point to MESSAGE. MESSAGE is a static variable in the assembly code and it points to, actually, only the 
+byte with ASCII value 'H'. So, in actuality, MESSAGE -> 'H'
 MESSAGE + 1 -> 'E'
 ...
 up until 0, which we define as the sentinel. So technically, this is a big data segment (a DS, one could say!)
@@ -40,43 +52,91 @@ DAY 2 TO LIKE 4, I THINK?
 A lot has been added now, and I feel like I need to explain some new stuff to myself so I hopefully don't forget it all later. 
 
 1. Real Mode vs. Protected Mode.
-x86 processors all start in real mode, and real mode is SUPER limiting. It is locked to 16-bit, and the total memory we have access to is (I believe) a measly 4 Kb. This is nothing, and if we really want to get into the big boy leagues, we need more memory soon. So, generally, people will often switch to protected mode at the end of their bootloader. Some people are weird, (like one of the youtubers I was following, Nanobyte), and they instead first implement a FAT16 file system, but I did not learn that yet, and I am not very far into the dinosaur book or comet book to really know about file allocation table yet, so I didn't touch it.
-Switching to protected mode is actually very easy, even though my code might seem to complicate it. One of the registers, CR0, has a PE (protection enabled) bit that, on boot, is set to 0. All we have to do, to switch to protected mode, is flip that bit to 1, and boom! Now we're in protected mode and we're coding in 32 bits with a LOT more memory. Of course, now that we're in protected mode, there are also some things we've lost. In day 1, we were able to print "Hello World!" through the use of BIOS interrupts. The instruction "INT 0x10" allowed us to signal to the BIOS that we wanted to display to video. Now that we're in protected mode, we no longer have such a luxury, but in return, we do have the ability to abandon assembly code altogether and, eventually, switch over to C, or C++, or Python, or whatever you wanna use, (I'm gonna use C because I also need to learn that language). The actual switching over to C is handled by our kernel, because we can do whatever we want in the kernel, basically. Our bootloader is limited to 512 bytes, which, once we implement the FAT16 file system, we will soon realize is not a lot.
+x86 processors all start in real mode, and real mode is SUPER limiting. It is locked to 16-bit, and the total memory we have
+access to is (I believe) a measly 4 Kb. This is nothing, and if we really want to get into the big boy leagues, we need more
+memory soon. So, generally, people will often switch to protected mode at the end of their bootloader. Some people are 
+weird, (like one of the youtubers I was following, Nanobyte), and they instead first implement a FAT16 file system, but I
+did not learn that yet, and I am not very far into the dinosaur book or comet book to really know about file allocation 
+table yet, so I didn't touch it.
+Switching to protected mode is actually very easy, even though my code might seem to complicate it. One of the registers,
+CR0, has a PE (protection enabled) bit that, on boot, is set to 0. All we have to do, to switch to protected mode, is flip 
+that bit to 1, and boom! Now we're in protected mode and we're coding in 32 bits with a LOT more memory. Of course, now that 
+we're in protected mode, there are also some things we've lost. In day 1, we were able to print "Hello World!" through the 
+use of BIOS interrupts. The instruction "INT 0x10" allowed us to signal to the BIOS that we wanted to display to video. Now 
+that we're in protected mode, we no longer have such a luxury, but in return, we do have the ability to abandon assembly 
+code altogether and, eventually, switch over to C, or C++, or Python, or whatever you wanna use, (I'm gonna use C because I 
+also need to learn that language). The actual switching over to C is handled by our kernel, because we can do whatever we 
+want in the kernel, basically. Our bootloader is limited to 512 bytes, which, once we implement the FAT16 file system, we 
+will soon realize is not a lot.
 
 2. Global Descriptor Table
-This is the 2nd thing I did, and was one of the most confusing things ever, because it surprisingly is not super well documented (in my opinion). In order to put it very simply, and how I understand it, the GDT works like the following:
-Each segment register (DS, ES, SS, CS) have two parts to them. One is the visible part, which you can access and play around with with the MOV instruction in x86, and it also contains the "segment selector". The other is the hidden part, which contains what is known as the "segment descriptor". Whenever a new segment selector is loaded onto the visible part, the CPU automatically copies the corresponding segment descriptor from the GDT (or LDT) and puts it into the hidden part. So, what is contained in this hidden part? Well, the hidden, segment descriptor, contains the description for the segment, such as:
+This is the 2nd thing I did, and was one of the most confusing things ever, because it surprisingly is not super well 
+documented (in my opinion). In order to put it very simply, and how I understand it, the GDT works like the following:
+Each segment register (DS, ES, SS, CS) have two parts to them. One is the visible part, which you can access and play around
+with with the MOV instruction in x86, and it also contains the "segment selector". The other is the hidden part, which 
+contains what is known as the "segment descriptor". Whenever a new segment selector is loaded onto the visible part, the CPU
+automatically copies the corresponding segment descriptor from the GDT (or LDT) and puts it into the hidden part. So, what 
+is contained in this hidden part? Well, the hidden, segment descriptor, contains the description for the segment, such as:
 How long is the segment?
 What are the access rights for the segment? (Kernel only or can the user also access them?).
 Where does this memory segment start?
 etc.
-This method all falls under memory segmentation which, supposedly, is an obsolete method of memory storage that has now been replaced by paging. But I CURRENTLY do not know what paging is, as it is irrelevant to me as of right now. Eventually, I will find out about it. 
+This method all falls under memory segmentation which, supposedly, is an obsolete method of memory storage that has now been 
+replaced by paging. But I CURRENTLY do not know what paging is, as it is irrelevant to me as of right now. Eventually, I 
+will find out about it. 
 
 3. Kernel 
-I haven't written the kernel as of this writing, (hopefully I will have a very simple one that just says 'Hello World from Kernel!' by the end of today), however, as stated previously, we eventually want to switch to the Kernel because the kernel allows us to do a lot more and code in C. 
-First things first is establishing where the Kernel should be in memory. Generally, people say to put the Kernel at 0x100000 from the beginning of the memory, and the reason for that is because from 0x0 to 0x500 is occuped. Then, there is 512 bytes reserved for the bootloader in the next 638 KB, (0x500 to 0x9fc00), and finally, from 0x9fc00 to 0x100000 is occupied too. After that, it is all free space for our taking. So, we decide to put the kernel there.
-But how do we actually load the kernel? Well, to do that, we can use a form of addressing to do a huge jump from somewhere in the bootloader all the way to 0x100000. The easiest form of addressing to do that is CHS, (Cylinder-Head-Sector). CHS addressing follows the way we read the HDD, or hard drive. See, the HDD is made up of a bunch of disks stacked on top of each other. To better explain this, I will be using polar coordinates. Imagine the cylinder being controlled by your r, (radius), or how far away you are from the center. The sectors are the thetha, or like a slice of pizza from a pizza pie. The head is what disk we are currently on, (there are usually multiple disks stacked on each other in a modern HDD). The bootloader begins in 
+I haven't written the kernel as of this writing, (hopefully I will have a very simple one that just says 'Hello World from 
+Kernel!' by the end of today), however, as stated previously, we eventually want to switch to the Kernel because the kernel
+allows us to do a lot more and code in C. 
+
+First things first is establishing where the Kernel should be in memory. Generally, people say to put the Kernel at 0x100000 
+from the beginning of the memory, and the reason for that is because from 0x0 to 0x500 is occuped. Then, there is 512 bytes 
+reserved for the bootloader in the next 638 KB, (0x500 to 0x9fc00), and finally, from 0x9fc00 to 0x100000 is occupied too.
+After that, it is all free space for our taking. So, we decide to put the kernel there.
+
+But how do we actually load the kernel? Well, to do that, we can use a form of addressing to do a huge jump from somewhere 
+in the bootloader all the way to 0x100000. The easiest form of addressing to do that is CHS, (Cylinder-Head-Sector). CHS 
+addressing follows the way we read the HDD, or hard drive. See, the HDD is made up of a bunch of disks stacked on top of 
+each other. To better explain this, I will be using polar coordinates. Imagine the cylinder being controlled by your r, 
+(radius), or how far away you are from the center. The sectors are the thetha, or like a slice of pizza from a pizza pie. 
+The head is what disk we are currently on, (there are usually multiple disks stacked on each other in a modern HDD). The 
+bootloader begins in 
 CYLINDER: 0, HEAD: 0, SECTOR: 1. 
-Most tutorials told me, and will likely tell you, to just stay in the same cylinder and head, (CYLINDER: 0 and HEAD: 0), but just move to SECTOR 2, because that is the closest available sector where we can store the kernel binary, (or the second bootloader if you want one), onto.
+Most tutorials told me, and will likely tell you, to just stay in the same cylinder and head, (CYLINDER: 0 and HEAD: 0), but
+just move to SECTOR 2, because that is the closest available sector where we can store the kernel binary, (or the second 
+bootloader if you want one), onto.
 
 DAY 5
 ----------------------------------
-Day 5 was a bit uneventful. I was really tired having worked on this project all day everyday so I didn't do a whole lot and kind of just took a break. I did do two very important things, though
+Day 5 was a bit uneventful. I was really tired having worked on this project all day everyday so I didn't do a whole lot and
+kind of just took a break. I did do two very important things, though
 1. I fixed the kernel loading up! Now it actually says "Hello World from Kernel!" from the correct memory address, (0x100000)
-I will now explain a bit about how this stuff works. Volatile memory, like the main memory (or RAM) is very, very easy and quick and easy for the CPU to access. Hence, the CPU requires that any instructions, code, etc. is to be loaded onto the main memory first before it is executed. Hence also why we load the kernel onto the memory, so that one, we can execute it and run it, but two, so that the CPU has quick and easy access to the kernel. So, you may ask, "why even have stuff in the disk in the first place if its so great for the CPU?" Well, for two reasons. The first reason is because it is volative, meaning that
+I will now explain a bit about how this stuff works. Volatile memory, like the main memory (or RAM) is very, very easy and 
+quick and easy for the CPU to access. Hence, the CPU requires that any instructions, code, etc. is to be loaded onto the 
+main memory first before it is executed. Hence also why we load the kernel onto the memory, so that one, we can execute it 
+and run it, but two, so that the CPU has quick and easy access to the kernel. So, you may ask, "why even have stuff in the 
+disk in the first place if its so great for the CPU?" Well, for two reasons. The first reason is because it is volative, 
+meaning that
 once we shut down the PC, everything in the RAM dissapears. This is a big issue, and it means that we will have to restart 
-everything everytime we open the system. But wait, that might bring up a question, "how does my system store my files and whatnot?". It does that by saving it to the disk. The disk is non-volatile, meaning it can be saved, AND it can store a LOT MORE information. But it has the issue where it requires more effort and interrupts from the CPU to access, and hence, is much less efficient. 
+everything everytime we open the system. But wait, that might bring up a question, "how does my system store my files and 
+whatnot?". It does that by saving it to the disk. The disk is non-volatile, meaning it can be saved, AND it can store a LOT 
+MORE information. But it has the issue where it requires more effort and interrupts from the CPU to access, and hence, is
+much less efficient. 
 So, "for the CPU to process data from disk, those data must first be transferred to main memory by CPU-generated I/O calls.
 In the same way, instructions must be in memory for the CPU to execute them.", (from dinosaur book, 10th edition). 
 However, there is a bit of a caveat. Since the bootloader begins in real mode, (16-bit), we cannot immediately load 
 the kernel into where we want, (0x100000), because of the fact that 16-bit addressing simply cannot go that high 
 (even with the segmentation technique I talked about earlier, the max it can go to is 0x10000). SO, to get around this, 
 I made a second stage bootloader that the first bootloader jumps to once it enters protected mode, and then in the 
-second stage bootloader, since we're in 32 bits now, we are able to move the contents in 0x10000 (where the kernel temporarily is) to 0x100000, and then jump to 0x100000.
+second stage bootloader, since we're in 32 bits now, we are able to move the contents in 0x10000 (where the kernel 
+temporarily is) to 0x100000, and then jump to 0x100000.
 
 2. I've finally entered C! 
-I still need to learn more about this process, and how link loaders exactly work, as I mostly did this step through tutorials.
-On a later day, (probably tomorrow, as I am reserving tomorrow for catch-up-study-day, I will come back and explain everything
+I still need to learn more about this process, and how link loaders exactly work, as I mostly did this step through 
+tutorials.
+On a later day, (probably tomorrow, as I am reserving tomorrow for catch-up-study-day, I will come back and explain 
+everything
 in much greater detail, and probably even fix some mistakes in my explanations). But yeah! We've finally entered C, and this
 is also where, unfortunately, most tutorials end. As all that is left to do now is dive into the more "complex" stuff, and
 also design the kernel to OUR fitting. It's a bit worrying, but again, I will try whatever I can. If it doesn't work, then 
@@ -84,16 +144,48 @@ I'll try to make it later. That's all for today.
 
 DAY 6
 ----------------------------------
-Day 6 was quite uneventful. I didn't do much. However, I did start learning about memory paging, and realized: Oh shoot, I should've probably maybe enabled it.
+Day 6 was quite uneventful. I didn't do much. However, I did start learning about memory paging, and realized: Oh shoot, I 
+should've probably maybe enabled it.
 
-Though I don't fully understand it, I do get its basics. Memory paging is basically a form of memory allocation, in which we create a virtual address for each program and make it believe that it has the full range from 0x0 to 0xFFFFFFFF. Of course, it doesn't actually have the full range. That's where we come in, and we can create and use a paging table to then say "ok, program 1 is page 0. Page 0 is supposed to be mapped to 0x200000 in the phyiscal address". Thus, we get to control the way memory is allocated for each program. Now, why is this better than memory segmentation? I don't know, I still need to study that. My guess is because each page is going to be the same in its size, whilst the coding and data segments are not equal in memory segmentation. I don't fully know, I still need to figure that out. 
-Either way, today was boring. I didn't do anything because I was feeling a bit burnt out, and instead focussed on myself (played games, went to the gym pet cooper)
+Though I don't fully understand it, I do get its basics. Memory paging is basically a form of memory allocation, in which we
+create a virtual address for each program and make it believe that it has the full range from 0x0 to 0xFFFFFFFF. Of course,
+it doesn't actually have the full range. That's where we come in, and we can create and use a paging table to then say "ok,
+program 1 is page 0. Page 0 is supposed to be mapped to 0x200000 in the phyiscal address". Thus, we get to control the way 
+memory is allocated for each program. Now, why is this better than memory segmentation? I don't know, I still need to study
+that. My guess is because each page is going to be the same in its size, whilst the coding and data segments are not equal 
+in memory segmentation. I don't fully know, I still need to figure that out. 
+Either way, today was boring. I didn't do anything because I was feeling a bit burnt out, and instead focussed on myself 
+(played games, went to the gym pet cooper)
+
 
 DAY 7
 ----------------------------------
-Day 7 I finally got around towards figuring out what I wanna do next. One of my biggest worries with this project is that I'll hit a wall and not know what to do next. I hope that doesn't happen. Today, though, I figured "why not create a print function?" To do this, I mostly followed nanobytes tutorial that he had, but I differed from it a little bit. Nanobyte has paging enabled AND is still in 16 bit real mode. I have neither of those things, so I had to figure out how to make the code myself. Though it is incomplete, and probably VERY inefficient (I am literally calling stdio.c into kernel.c, which is NOT good), it works! I've managed to print "Hello World from C!" onto the window. The way it works is abusing the stack. In my kernel.s we initialized a stack. Now, before I get into anything, I should preface I am using the GCC compiler. The GCC compiler, by default, uses a calling convention known as CDECL. The way you save stuff in CDECL is irrelevant (at least for now). What's important is how it deals with the stack. When you call a function with CDECL enabled, and that function has parameters, the CPU will then first push the arguments into the stack from right to left. For example, say I have:
-foo(x, y, z). Then, with CDECL calling convention, we will first push z, then y, then x into the stack. After all the arguments are pushed in, then we push in the return address into the stack. Then, the ESP register (the stack pointer register), will point to the "top" of the stack, which just so happens to be the return address. If we want to access the arguments sent to us in the function we just called, we can then manipulate the ESP by adding or subtracting values. Since each "thing" in the stack takes up 4 bytes, if we add 4 to the ESP, we get x. Add 4 again, we get y, add 4 another time, and we get z. This is how we can access arguments sent to us in a function. When all is said is done, we can then simply RET, which will assume that the ESP still points to the return address (which it should), and then it'll return to the address specified on the stack. Using this knowledge, I managed to print stuff onto the video! Woohoo!
-Oh, I should specify how we print stuff onto video. We do this through VGA text mode. VGA has its own segment in the memory, and that segment lives at address 0xB8000 and continues on for a while. The way it works is that each 0xB8000 stores the character, and 0xB8001 stores the background color, or other stuff, of the character at 0xB8000. By the way, 0xB8000 is the top left corner, and adding 2 increases the column to the next character position. So, if we store the register EAX with the character, then that means AL (bottom 8 bits of EAX) has the character, and we just have to change AH (top 8 bits of EAX) to be the background color and stuff (and we set it to 0x0F, which means WHITE ON BLACK). This allows us to print ONE CHARACTER.
+Day 7 I finally got around towards figuring out what I wanna do next. One of my biggest worries with this project is that
+I'll hit a wall and not know what to do next. I hope that doesn't happen. Today, though, I figured "why not create a print
+function?" To do this, I mostly followed nanobytes tutorial that he had, but I differed from it a little bit. Nanobyte has
+paging enabled AND is still in 16 bit real mode. I have neither of those things, so I had to figure out how to make the code
+myself. Though it is incomplete, and probably VERY inefficient (I am literally calling stdio.c into kernel.c, which is NOT
+good), it works! I've managed to print "Hello World from C!" onto the window. The way it works is abusing the stack. In my 
+kernel.s we initialized a stack. Now, before I get into anything, I should preface I am using the GCC compiler. The GCC
+compiler, by default, uses a calling convention known as CDECL. The way you save stuff in CDECL is irrelevant (at least for 
+now). What's important is how it deals with the stack. When you call a function with CDECL enabled, and that function has 
+parameters, the CPU will then first push the arguments into the stack from right to left. For example, say I have:
+
+foo(x, y, z). Then, with CDECL calling convention, we will first push z, then y, then x into the stack. After all the 
+arguments are pushed in, then we push in the return address into the stack. Then, the ESP register (the stack pointer 
+register), will point to the "top" of the stack, which just so happens to be the return address. If we want to access the
+arguments sent to us in the function we just called, we can then manipulate the ESP by adding or subtracting values. Since 
+each "thing" in the stack takes up 4 bytes, if we add 4 to the ESP, we get x. Add 4 again, we get y, add 4 another time, and
+we get z. This is how we can access arguments sent to us in a function. When all is said is done, we can then simply RET,
+which will assume that the ESP still points to the return address (which it should), and then it'll return to the address
+specified on the stack. Using this knowledge, I managed to print stuff onto the video! Woohoo!
+
+Oh, I should specify how we print stuff onto video. We do this through VGA text mode. VGA has its own segment in the memory,
+and that segment lives at address 0xB8000 and continues on for a while. The way it works is that each 0xB8000 stores the 
+character, and 0xB8001 stores the background color, or other stuff, of the character at 0xB8000. By the way, 0xB8000 is the 
+top left corner, and adding 2 increases the column to the next character position. So, if we store the register EAX with the
+character, then that means AL (bottom 8 bits of EAX) has the character, and we just have to change AH (top 8 bits of EAX) to
+be the background color and stuff (and we set it to 0x0F, which means WHITE ON BLACK). This allows us to print ONE CHARACTER.
 But wait, what if we want to print MORE characters? Well, to do that, we should move to C. We can define a header that has 
 C's putc and puts functions. Then, we can define a C file that uses the header, and then actually implements our putc and 
 puts functions. Putc is easy, since all we have to do to display a character is just, well, put in a character into our
