@@ -196,3 +196,25 @@ we have an actually printing function!
 
 Tomorrow, I will enable paging and destroy everything. I will also try to make an actual printf() function in our main
 kernel.c, so we can actually start printing for real in C, instead of fake printing in C.
+----------------------------------
+DAY 8 & 9
+I got sick on these days, so I wasn't able to work on the project much. :(
+----------------------------------
+DAY 10
+On Day 7 I decided I wanted to turn on paging.
+I decided to NOT do that just yet, as I figured out there were some issues with my puts and putc functions. First, if I 
+had a long enough message, that message would not wrap around. There was no overflow management happening, so I needed to fix
+that. But by far the most GLARING issue was the fact that if I had multiple puts and putc functions, puts and putc would 
+magically stop working. Even MORE confusing was that if I had another function in kernel.c that I wasn't even using, 
+(like it was just EXISTING in kernel.c), puts and putc would ALSO stop working. Immediately I knew this had to be an issue
+between two-three culprits.
+The first culprit was that I assumed something incorrectly. Perhaps I used a register that had an implicit rule, or
+I was just being unoptimized and it was messing something up. For this, I decided to clean up my x86_video_whatever it was
+called function, and actually use the BP register, which is what a lot of people do whenever they're messing around with the
+stack.
+Speaking of the stack, this brings us to the second culprit. The stack. I assumed that, maybe, I was just being stupid and
+I had actually not properly set up the stack, or I just forgot how the cdecl calling convention worked??? I dunno, but
+I DID end up finding that I wasn't actually using the stack at all, and that my code just so happened to work. Originally I
+was using the linker script 'ld' with the flag --oformat to directly create the .bin file by linking all the C and assembly
+files. This turned out to be a BAD IDEA, because for some reason, "--oformat binary" sets the size of the .bss section to be 0, or just drops the .bss section. This is because the .bss section is not treated the same as .data or .text, as it is considered "unallocated memory", and has type SHT_NOBITS, (at least I think). A section of type SHT_NOBITS may be in the file, but occupies no space in the file, so we have to force it to see the .bss section.
+
