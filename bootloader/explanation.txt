@@ -232,3 +232,12 @@ you would think, I would reach the limit. But no, instead, it breaks, and nothin
 function with 80 characters, then it works just fine! But if I try to add clamps, then that one puts function fails too! What is even going on??
 I'm going to try fixing this tomorrow, hopefully.
 
+----------------------------------
+DAY 11
+Alright so it turns out none of the culrpits I talked about previously were the issue,  (well, I mean the .bss --oformat binary stuff was 
+certainly an issue that I'm glad I fixed). Instead, the issue was that in my kernel file, I was specifying it with:
+SECTION _text
+instead of
+SECTION .text
+And my link loader doesn't know what _text is, as it only knows about .text, leading to the huge issues. That one character fix seemingly fixed 
+everything, (or at least I am hoping it fixed everything. I can't seem to find any bugs at the moment..).
