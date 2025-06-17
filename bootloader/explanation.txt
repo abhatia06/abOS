@@ -225,10 +225,10 @@ copy over. So we convert it to an ELF type first, as ELF preserves the full memo
 to binary, (it wont think .bss is empty this time, because the ELF file contains it already). Also, it's a good idea to
 use this anyway since, according to the OSDev wiki, generally binary files are "a flat binary with no formatting at all."
 which is not great. (At least, I would assume it's not great, since we would like it to format to elf-i386 32-bit)
-And finally, the third culprit. My compiler itself, GCC, (or the NASM assembler). It turns out the NASM assembler was 
-fine, but there was an issue with the GCC cross compiler. For some reason, GCC automatically assumes two things: the 
-first is actually helpeful. It automatically assumes functions will follow the CDECL calling convention, which I have 
-already talked about. The second was the big issue, which is the fact that GCC automatically assumes that the stack
-pointer must be 16-byte aligned at a call instruction. But it is not! And that 16-byte alignment is generally only used 
-in 64-bit systems, which I am not developing. So I have to make it 32-bit.
+And finally, the third culprit. I don't understand the third culprit yet, and so I will not talk about it yet.
+It is late, and I still have some glaring issues with puts and putc that I need to iron out before I can make printf and whatnot. 
+The biggest issue has to do with reaching the edges. The window is 80x25. So, if I have two puts functions that are 40 characters each then,
+you would think, I would reach the limit. But no, instead, it breaks, and nothing is displayed instead. Oh but wait, if I just have ONE puts
+function with 80 characters, then it works just fine! But if I try to add clamps, then that one puts function fails too! What is even going on??
+I'm going to try fixing this tomorrow, hopefully.
 
