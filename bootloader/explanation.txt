@@ -216,6 +216,17 @@ Speaking of the stack, this brings us to the second culprit. The stack. I assume
 I had actually not properly set up the stack, or I just forgot how the cdecl calling convention worked??? I dunno, but
 I DID end up finding that I wasn't actually using the stack at all, and that my code just so happened to work. Originally I
 was using the linker script 'ld' with the flag --oformat to directly create the .bin file by linking all the C and assembly
-files. This turned out to be a BAD IDEA, because for some reason, "--oformat binary" sets the size of the .bss section to be 0, or just drops the .bss section. This is because the .bss section is not treated the same as .data or .text, as it is considered "unallocated memory", and has type SHT_NOBITS, (at least I think). A section of type SHT_NOBITS may be in the file, but occupies no space in the file, so we have to force it to see the .bss section. The linker ld uses the objcopy through the BFD library. The objcopy is the real culprit, as it does not include anything of type SHT_NOBITS to copy over. So we convert it to an ELF type first, as ELF preserves the full memory layout, THEN we use objcopy to convert to binary, (it wont think .bss is empty this time, because the ELF file contains it already)
-And finally, the third culprit. My compiler itself, GCC, (or the NASM assembler). It turns out the NASM assembler was fine, but there was an issue with the GCC cross compiler. For some reason, GCC automatically assumes two things: the first is actually helpeful. It automatically assumes functions will follow the CDECL calling convention, which I have already talked about. The second was the big issue, which is the fact that GCC automatically assumes that the stack pointer must be 16-byte aligned at a call instruction. But it is not! And that 16-byte alignment is generally only used in 64-bit systems, which I am not developing. So I have to make it 32-bit.
+files. This turned out to be a BAD IDEA, because for some reason, "--oformat binary" sets the size of the .bss section to 
+be 0, or just drops the .bss section. This is because the .bss section is not treated the same as .data or .text, as it 
+is considered "unallocated memory", and has type SHT_NOBITS, (at least I think). A section of type SHT_NOBITS may be in 
+the file, but occupies no space in the file, so we have to force it to see the .bss section. The linker ld uses the 
+objcopy through the BFD library. The objcopy is the real culprit, as it does not include anything of type SHT_NOBITS to
+copy over. So we convert it to an ELF type first, as ELF preserves the full memory layout, THEN we use objcopy to convert
+to binary, (it wont think .bss is empty this time, because the ELF file contains it already)
+And finally, the third culprit. My compiler itself, GCC, (or the NASM assembler). It turns out the NASM assembler was 
+fine, but there was an issue with the GCC cross compiler. For some reason, GCC automatically assumes two things: the 
+first is actually helpeful. It automatically assumes functions will follow the CDECL calling convention, which I have 
+already talked about. The second was the big issue, which is the fact that GCC automatically assumes that the stack
+pointer must be 16-byte aligned at a call instruction. But it is not! And that 16-byte alignment is generally only used 
+in 64-bit systems, which I am not developing. So I have to make it 32-bit.
 
