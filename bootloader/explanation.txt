@@ -222,7 +222,9 @@ is considered "unallocated memory", and has type SHT_NOBITS, (at least I think).
 the file, but occupies no space in the file, so we have to force it to see the .bss section. The linker ld uses the 
 objcopy through the BFD library. The objcopy is the real culprit, as it does not include anything of type SHT_NOBITS to
 copy over. So we convert it to an ELF type first, as ELF preserves the full memory layout, THEN we use objcopy to convert
-to binary, (it wont think .bss is empty this time, because the ELF file contains it already)
+to binary, (it wont think .bss is empty this time, because the ELF file contains it already). Also, it's a good idea to
+use this anyway since, according to the OSDev wiki, generally binary files are "a flat binary with no formatting at all."
+which is not great. (At least, I would assume it's not great, since we would like it to format to elf-i386 32-bit)
 And finally, the third culprit. My compiler itself, GCC, (or the NASM assembler). It turns out the NASM assembler was 
 fine, but there was an issue with the GCC cross compiler. For some reason, GCC automatically assumes two things: the 
 first is actually helpeful. It automatically assumes functions will follow the CDECL calling convention, which I have 
