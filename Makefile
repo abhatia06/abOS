@@ -55,7 +55,7 @@ $(BUILD_DIR)/kernel.elf: always
         $(ASM) $(SRC_DIR3)/kernel.s -f elf32 -o $(BUILD_DIR)/kernel.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR3)/kernel.c -o $(BUILD_DIR)/kernelC.o
         $(ASM) $(SRC_DIR3)/x86.s -f elf32 -o $(BUILD_DIR)/x86.o
-        $(CCOMP) -m32 -ffreestanding -fno-pic -fno-pie -nostdlib -c $(SRC_DIR3)/stdio.c -o $(BUILD_DIR)/stdio.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR3)/stdio.c -o $(BUILD_DIR)/stdio.o
         $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/stdio.o
 
 #
