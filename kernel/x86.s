@@ -3,7 +3,7 @@ BITS 32
 VIDEO_MEMORY equ 0xB8000
 WHITE_ON_BLACK equ 0x0F ; video memory works as: 0xB8000 = first character, 0xB8001 = color for first character, and then loops
 
-SECTION _text:
+SECTION .text:     
 
 
 GLOBAL _x86_Video_WriteCharTeletype
