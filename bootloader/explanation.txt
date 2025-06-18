@@ -244,5 +244,34 @@ everything, (or at least I am hoping it fixed everything. I can't seem to find a
 OK. New bug was discovered while I was implementing printf. The more I implemented printf, the more and more my strings were truncating. I knew 
 that the issue HAD to be memory allocation, but I couldn't for the life of me figure out what the issue was. Eventually, while looking through
 the boot code, and genuinely feeling like giving up and restarting this project from scratch and actually following nanobytes tutorial 100%, 
-I found out in my boot2.s I was only copying the first 512 bytes of code over to 0x100000. That's nothing! I changed this to 4096 and bam! 
+I found out in my boot2.s I was only copying the first 512 bytes of code over to 0x100000. That is nothing, so I changed it to 4096 and 
 Everything started working again. 
+
+Furthermore, today I implemented the functionality for printf. The OSDev wiki had a page on it, so I assumed I needed to do it. Also it is
+quite nice to be able to actually print things stored in variables, so why not, right? Anyway. The implementation is only really half complete.
+I followed Nanobyte's tutorial, but he doesn't make use of the va_list, (even though OSDev wiki tells me to), and he's in 16-bit real mode still
+so I have to change some stuff. Unfortunately, though, the stuff I changed ended up not being great ideas and now the code doesn't function. 
+For one, the "continue" I have doesn't increment fmt, so in some cases, (in literally evey case), I end up being stuck in an infinite loop in
+printf. Also, the number to ASCII thing definitely does not work (my emulator keeps flickering). But oh well, this is all stuff I will do for
+tomorrow.
+Oh yes, as for how the implementation works. On paper, it is simple. We observe printf through a sort of finite state machine. Since strings are
+just arrays, we will increment through the string starting from the far left and moving rightward towards the sentinel at the end. We begin at
+state NORMAL. If we discover there exists no "%", and we are in no other state, then we simply print whatever character we are currently at
+and move on. If we discover a '%', then we move to a state "LENGTH". Here, we once again increment and check the next character after the '%'.
+If this next character is 'h', or 'l', that means we are thinking about short or long respectively. So we increment once again to see the thing
+AFTER 'h' or 'l'. If there is another 'h' or 'l', that means we're in SHORT SHORT or LONG LONG. You can't be SHORT SHORT SHORT or LONG LONG LONG
+so that means the next thing that comes must mean we are printing something out, so we move to the PRINT_STATE state, where we have a bunch of
+cases for various commands, like %d, %i, %x, %o, etc. 
+%d implies that we have to be printing numbers. Now, we cannot just prints numbers by themselves, as they are not characters, they are ints, and
+ints are usually 32 bits (4 bytes), and chars are 8 bits (1 byte). So, we have to somehow make 32 bits into 8 bits and keep the same display 
+value. How would we do that? Through the power of ASCII tables. ASCII tables allow us to take integers and print them as characters. So, we must
+do that through a special function. That special function is printf_number, which takes a value and prints it into an ASCII value based on a 
+specific base, (base 10, 16, or 8 depending on % code). It uses long division to repeatedly divide the numbers by the base to extract digits,
+and then stores the corresponding digits in reverse order. Then we can just print it in reverse order and get the ASCII value for the number. 
+If you want a better-ish explanation, I would recommend watching Nanobyte's printf implementation video.
+Now back to printf. After it has processed this one character, it finishes, resets the state and length back to NORMAL, and then moves onto the
+next letter.
+Oh, by the way, our printf is technically wrong. The header is supposed to return an int according to the C++ documentation, but I don't care. 
+This is my printf. So I made it return nothing, but the parameters are the same! (const char* fmt, ...). 
+Anyway, tomorrow I'll fix printf and I'll do some more studying and whatnot. Then hopefully this week I can turn on memory paging to protect
+my memory.
