@@ -5,6 +5,34 @@ WHITE_ON_BLACK equ 0x0F ; video memory works as: 0xB8000 = first character, 0xB8
 
 SECTION .text:     
 
+GLOBAL _x86_div64_32
+_x86_div64_32:
+
+; I will comment all this code tomorrow. As of today, it is late and I am tired.
+    PUSH EBP
+    MOV EBP, ESP
+    PUSH EBX
+
+    MOV EDX, [EBP + 8]          
+    MOV EAX, [EBP + 12]         
+    XOR ECX, [EBP + 16]
+
+    DIV ECX                     
+
+    ; store quotient
+    MOV EBX, [EBP + 20]
+    MOV [EBX], EAX
+    XOR EAX, EAX
+    MOV [EBX + 4], EAX
+
+    ; store remainder
+    MOV EBX, [EBP + 24]
+    MOV [EBX], EDX
+
+    POP EBX
+    POP EBP
+    RET
+
 
 GLOBAL _x86_Video_WriteCharTeletype
 _x86_Video_WriteCharTeletype:
