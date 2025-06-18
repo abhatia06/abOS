@@ -3,8 +3,19 @@
 
 int cursor_pos = 0;
 void putc(char c) {
-	_x86_Video_WriteCharTeletype(c, 0, cursor_pos);
-	cursor_pos += 2;
+	switch(c) {
+
+		// The below two cases are for handling line breaks and return carriages
+		case '\n' : cursor_pos += (VGA_WIDTH * 2) - (cursor_pos % (VGA_WIDTH * 2));	// This math 
+			    break;
+
+		case '\r' : cursor_pos -= (cursor_pos % (VGA_WIDTH * 2));
+			    break;
+
+		default : _x86_Video_WriteCharTeletype(c, 0, cursor_pos);	// The 2nd argument isn't used JUST YET. It is for memory paging
+			  cursor_pos += 2;	// We add 2 to cursor_pos because 0xB8000 = top left character, 0xB8002 = character after that
+			  break;
+	}
 }
 
 void puts(const char* str) {
@@ -20,7 +31,7 @@ void puts(const char* str) {
  * In the code below I will be implementing printf() according to the format specified by the regular printf()
  * found in the stdio.h library in the actual C language. According to the OSDev wiki, I am basically forced to use
  * the va_list. Thankfully, I don't have to implement va_list, because it can be found in the freestanding
- * <stdarg.h>, so, woohoo! Also I used Nanobyte's implementation, but he doesn't use va_args, and he's in 16 bit  mode, so I changed it
+ * <stdarg.h>, so, woohoo! Also I used Nanobyte's implementation, but he doesn't use va_args, and he's in 16 bit mode, so I changed it
  * just a slight to make it work for me.
  */
 
@@ -134,8 +145,7 @@ void kprintf(const char* fmt, ...) {
                                         case 'l' : length = PRINTF_LENGTH_LONG;
                                                    state = PRINTF_STATE_LENGTH_LONG;
                                                    break;
-                                        default : state = PRINTF_STATE_SPEC;
-                                                  continue;
+                                        default : goto PRINTF_STATE_SPEC_;
                                 }
                                 break;
 
@@ -145,8 +155,7 @@ void kprintf(const char* fmt, ...) {
                                         state = PRINTF_STATE_SPEC;
                                 }
                                 else {
-                                        state = PRINTF_STATE_SPEC;
-                                        continue;
+                                        goto PRINTF_STATE_SPEC_;
                                 }
                                 break;
 
@@ -156,12 +165,12 @@ void kprintf(const char* fmt, ...) {
                                         state = PRINTF_STATE_SPEC;
                                 }
                                 else {
-                                        length = PRINTF_LENGTH_LONG;
-                                        continue;
+                                        goto PRINTF_STATE_SPEC_;
                                 }
                                 break;
 
                         case PRINTF_STATE_SPEC:
+			PRINTF_STATE_SPEC_:
                                 switch(*fmt) {
                                         case 'c' : putc((char)va_arg(args, int));
                                                    break;
