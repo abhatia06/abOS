@@ -13,9 +13,9 @@ _x86_div64_32:
     MOV EBP, ESP
     PUSH EBX
 
-    MOV EDX, [EBP + 8]          
-    MOV EAX, [EBP + 12]         
-    XOR ECX, [EBP + 16]
+    MOV EAX, [EBP + 8]          
+    MOV EDX, [EBP + 12]         
+    MOV ECX, [EBP + 16]
 
     DIV ECX                     
 
@@ -23,7 +23,7 @@ _x86_div64_32:
     MOV EBX, [EBP + 20]
     MOV [EBX], EAX
     XOR EAX, EAX
-    MOV [EBX + 4], EAX
+    MOV [EBX + 4], EAX    ; we zero out the upper 32 bits
 
     ; store remainder
     MOV EBX, [EBP + 24]
