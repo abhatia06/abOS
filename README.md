@@ -7,7 +7,7 @@ To learn about stuff, I am using a combination of the OSDev Wiki, Reddit posts (
 Concepts 10th Edition), and anything else I can find on Google (the Stanford x86 cheat-sheet was very helpful).  
 
 This OS has, as of writing this:
-1. A custom bootloader that switches from real mode to protected mode,
+1. A custom legacy bootloader that switches from real mode to protected mode
 2. Sets up the Global Descriptor Table and a flat memory model 
 3. Reads the disk through CHS addressing and loads the kernel into memory through a two-stage process (loads kernel to 0x10000 first, then loads kernel into 0x100000)
-4. Partially implements various C standard libraries, such as stdio and stdint, and has its own custom standard library functions, such as puts, putc, and printf. 
+4. Partially implements various C standard libraries, such as stdio and stdint, and has its own custom standard library functions, such as puts, putc, and printf
