@@ -1,7 +1,5 @@
-#ifndef STDIO_H
-#define STDIO_H
+#pragma once
 
 void putc(char c);
 void puts(const char* str);
-
-#endif
+void kprintf(const char* fmt, ...);
