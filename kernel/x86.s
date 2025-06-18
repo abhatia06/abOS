@@ -8,30 +8,30 @@ SECTION .text:
 GLOBAL _x86_div64_32
 _x86_div64_32:
 
-; I will comment all this code tomorrow. As of today, it is late and I am tired.
-    PUSH EBP
-    MOV EBP, ESP
-    PUSH EBX
+    ; I realized I wasn't doing a proper 64-bit division, like how Nanobyte waas doing it, leading to stuff like %llx failing. So, I changed it.
+     PUSH EBP
+     MOV EBP, ESP
+     PUSH EBX
 
-    MOV EAX, [EBP + 8]          
-    MOV EDX, [EBP + 12]         
-    MOV ECX, [EBP + 16]
+     XOR EDX, EDX
+     MOV EAX, [EBP + 12]
+     MOV ECX, [EBP + 16]
+     DIV ECX
 
-    DIV ECX                     
+     MOV EBX, EAX
+     MOV EAX, [EBP + 8]
+     DIV ECX 
 
-    ; store quotient
-    MOV EBX, [EBP + 20]
-    MOV [EBX], EAX
-    XOR EAX, EAX
-    MOV [EBX + 4], EAX    ; we zero out the upper 32 bits
+     MOV ESI, [EBP + 20]
+     MOV [ESI], EAX
+     MOV [ESI + 4], EBX 
 
-    ; store remainder
-    MOV EBX, [EBP + 24]
-    MOV [EBX], EDX
+     MOV ESI, [EBP + 24]
+     MOV [ESI], EDX
 
-    POP EBX
-    POP EBP
-    RET
+     POP EBX
+     POP EBP
+     RET
 
 
 GLOBAL _x86_Video_WriteCharTeletype
