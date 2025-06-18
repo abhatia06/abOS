@@ -3,19 +3,8 @@
 
 int cursor_pos = 0;
 void putc(char c) {
-	switch(c) {
-
-		// The below two cases are for handling line breaks and return carriages
-		case '\n' : cursor_pos += (VGA_WIDTH * 2) - (cursor_pos % (VGA_WIDTH * 2));
-			    break;
-
-		case '\r' : cursor_pos -= (cursor_pos % (VGA_WIDTH * 2));
-			    break;
-
-		default : _x86_Video_WriteCharTeletype(c, 0, cursor_pos);	// The 2nd argument isn't used JUST YET. It is for memory paging
-			  cursor_pos += 2;	// We add 2 to cursor_pos because 0xB8000 = top left character, 0xB8002 = character after that
-			  break;
-	}
+	_x86_Video_WriteCharTeletype(c, 0, cursor_pos);	// The 2nd argument isn't used JUST YET. It is for memory paging
+	cursor_pos += 2;	// We add 2 to cursor_pos because 0xB8000 = top left character, 0xB8002 = character after that
 }
 
 void puts(const char* str) {
