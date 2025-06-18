@@ -6,7 +6,7 @@ void putc(char c) {
 	switch(c) {
 
 		// The below two cases are for handling line breaks and return carriages
-		case '\n' : cursor_pos += (VGA_WIDTH * 2) - (cursor_pos % (VGA_WIDTH * 2));	// This math 
+		case '\n' : cursor_pos += (VGA_WIDTH * 2) - (cursor_pos % (VGA_WIDTH * 2));
 			    break;
 
 		case '\r' : cursor_pos -= (cursor_pos % (VGA_WIDTH * 2));
