@@ -275,3 +275,29 @@ Oh, by the way, our printf is technically wrong. The header is supposed to retur
 This is my printf. So I made it return nothing, but the parameters are the same! (const char* fmt, ...). 
 Anyway, tomorrow I'll fix printf and I'll do some more studying and whatnot. Then hopefully this week I can turn on memory paging to protect
 my memory.
+
+----------------------------------
+DAY 12
+Today was a bit of a nothing burger day in terms of new stuff. It was really just more debugging and studying. As of right now, I believe I have
+EVERYTHING in my program working smoothly. Printf actually prints everything I want it to print, (including long long hexadecimals, which is
+something I almost never see, but why not). I've also updated my x86_div64_32 algorithm, after realizing that my original algorithm was trying to
+divide a 64 bit number by the base (base 10, 16, or 8), and then store it. This is stupid, and obviously won't work. So I went back to Nanobyte's
+video, and I discovered a new "tutorial" channel, Queso Fuego, whom also talked about the "long division method" where they take the first 32
+bits, divide them by the base, store the quotient and remainder, then take the last 32 bits, append the remainder, and divide it by the base, 
+before storing everything once more. Adding the two will give you the actual division, just like if you were to try and divide the 64 bits in 
+one go. This worked much better, (duh), and actually allowed me to use %llx, as before I was unable to use them with my implementation. 
+
+As for studying, I just read more of the intel manual, OSDev wiki, and the dinosaur book (specifically chapter 2), to get a better understanding
+of where I want to go next. I think the next plan of action is the following
+1. More studying. I really need to read more of the dinosaur book, it is a very good book and teaches the concepts quite well. I want to have read
+a large chunk of it by the time I'm done with v1.0 of this project.
+2. Set up memory paging. I've been talking about doing this for a while, but I think I've held it off for long enough and I need to do it soon.
+3. Set up TSS w/ ESP0 stack. I don't fully know what these are yet, but the OSDev wiki recommends them
+3. Set up IDT. The IDT is not only necessary for entering user mode (ring 3), but also will be quite helpful in the future for debugging purposes.
+4. Enter user mode. I'm quite excited for this, as there is a lot to do after I enter user mode still. 
+5. This part I need to study some more, but I believe I need to:
+  - implement various user programs (a simple clock, maybe)
+  - implement system calls for said user programs (a system call interface)
+  - set up a timer 
+  - set up scheduling (so I can multitask and not force the user to have one thing at a time. Timer is also necessary for this, paging too)
+After that, I should probably implement a file system, drivers, and other shenanigans that I need to study up on. (FAT32?)
