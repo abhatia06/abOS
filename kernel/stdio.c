@@ -1,19 +1,113 @@
 #include "stdio.h"
 #include "x86.h"
+#include <stdarg.h>
+#include <stdbool.h>
 
-int cursor_pos = 0;
+const unsigned VGA_WIDTH = 80;
+const unsigned VGA_HEIGHT = 25;
+const uint8_t DEFAULT_COLOR = 0x0F;
+
+uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
+int g_ScreenX = 0, g_ScreenY = 0;
+
+void putchar(int x, int y, char c) {
+        g_ScreenBuffer[2 * (y * VGA_WIDTH + x)] = c;
+}
+
+void putcolor(int x, int y, uint8_t color) {
+        g_ScreenBuffer[2 * (y * VGA_WIDTH + x) + 1] = color;
+}
+
+int getchr(int x, int y) {
+        return g_ScreenBuffer[2 * (y * VGA_WIDTH + x)];
+}
+
+uint8_t getcolor(int x, int y) {
+        return g_ScreenBuffer[2 * (y * VGA_WIDTH + x) + 1];
+}
+
+void setcursor(int x, int y) {
+        int pos = y * VGA_WIDTH + x;
+
+        _x86_outb(0x3D4, 0x0F);
+        _x86_outb(0x3D5, (uint8_t)(pos & 0xFF));
+        _x86_outb(0X3D4, 0X0E);
+        _x86_outb(0x3D5, (uint8_t)((pos >> 8) & 0XFF));
+}
+
+void scrollback(int lines) {
+        for(int y = lines; y < VGA_HEIGHT; y++) {
+                for(int x = 0; x < VGA_WIDTH; x++) {
+                        putchar(x, y - lines, getchr(x, y));
+                        putcolor(x, y - lines, getcolor(x, y));
+                }
+        }
+
+        for(int y = VGA_HEIGHT - lines; y < VGA_HEIGHT; y++) {
+                for(int x = 0; x < VGA_WIDTH; x++) {
+                        putchar(x, y, '\0');
+                        putcolor(x, y, DEFAULT_COLOR);
+                }
+        }
+
+        g_ScreenY -= lines;
+}
+
+void clrscr() {
+        for(int y = 0; y < VGA_HEIGHT; y++) {
+                for(int x = 0; x < VGA_WIDTH; x++) {
+                        putchar(x, y, '\0');
+                        putcolor(x, y, DEFAULT_COLOR);
+                }
+        }
+
+        g_ScreenX = 0;
+        g_ScreenY = 0;
+        setcursor(g_ScreenX, g_ScreenY);
+}
+
+
 void putc(char c) {
-	_x86_Video_WriteCharTeletype(c, 0, cursor_pos);	// The 2nd argument isn't used JUST YET. It is for memory paging
-	cursor_pos += 2;	// We add 2 to cursor_pos because 0xB8000 = top left character, 0xB8002 = character after that
+        switch(c) {
+                case '\n' :
+                        g_ScreenX = 0;
+                        g_ScreenY++;
+                        break;
+
+                case '\t' :
+                        for(int i = 0; i < 4 - (g_ScreenX % 4); i++) {
+                                putc(' ');
+                        }
+                        break;
+
+                case '\r' :
+                        g_ScreenX = 0;
+                        break;
+
+                default :
+                        putchar(g_ScreenX, g_ScreenY, c);
+                        g_ScreenX++;
+                        break;
+        }
+
+        if(g_ScreenX >= VGA_WIDTH) {
+                g_ScreenY++;
+                g_ScreenX = 0;
+        }
+        if(g_ScreenY >= VGA_HEIGHT) {
+                scrollback(1);
+        }
+
+        setcursor(g_ScreenX, g_ScreenY);
 }
 
 void puts(const char* str) {
 
-	while(*str) {
+        while(*str) {
+                putc(*str);
+                str++;
+        }
 
-		putc(*str);
-		str++;
-	}
 }
 
 /*
