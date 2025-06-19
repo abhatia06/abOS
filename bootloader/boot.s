@@ -71,6 +71,7 @@ retry:
    INT 0x10
 
    CALL loadKernelToMem
+   CALL enableFastA20
    JMP enterProtectedMode
 
 .fail:
@@ -80,6 +81,12 @@ retry:
 
 .done:
    JMP enterProtectedMode
+
+enableFastA20:        ; I am 100% sure that the QEMU emulator already has the A20 line on by default (as seen by the fact that I was able to 
+    IN AL, 0x92       ; access memory above 1MB before I explicitly enabled it here), but I thought I might as well add it, as the OSDev wiki
+    OR AL, 0x02       ; does recommend it.
+    AND AL, 0xFE
+    OUT 0x92, AL
 
 enterProtectedMode:
     CLI
