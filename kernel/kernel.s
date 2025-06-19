@@ -5,7 +5,7 @@ EXTERN main
 
 SECTION .text
 
-_start:        ; supposedly we use _ before to indicate CDECL calling convention
+_start:        ; supposedly we use _ before to indicate CDECL calling convention <-- I dont think GCC actually cares tho lol
 
     ; The code below zeroes out the BSS. Why do we need to do that? I believe this reddit page answers it pretty well:
     ; https://www.reddit.com/r/AskProgramming/comments/7r8scm/why_do_we_have_to_clear_bss_in_assembly/
