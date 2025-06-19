@@ -3,15 +3,15 @@
 
 ASM=nasm
 SRC_DIR=bootloader
-SRC_DIR3=kernel
+SRC_DIR2=kernel
+SRC_DIR3=interrupts
 BUILD_DIR=build
 CCOMP=gcc
 LD = ld
 
 # The CFLAGS below are for compiling my kernel.c. For some reason, GCC assumes code is aligned to 16-bytes, because most modern OS, like Windows and Linux are. I'm 
 # not making a normal OS, and I'm certainly not on 64-bit, so I have to use the 32-bit version, which is 4 bytes, so we use -mpreferred-stack-boundary=2. The other
-# flags are there for other reasons. As of writing this, I have no idea if I'm progressing through my OS journey correctly, because having looked at Nanobyte's code, 
-# this guy is STILL using a floppy disk and hasn't entered protected mode, and it is worrying me a little bit.
+# flags are there for other reasons, which I will explain later (im too lazy).
 CFLAGS=-m32 -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
@@ -49,14 +49,19 @@ $(BUILD_DIR)/boot.bin: always
 kernel: $(BUILD_DIR)/kernel.bin
 
 #
-#kernel
+#kernel.
+# Side note: The makefile is starting to get a bit big, and I've seen other OS projects split the task of making everything into separate makefiles
+# like one in the kernel, one in the bootloader, etc. I might do that too soon enough, and I'll also place link loaders in each one there too, so
+# this main makefile, in the src folder, won't be so cluttered and large.
 #
 $(BUILD_DIR)/kernel.elf: always
-        $(ASM) $(SRC_DIR3)/kernel.s -f elf32 -o $(BUILD_DIR)/kernel.o
-        $(CCOMP) $(CFLAGS) $(SRC_DIR3)/kernel.c -o $(BUILD_DIR)/kernelC.o
-        $(ASM) $(SRC_DIR3)/x86.s -f elf32 -o $(BUILD_DIR)/x86.o
-        $(CCOMP) $(CFLAGS) $(SRC_DIR3)/stdio.c -o $(BUILD_DIR)/stdio.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/stdio.o
+        $(ASM) $(SRC_DIR2)/kernel.s -f elf32 -o $(BUILD_DIR)/kernel.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/kernel.c -o $(BUILD_DIR)/kernelC.o
+        $(ASM) $(SRC_DIR2)/x86.s -f elf32 -o $(BUILD_DIR)/x86.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/stdio.c -o $(BUILD_DIR)/stdio.o
+        $(ASM) $(SRC_DIR2)/$(SRC_DIR3)/idt.s -f elf32 -o $(BUILD_DIR)/idt_stubs.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/idt.c -o $(BUILD_DIR)/idt.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o
 
 #
 # This part is SUPER necessary. The --oformat binary that directly links
