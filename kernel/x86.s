@@ -34,6 +34,7 @@ _x86_div64_32:
      RET
 
 
+; NOTE: This global function is now useless and unused. I still have it here, though, because it is a good reference I think
 GLOBAL _x86_Video_WriteCharTeletype
 _x86_Video_WriteCharTeletype:
 
@@ -54,3 +55,19 @@ _x86_Video_WriteCharTeletype:
      
      POP EBP          ; Return EBP back to its original address
      RET
+
+GLOBAL _x86_outb
+_x86_outb:
+
+    MOV DX, [ESP + 4]
+    MOV AL, [ESP + 8]
+    OUT DX, AL
+    RET
+
+GLOBAL _x86_inb
+_x86_inb:
+
+    MOV DX, [ESP + 4]
+    XOR EAX, EAX
+    IN AL, DX
+    RET
