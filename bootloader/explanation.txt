@@ -301,3 +301,52 @@ a large chunk of it by the time I'm done with v1.0 of this project.
   - set up a timer 
   - set up scheduling (so I can multitask and not force the user to have one thing at a time. Timer is also necessary for this, paging too)
 After that, I should probably implement a file system, drivers, and other shenanigans that I need to study up on. (FAT32?)
+
+----------------------------------
+DAY 12
+Today was very confusing, and that is why I will be dedicating tomorrow towards a study day. Perhaps even the rest of the week, I will dedicate
+to being a study-remainder-week. I need to catch up more on the x86 ASM language, as I believe I am starting to reach the point where I'm not
+fulling understanding the assembly code the tutorials are giving me.
+The things I did understand, though, is the newly updated putc and whatnot with proper cursor handling. Beforehand I was relying on the assembly
+code and then sending in a global variable, cursor_pos. This worked, but it didn't literally update the cursor position. Now, I use a volatile
+8-bit memory pointer that uses 0xB8000 as a pointer itself (bleh, jumbo of words). As I've explained before, the VGA memory address works like
+the following: 0xB8000 stores a character, and 0xB8001 stores the attributes of said character, (like background color, font-color, etc.). So,
+by having a buffer integer pointer that points to an 8-bit integer, we are basically saying that the variable uint8_t* g_ScreenBuffer points to
+the address 0xB8000, which we are able to then print directly to, and then we can move onto the next character by playing around with the pointer.
+
+I also started working on setting up the IDT. The IDT is, of course, for interrupts. I believe I've mentioned in this dev-log that, once we enter
+protected mode, we lose the ability to use interrupts (like INT 0x10, INT 0x13, both of which we used quite extensively. 0x10 is for video memory,
+0x13 combined with AH 0x02 is for reading from a disk. Fun fact: INT 0x13 AH 0x03 is for WRITING to a disk, so that's fun). I never actually
+explained WHY we lose the ability to use interrupts. That's because in real mode, to be able to use interrupts, we had the IVT (interrupt vector
+table) already available to us, and so we could use its many functions. But, in protected mode, the CPU now requires the implementation of the
+IDT, (interrupt descriptor table) for us to not only be able to use some interrupts (like being able to get keyboard input. This will be VERY 
+important once we get into user mode), but also for the hardware to give us some interrupts (divide by 0 and whatnot). Now I still don't FULLY
+understand the implementation of the IDT, so I will get back on this devlog tomorrow when I have more understanding, but to my knowledge, the
+IDT is very similar to the GDT, in that when an interrupt is issued to the CPU, it will look to the GDT to figure out what ISR to call, (ISRs are
+interrupt service routines, they will handle interrupts, so we would have an ISR for divide by 0, for example, that would process, and then return
+function back to the CPU to continue reading memory). When an interrupt is handled, the CPU, of course, needs to stop what it is doing. But it
+can't just DROP what it is doing, that would be very inconvenient, imagine having to download something, and you accidentally press a key, making
+the download process just stop. So, the CPU needs a way to save the information of what it does, I believe it does this through the IDT too,
+in particular, if an interrupt occurs on kernel mode, (which is good), then all it has to do is push the error code, if there is one, onto the
+stack, the CS register, the ES register, and the EFLAGS, (if the interrupt is from user mode, it has to switch to kernel mode and also push a
+lot more stuff onto the stack). The Intel manual is more specific, so I'd recommend checking it out (go to figure 6.7, it explains it quite well).
+The IDT also has some other stuff, like the interrupt gate and trap gate. I, again, don't fully understand the IDT just yet, but to my 
+understanding, and according to the OSDev wiki, the trap gate sucks and is useless, so don't implement it. Just stick to the 32-bit interrupt
+gate. We use the interrupt gate because it clears the IE bit (interrupt enabled) in the EFLAGS register, so if one interrupt is being processed,
+more interrupts cannot come and mess up the process. The trap gate doesn't do that. Furthermore, the severity of an exception/interrupt is 
+organized from most severe (0) to least severe (256). There's a big ol' table on the Intel manual that gives us the list of interrupts, 
+(table 6.1 in the manual). 
+Furthermore, I started to implement the PIC. My thought process, as of right now, is to follow what the OSDev wiki has told me, which is, to
+be able to implement and code in interrupts into your OS in 32-bit protected mode, we need to do the following: 
+- Make space for the interrupt descriptor table
+- Tell the CPU where that space is (see GDT Tutorial: lidt works the very same way as lgdt)
+- Tell the PIC that you no longer want to use the BIOS defaults (see Programming the PIC chips)
+- Write a couple of ISR handlers (see Interrupt Service Routines) for both IRQs and exceptions
+- Put the addresses of the ISR handlers in the appropriate descriptors (in Interrupt Descriptor Table)
+- Enable all supported interrupts in the IRQ mask (of the PIC)
+Currently, I believe I've done steps 1, 2, and 3. BUT, before moving onto implementing ISR handlers, I have come across a bug that I believe has
+to do with memory (I don't have any memory management techniques as of right now, so it makes sense for these issues to arise). I believe the 
+issues are arising because I'm stupid and I don't understand the things I've implemented, so I will take a step back and try to understand
+EVERYTHING I've implemented, and play around with it to see how they work. And genuinely this time. Yesterday was supposed to be a study day, 
+but I ended up debugging instead. I will try not to debug tomorrow, instead, I'll play around with stuff and try to understand it. Also I've been
+using a lot of tutorial code. This is not good. I will also try to change and make stuff mine.
