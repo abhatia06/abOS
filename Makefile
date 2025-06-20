@@ -32,6 +32,9 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
         #Loads the kernel into sector 2
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=2 count=$(KERNEL_SECTORS) conv=notrunc
 
+        $echo $(KERNEL_SECTORS)        # completely useless, but for in the future, whenever such issues, arise, I will know to update the 
+                                       # number of sectors that we're reading from disk onto memory in boot.s
+
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
         $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
 
