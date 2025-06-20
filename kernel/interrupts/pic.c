@@ -8,24 +8,37 @@ void PIC_sendEOI(uint8_t irq) {
         outb(PIC1_COMMAND, PIC_EOI);
 }
 
-void PIC_remap(int offset1, int offset2) {
+void PIC_remap(uint8_t offset1) {
+	uint8_t master_mask, slave_mask;
+
+	master_mask = inb(PIC1_DATA);
+	slave_mask = inb(PIC2_DATA);
+	
 	// This will send ICW1 saying we'll follow with ICW4 later on
 	outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);	// starts initialization
+	io_wait();
 	outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
+	io_wait();
 	
 	// Send ICW2 with IRQ remapping
 	outb(PIC1_DATA, offset1);
-	outb(PIC2_DATA, offset2);	// This is supposed to be offset1+8, so I just have to remember that.
+	io_wait();
+	outb(PIC2_DATA, offset1 + 0x08);	// This is supposed to be offset1+8, so I just have to remember that.
+	io_wait();
 	
-	outb(PIC1_DATA, 4);
-	outb(PIC2_DATA, 2);
+	outb(PIC1_DATA, 0x04);
+	io_wait();
+	outb(PIC2_DATA, 0x02);
+	io_wait();
 
 	outb(PIC1_DATA, ICW4_8086);
+	io_wait();
 	outb(PIC2_DATA, ICW4_8086);
+	io_wait();
 
-	// unmask both PICs. We're done now basically
-	outb(PIC1_DATA, 0);	
-	outb(PIC2_DATA, 0);	
+	// And we're done
+	outb(PIC1_DATA, master_mask);
+	outb(PIC2_DATA, slave_mask);
 }
 
 //  Disables interrupts. Really only had this for testing, don't think I'll ever use it? After today, I've decided to once again have tomorrow
