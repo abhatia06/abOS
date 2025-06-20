@@ -8,6 +8,7 @@ Concepts 10th Edition), and anything else I can find on Google (the Stanford x86
 
 This OS has, as of writing this:
 1. A custom legacy bootloader that switches from real mode to protected mode
-2. Sets up the Global Descriptor Table and a flat memory model 
-3. Reads the disk through CHS addressing and loads the kernel into memory through a two-stage process (loads kernel to 0x10000 first, then loads kernel into 0x100000)
-4. Partially implements various C standard libraries, such as stdio and stdint, and has its own custom standard library functions, such as puts, putc, and printf
+2. Sets up its own Global Descriptor Table
+3. Performs a two-stage boot process to load the kernel into its proper memory position (0x100000) from disk via CHS addressing
+4. Sets up its own Interrupt Descriptor Table, along with the various things that come with interrupt handling, like 8259 PIC 
+5. Partially implements various parts of the C standard library, like stdint and stdio, (printf).
