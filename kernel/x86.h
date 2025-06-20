@@ -8,3 +8,5 @@ void _x86_Video_WriteCharTeletype(char c, uint8_t page, uint8_t pos);
 void _x86_outb(uint16_t port, uint8_t value);
 
 uint8_t _x86_inb(uint16_t port);
+
+void io_wait();
