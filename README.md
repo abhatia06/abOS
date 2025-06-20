@@ -6,7 +6,8 @@ would highly recommend checking out the book Introduction to Computing Systems b
 To learn about stuff, I am using a combination of the OSDev Wiki, Reddit posts (r/osdev), Comet Book (Operating Systems: Three Easy Pieces), Dinosaur Book (Operating Systems
 Concepts 10th Edition), and anything else I can find on Google (the Stanford x86 cheat-sheet was very helpful).  
 
-This OS has, as of writing this:
+
+This 32-bit OS has, as of writing this:
 1. A custom legacy bootloader that switches from real mode to protected mode
 2. Sets up its own Global Descriptor Table
 3. Performs a two-stage boot process to load the kernel into its proper memory position (0x100000) from disk via CHS addressing
