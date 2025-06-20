@@ -59,9 +59,10 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/kernel.c -o $(BUILD_DIR)/kernelC.o
         $(ASM) $(SRC_DIR2)/x86.s -f elf32 -o $(BUILD_DIR)/x86.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/stdio.c -o $(BUILD_DIR)/stdio.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/pic.c -o $(BUILD_DIR)/pic.o
         $(ASM) $(SRC_DIR2)/$(SRC_DIR3)/idt.s -f elf32 -o $(BUILD_DIR)/idt_stubs.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/idt.c -o $(BUILD_DIR)/idt.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o
 
 #
 # This part is SUPER necessary. The --oformat binary that directly links
