@@ -303,7 +303,7 @@ a large chunk of it by the time I'm done with v1.0 of this project.
 After that, I should probably implement a file system, drivers, and other shenanigans that I need to study up on. (FAT32?)
 
 ----------------------------------
-DAY 12
+DAY 13
 Today was very confusing, and that is why I will be dedicating tomorrow towards a study day. Perhaps even the rest of the week, I will dedicate
 to being a study-remainder-week. I need to catch up more on the x86 ASM language, as I believe I am starting to reach the point where I'm not
 fulling understanding the assembly code the tutorials are giving me.
@@ -350,3 +350,70 @@ issues are arising because I'm stupid and I don't understand the things I've imp
 EVERYTHING I've implemented, and play around with it to see how they work. And genuinely this time. Yesterday was supposed to be a study day, 
 but I ended up debugging instead. I will try not to debug tomorrow, instead, I'll play around with stuff and try to understand it. Also I've been
 using a lot of tutorial code. This is not good. I will also try to change and make stuff mine.
+
+----------------------------------
+DAY 14
+
+Today was a study day, but I also decided to do some debugging. Thankfully, the debugging was easy, because it was something I had seen before.
+If I had too many functions, or if I had too many kprintf() function calls, or just too many lines, something would stop functioning, 
+generally my kprintf(). So, I knew the issue had to be memory related. Low and behold, after like 10 minutes of figuring out what the issue was,
+I figured out that I was copying only 8 sectors from the disk to the memory in my boot.s, when my kernel was taking up 9 sectors. SO, I just 
+changed it to 9 sectors, and everything works now. I really need to make a dynamic memory allocator for that.
+
+As for the IDT and PIC, as those were the main things I studied today, I think I finally understand them. Interrupts 0 - 31 are occupied by the
+CPU, and are directly thrown by the CPU itself, so our PIC doesn't actually manage it. PIC is a piece of circuitry that ENABLES interrupt-based 
+I/O to occur, otherwise, we would be forced to use polling. Basically, what happens is that the I/O has some lines connected to it and the various
+external hardware, like the mouse, keyboard, etc.. A PIC usually has 8 IRQ lines, (IRQ 0 thru 7), and each line corresponds to a different 
+external hardware sending an interrupt signal. Now, when the PIC recieves the signal it does some things to it. First, the PIC_DATA port contains
+an 8-bit binary that is basically a mask for the various IRQ lines. (So, it'd be like 00000000 on default). If we don't want keyboard interrupts
+to interrupt our CPU, we can mask the IRQ line that the keyboard hardware is associated with (for example, lets say keyboard is associated with
+IRQ line 7, I don't think it actually is, but I'm too lazy to check right now). Then, we flip the 7th bit to 1 and we get: 10000000. So, if
+the keyboard ever sends a signal through IRQ_LINE_7 now, the PIC will see that the PIC_DATA port's 8-bit binary mask has the 7th bit flipped
+to 1, and so we now ignore any signal coming from IRQ Line 7, or the keyboard. That's masking. The priority resolver, which is the next thing
+the PIC does, sees how to assign the interrupts if MULTIPLE IRQ lines have sent signals. The general scheme is the following: the timer is the
+most important, followed by keyboard, followed by the cascade to slave, etc.. That's the priority resolver. Finally, the ISR is a register that
+basically is the security guard at a club. It checks to see if an interrupt is being processed (i.e., has the CPU sent an EOI signal back to
+the PIC yet?), and if it is being processed, then it tells the interrupts in line to wait. Once the CPU sends an EOI signal back, then we can send
+the next interrupt to the CPU. The transfering of the interrupt to the CPU is controlled by a variety of things, like the data bus buffer, and
+the read/write logic thing, and that's all kind of un-important to really understand the PIC right now. There is another thing, and it has to do
+with the existence of the slave PIC's. You see, I said the PIC's have 8 IRQ lines. That's not a lot, and the IDT, supposedly, can manage 256 
+descriptors for different interrupts. If the first 31 are to be controlled by the CPU, then the interrupts 32-255 (external hardware interrupts)
+surely can not be managed by 8 IRQ line alone, correct? Correct. They can't. That's why we can have up to 8 master-slave PIC's, but for now, 
+I only have one other PIC, or slave PIC, allowing us to have 15 IRQs. Yes, 15. Not 16. That's because the master and slave PICs still have to
+communicate with each other, so IRQ2 is used to communicate with the slave PIC. If the slave PIC recieves an interrupt (say we get an interrupt
+on IRQ 14 or something, clearly out of the master PIC's range), then the slave PIC can send the signal, after it has done all the masking and 
+whatnot in its OWN registers, to the master pic through IRQ2, where the master PIC can then send it to the CPU. So, basically, the way it works
+as of right now, with the slave pic included is:
+
+One of the PICs recieve a signal from external hardware via the IRQ lines (0 - 7 for master, 8 - 15 for slave). 
+The PICs manage said signal, and see if it should even be sent. 
+PICs check to see if the CPU has sent an EOI, (is it processing an interrupt right now?)
+If not, then the slave PIC will send the INT to the master PIC through IRQ2, which will then send the INT to the CPU
+the CPU, if it allows, will send back an INTA signal, which is just the CPU acknowledging the interrupt, and asking for the interrupt number, or
+vector, or whatever
+If the master PIC found the interrupt, it will then calculate the interrupt number based off of the IDT:
+(interrupt number = IRQ_Line + base_offset)
+And then it'll send it to the CPU.
+If the slave PIC found the interrupt, the master PIC will instruct the slave PIC to calculate the interrupt number, again based off of the IDT,
+and then it'll send it back to the master PIC, who will send it off to the CPU.
+
+I believe that is basically how these interrupts work.
+Oh, I noted that interrupt number = IRQ_Line + base_offset.
+The IRQ_Lines are from 0 - 7 and 8 - 15, and base_offset is generally going to be 0x20 and above, because anything lower is being used the IVT,
+or the CPU itself reserves those offsets, (or at least, I placed it as 0x20. The OSDev wiki doesn't specify, but I used 0x20, because the
+IDT states that the external hardware interrupt starts from 0x20 and goes onward, so we should probably specify it to that for the vector offset).
+
+That's basically how the PIC works. As for the IDT, we haven't implemented any ISR's yet, nor are we in user mode, so it isn't a huge issue,
+but there is the issue regarding how the CPU should switch into an ISR. Generally, there are two types of interrupts, precise and imprecise 
+interrupts. I will be really only dealing with precise interrupts, because imprecise interrupts seem impossible to manage. Basically,
+precise interrupts assume and require that every instruction up to the instruction the CPU is currently at has been 100% executed, and every
+instruction AFTER the instruction the CPU is currently at hasn't even been touched. This allows for easy flow between the CPU doing the actual
+process and handling the interrupt. Of course, Tanenbaum also says there are some issues with this, as there is no guarantee, and also you CAN
+have some interrupts be imprecise, (like a divide by zero interrupt can be imprecise, or a trap gate interrupt can be imprecise, because you
+aren't really gonna be going back to the process after these interrupts), so I'll probably take that into heart when developing the ISRs. Also,
+I've grossly simplified the PIC, or at least somewhat simplified it, because there are actually a lot more registers it has at play, but the 
+basic concept of the PIC I think I've managed to explain quite well. For more information, I would highly recommend checking this out:
+https://pdos.csail.mit.edu/6.828/2014/readings/hardware/8259A.pdf
+Very good PDF that explains the PIC and its inner mechanisms. 
+That's all for today. The weekends I have decided to make into rest days, but I am quite restless about this project, so I'll probably work on
+something anyway, or at least I'll study.
