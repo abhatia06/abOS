@@ -32,6 +32,10 @@ void initIDT() {
 
 	//  Set up the exception handlers first (ISRs 0-31)
 	for(uint8_t vector = 0; vector < 32; vector++) {
+		/* By default, all of the interrupts will go to the two exception handlers below. I've made it so the
+                 * if I want to have unique interrupt handlers for an interrupt, I need to use idt_set_descriptor for
+                 * the offset I want to define in the kernel.c code, (which I've done with divide by 0)
+		 */
 		idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
 		vectors[vector] = true;
 	}
