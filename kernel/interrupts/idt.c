@@ -36,8 +36,14 @@ void initIDT() {
 		vectors[vector] = true;
 	}
 
-	// Set up the exception handlers for the external interrupts, (hardware and whatnot, 32-255)
-	for(uint8_t vector = 32; vector < 256; vector++) {
+	// Set up exception handlers for the IRQs
+	for(uint8_t vector = 32; vector < 48; vector++) {
+		idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+		vectors[vector] = true;
+	}
+
+	// And then set up the exception handlers for everything after that (we rarely use these interrutps, so theyre kinda irrelevant)
+	for(uint16_t vector = 48; vector < 256; vector++) {
 		idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
 		vectors[vector] = true;
 	}
