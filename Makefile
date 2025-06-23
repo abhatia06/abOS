@@ -12,7 +12,7 @@ LD = ld
 # The CFLAGS below are for compiling my kernel.c. For some reason, GCC assumes code is aligned to 16-bytes, because most modern OS, like Windows and Linux are. I'm 
 # not making a normal OS, and I'm certainly not on 64-bit, so I have to use the 32-bit version, which is 4 bytes, so we use -mpreferred-stack-boundary=2. The other
 # flags are there for other reasons, which I will explain later (im too lazy).
-CFLAGS=-m32 -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c
+CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 
@@ -63,9 +63,10 @@ $(BUILD_DIR)/kernel.elf: always
         $(ASM) $(SRC_DIR2)/x86.s -f elf32 -o $(BUILD_DIR)/x86.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/stdio.c -o $(BUILD_DIR)/stdio.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/pic.c -o $(BUILD_DIR)/pic.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/exceptions.c -o $(BUILD_DIR)/exceptions.o
         $(ASM) $(SRC_DIR2)/$(SRC_DIR3)/idt.s -f elf32 -o $(BUILD_DIR)/idt_stubs.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/idt.c -o $(BUILD_DIR)/idt.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o
 
 #
 # This part is SUPER necessary. The --oformat binary that directly links
