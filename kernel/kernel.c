@@ -1,7 +1,17 @@
 #include "stdint.h"
 #include "stdio.c"
+#include "interrupts/idt.h"
+#include "interrupts/exceptions.h"
+#include "interrupts/pic.h"
 
 void main() {
+	PIC_remap_(0x20) // Look at the table, all external interrupts begin at 0x20. 
+	//pic_disable()
+	initIDT();	// Set up the IDT
+	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
+
+	uint8_t div0test = 0/0;	// This SHOULD throw an interrupt. 
+	
 	const char* not_really_far_string = "far string";
 	puts("Hello World from C!\n");
 	kprintf("Formatted %% %c %s %ls\n" 'a', "string", not_really_far_string);
