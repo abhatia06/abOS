@@ -20,8 +20,8 @@ void initIDT(void);
 __attribute__((noreturn)) void exception_handler(uint32_t vector_number);
 __attribute__((noreturn)) void exception_handler_error(uint32_t vector_number, uint32_t error_code);
 
-typdef struct {
+typdef struct {		// According to OSDev wiki and the Intel Manual, this is only for when an interrupt (basically) occurs in the kernel
 	uint32_t eflags;
 	uint32_t cs;
 	uint32_t eip;
-} __attribute__((packed)) int_frame_32_t;
+} __attribute__((packed)) int_frame_32_t;	// I will define another one for switching from user -> kernel mode once I switch to user mode.
