@@ -417,3 +417,11 @@ https://pdos.csail.mit.edu/6.828/2014/readings/hardware/8259A.pdf
 Very good PDF that explains the PIC and its inner mechanisms. 
 That's all for today. The weekends I have decided to make into rest days, but I am quite restless about this project, so I'll probably work on
 something anyway, or at least I'll study.
+
+----------------------------------
+DAY 15 & 16
+
+As stated above, I've made the weekends into rest days. I didn't do anything these days except hang out with friends and stuff
+
+----------------------------------
+DAY 17
