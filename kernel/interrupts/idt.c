@@ -30,7 +30,14 @@ void initIDT() {
 	idtr.base = (uintptr_t)&idt[0];
 	idtr.limit = (uint16_t)sizeof(idt_entry_t) * 256 - 1;
 
+	//  Set up the exception handlers first (ISRs 0-31)
 	for(uint8_t vector = 0; vector < 32; vector++) {
+		idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+		vectors[vector] = true;
+	}
+
+	// Set up the exception handlers for the external interrupts, (hardware and whatnot, 32-255)
+	for(uint8_t vector = 32; vector < 256; vector++) {
 		idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
 		vectors[vector] = true;
 	}
