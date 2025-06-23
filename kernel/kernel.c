@@ -8,13 +8,14 @@ void main() {
 	
 	initIDT();	// Set up the IDT
 	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
-	pic_disable();
-	PIC_remap_(0x20) // Look at the table, all external interrupts begin at 0x20. 
+	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in)
+	PIC_remap(0x20) // Look at the table, all external interrupts begin at 0x20. 
 
 	//idt_set_descriptor(0x20, PIT, 0x8E);
-	//idt_set_descriptor(0x21, KEYBOARD HANDLER, 0x8E);	// We can finally have a keyboard handler and accept user input!! 
+	idt_set_descriptor(0x21, (uint32_t)keyboard_handler, 0x8E);	// We can finally have a keyboard handler and accept user input!!
+	IRQ_clear_mask(1);	// We need to re-enable listening to interrupts from IRQ1, which is connected to the keyboard device
 
-	uint8_t div0test = 0/0;	// This SHOULD throw an interrupt. 
+	//uint8_t div0test = 0/0;	// This SHOULD throw an interrupt
 	
 	const char* not_really_far_string = "far string";
 	puts("Hello World from C!\n");
