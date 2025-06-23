@@ -39,7 +39,13 @@ void initIDT() {
 	__asm__ volatile ("sti");
 }
 
-void exception_handler() {
+void exception_handler(uint32_t vector_number) {
+	kprintf("Interrupt %u\r\n", vector_number);
+	__asm__ volatile ("cli; hlt");
+}
+
+void exception_handler_error(uint32_t vector_number, uint32_t error_code) {
+	kprintf("Interrupt %u (with error code: 0x%x)\r\n", vector_number, error_code)
 	__asm__ volatile ("cli; hlt");
 }
 
