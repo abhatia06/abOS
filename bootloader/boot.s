@@ -16,7 +16,7 @@ loadKernelToMem:
     MOV ES, AX
     MOV BX, 0x0000
     MOV AH, 0x02
-    MOV AL, 9        ; We need 9 sectors now.
+    MOV AL, 12 
     MOV DI, 3
 
 .retry
