@@ -5,10 +5,14 @@
 #include "interrupts/pic.h"
 
 void main() {
-	PIC_remap_(0x20) // Look at the table, all external interrupts begin at 0x20. 
-	//pic_disable()
+	
 	initIDT();	// Set up the IDT
 	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
+	pic_disable();
+	PIC_remap_(0x20) // Look at the table, all external interrupts begin at 0x20. 
+
+	//idt_set_descriptor(0x20, PIT, 0x8E);
+	//idt_set_descriptor(0x21, KEYBOARD HANDLER, 0x8E);	// We can finally have a keyboard handler and accept user input!! 
 
 	uint8_t div0test = 0/0;	// This SHOULD throw an interrupt. 
 	
