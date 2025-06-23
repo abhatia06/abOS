@@ -25,5 +25,8 @@ void PIC_sendEOI(uint8_t irq);
 #define ICW4_BUF_MASTER 0x0C
 #define ICW4_SFNM	0x10
 
-void PIC_remap(int offset1, int offset2);
+void PIC_sendEOI(uint8_t irq);
+void PIC_remap(uint8_t offset);
 void pic_disable(void);
+void IRQ_clear_mask(uint8_t IRQLine);
+void IRQ_set_mask(uint8_t IRQline);
