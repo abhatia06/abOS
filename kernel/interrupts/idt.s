@@ -2,18 +2,23 @@ BITS 32
 
 %MACRO isr_err_stub 1
 isr_stub_%+%1:
-    CALL exception_handler
+    PUSH DWORD %1
+    CALL exception_handler_error
+    ADD ESP, 4    ; reset stack pointer
     IRET		; according to OSDev wiki, to return from an interrupt handler, IRET must be used, not RET.
 %ENDMACRO
 
 %MACRO isr_no_err_stub 1
 isr_stub_%+%1:
+    PUSH DWORD %1
     CALL exception_handler
+    ADD ESP, 4
     IRET
 %ENDMACRO
 
 ; 32 exception handlers:
 EXTERN exception_handler
+EXTERN exception_handler_error
 isr_no_err_stub 0
 isr_no_err_stub 1
 isr_no_err_stub 2
