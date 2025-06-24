@@ -305,3 +305,16 @@ void kprintf(const char* fmt, ...) {
         }
         va_end(args);
 }
+
+// THIS IS TEMPORARY. I WILL LIKELY MOVE IT INTO ITS OWN I/O THING LATER
+char* readline() {
+        input_pos = 0;
+        input_buffer[0] = '\0';
+        input_ready = false;
+
+        while(!input_ready) {
+                // loop here basically and wait (yes, we're basically doing polling lol)
+        }
+
+        return input_buffer;
+}
