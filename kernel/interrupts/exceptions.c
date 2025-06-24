@@ -70,15 +70,53 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                         if(keypressed == '/') {
                                                                 keypressed = '?';
                                                         }
+                                                        if(keypressed == '\'') {
+                                                                keypressed = '"';
+                                                        }
+                                                        if(keypressed == ';') {
+                                                                keypressed = ':';
+                                                        }
+                                                        if(keypressed == '-') {
+                                                                keypressed = '_';
+                                                        }
                                                         // add more shifted keys (booorrrinngg)
                                                 }
                                         }
                                         if(keypressed != 0) {   // so we don't create spaces whenever we press shift
-                                                kprintf("%c", keypressed);
+                                                // Max number of characters is 255
+                                                if(input_pos <= 255) {
+                                                        if(keypressed == '\b') {
+                                                                // We only allow the user to delete what they've typed
+                                                                if(input_pos > 0) {
+                                                                        // Go back (duh), and
+                                                                        input_pos--;
+                                                                        // override the previous character with sentinel
+                                                                        input_buffer[input_pos] = '\0';
+                                                                        // then display the changes
+                                                                        kprintf("\b");
+                                                                }
+                                                        }
+                                                        else if(keypressed == '\n') {
+                                                                // if the user enters, that means their message is
+                                                                // complete, and we can process it now
+                                                                input_ready = true;
+                                                                kprintf("\n");
+                                                        }
+                                                        else {
+                                                                //input_pos always points to the sentinel, so we just
+                                                                //have to override the sentinel with the new key
+                                                                input_buffer[input_pos] = keypressed;
+
+                                                                //then increment and add a new sentinel there
+                                                                input_pos++;
+                                                                input_buffer[input_pos] = '\0';
+                                                                kprintf("%c", keypressed);
+                                                        }
+                                                }
                                         }
                                 }
                         }
                 }
         }
-        PIC_sendEOI(1);        // Tell the PIC we've finished processing the interrupt from IRQ line 1 (keyboard interrupt)
+        PIC_sendEOI(1);
 }
