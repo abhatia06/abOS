@@ -17,7 +17,8 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
         uint8_t key = inb(0x60);
         static key_info_t key_info = {0};
         static bool e0 = false; // honestly not really used at all. I don't think I'll have to worry about it JUST YET
-        if(true) {
+        if(true) {        // I develop my stuff on Vim, and previously I had an if statement here that I later removed. I didn't want to fix the 
+                          // indents, so I just decided to put a if(true) here because im lazy
                 if(key == ENTER) {
                         // we do nothing for now, but eventually, we'll want to save whatever the user types
                         // idk how to do that just yet, but we'll probably need to use a global buffer of some
