@@ -31,7 +31,7 @@ char keymap[128] = {
 	[0x0B] = '0',
 	[0x0C] = '-',
 	[0x0D] = '=',
-	[0x0E] = '\b',
+	[0x0E] = '\b',	// my printf implementation doesn't support \b or \t, so we'll have to implement them (booorrrinnggg!!)
 	[0x0F] = '\t',
 	[0x10] = 'q',
 	[0x11] = 'w',
@@ -45,7 +45,7 @@ char keymap[128] = {
 	[0x19] = 'p',
 	[0x1A] = '[',
 	[0x1B] = ']',
-	[0x1C] = '\n',	// enter, we'll let it escape to a new line, but we'll also manage this
+	[0x1C] = '\n',	// enter key
 	[0x1D] = 0,	// left control, we manage that
 	[0x1E] = 'a',
 	[0x1F] = 's',
