@@ -425,3 +425,38 @@ As stated above, I've made the weekends into rest days. I didn't do anything the
 
 ----------------------------------
 DAY 17
+
+Today was an ok day. Somehow, due to the fact that I hadn't touched the code for two days, it felt as though I was re-learning everything,
+(not really). 
+Today, though, I did learn some new stuff. For one, I have a better understanding of the IDT and PIC code, largely thanks to the studying I did
+on Friday, and also largely thanks to the fact that I had started writing ISRs today! I have created a stub for ALL 256 interrupts available, 
+though, I have disabled the external hardware interrupts (the ones that come from the PIC via IRQ lines), due to the fact that I haven't
+implemented any of them at all, and they all require the use of the EOI method I've made to signal to the PIC that we're done processing that
+interrupt.
+However, I DID start on implementing the keyboard handler! We now are able to actually interract with the operating system and type stuff!
+Of course, the stuff we type isn't actually worth anything, as we're just typing the ASCII representation of the keys we're inputting. I believe
+now would be a good time to explain keyboard interrupts, along with more information regarding interrupts. 
+Firstly, I will begin with interrupts. I've already explained a great deal about them with my day 14 explanation on PIC, but I will explain WHY
+we use interrupts. 
+Interrupts is NECESSARY for a CPU to work to its fullest potential. Without them, our OS would be moving at snails pace. Why is that? Because, 
+well, take a very basic example for now: typing "Hello World"
+Say, for example, you are a super fast typer, and you can type at an astonishing 300 WPM. While to you, and to literally every living species, 
+300 WPM might seem fast, to the computer that is operating at microsecond speeds, 300 WPM is a snails pace. So, say we weren't using the interrupt
+method, and instead, we were using the polling method. There would be quite a lot of issues. The polling method is relatively simple to implement,
+and is actually what, (at least I think), quite a few real mode (16-bit) OS's use for user I/O. Basically, if we ever want the user to type 
+something, instead of using interrupts, we can have the CPU drop everything it's doing and constantly nag the keyboard hardware. We keep asking
+the keyboard, and its data ports, "hey, is there anything here yet?" over and over, every CPU cycle, until the keyboard eventually says "yes,
+there is something in my data port now". Then, we ask the keyboard, "Well, can I take the stuff out of the data port?". We do this because,
+although there is stuff in the data port, it isn't necessarily ours for taking immediately. We have to ask keyboard for permission to take it.
+Eventually, the keyboard says "yeah, ok, take it now". Then we can take the letter, process it, display it, do whatever we want with it, 
+throw it away, then go back to asking the keyboard for the next letter. In theory, this SOUNDS ok, because you might imagine a scenario where the
+user is asked to put in a command. Then, you would imagine that the CPU would want to have its attention focused towards you, right? Well, not
+exactly. The issue with polling is that it restricts the CPU to being able to do nothing except wait for the user to type at what feels like
+a snails pace. Imagine being the Flash in speed-time and having to watch a snail crawl a kilometer. That's probably what the CPU would feel like.
+See, we NEVER want the CPU to be doing nothing, because the CPU can ALWAYS be doing something, like other processes. That's where interrupts come
+in. Instead of having the CPU sit and wait for the user to type stuff, we can have the CPU instead go and do other stuff while it's waiting. THEN,
+when the keyboard is ready (which is signaled to the CPU via the PIC/APIC), the CPU has two options: either 1, it says "hold on a second, I am
+doing a HIGHER PRIORITY task/doing a different interrupt", OR, it can say "alright, give me the interrupt". This can save immeasurable time,
+and it allows for the CPU to effectively multitask multiple things, and that is why it is so desired.
+Next up, the keyboard handler. I'm too lazy to explain it. So, instead, I will link to a very good website I found that explained it quite nicely:
+https://www.basicinputoutput.com/2024/11/the-keyboard-controller-interface.html
