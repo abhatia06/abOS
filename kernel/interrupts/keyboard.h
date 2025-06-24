@@ -1,3 +1,5 @@
+// Admittedly, this header file is very different from how I usually do my header files. However, since I only use this file in exceptions.c, it doesn't really matter.
+
 #pragma once
 
 // Case keys. The keyboard port does not differentiate between capital or lowercase letters. We must do that ourselves
