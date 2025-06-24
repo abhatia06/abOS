@@ -84,6 +84,17 @@ void putc(char c) {
                         g_ScreenX = 0;
                         break;
 
+		case '\b' : // in most printf cases, \b is supposed to be non-destructive, but ours is destructive b/c of our keyboard handler
+                	if(g_ScreenX > 0) {
+                        	g_ScreenX--;
+                	}
+                	else if(g_ScreenY > 0) { // if we're NOT at the first (0th) row, and we're at column 0 of the current row we're at, then go to the previous row
+                        	g_ScreenY--;
+                        	g_ScreenX = VGA_WIDTH - 1; // start at the very last column (might change this, though)
+                	}
+                	putchar(g_ScreenX, g_ScreenY, ' ');
+                	break;
+		
                 default :
                         putchar(g_ScreenX, g_ScreenY, c);
                         g_ScreenX++;
