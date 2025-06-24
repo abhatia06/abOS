@@ -8,12 +8,19 @@
 #define LCTRL_MAKE      0x1D
 #define LCTRL_BREAK     0x9D
 #define ENTER           0x1C 
+#define CAPSLOCK	0x3A
 
-/*
 typedef struct {
-	uint8_t 
-}
-*/
+        uint8_t key;
+        bool shift;
+        bool ctrl;
+        bool caps;
+} key_info_t;
+
+// I was too lazy to make another keymap but this time replace the scan codes for the numbers 1-9 be for their respective shift keys. So, instead, I abused the fact
+// that every int in ASCII (1-9) begins with 3 (0x30 = 0, 0x31 = 1, 0x32 = 2, you get the pattern). So, all we have to do is just take the number we have, subtract 
+// 0x30, and then compare it to an array, which is num_row_shifts. And then boom, it works.
+const uint8_t* num_row_shifts = (const uint8_t*)")!@#$%^&*(";
 
 // Mapping scan codes to their respective characters. Find more info at: https://wiki.osdev.org/PS/2_Keyboard
 char keymap[128] = {
