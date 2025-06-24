@@ -80,5 +80,5 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                         }
                 }
         }
-        PIC_sendEOI(1);
+        PIC_sendEOI(1);        // Tell the PIC we've finished processing the interrupt from IRQ line 1 (keyboard interrupt)
 }
