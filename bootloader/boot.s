@@ -127,8 +127,10 @@ retry:
    INT 0x10
 
    CALL loadKernelToMem
-   CALL enableFastA20
+   MOV AX, 0x0000    ; the OSDev wiki version assumes 0x0000 for ES because they're going to do some segmentations stuff with ES:DI, so I need ES to be 0x0000 too.
+   MOV ES, AX 
    CALL do_e820
+   CALL enableFastA20
    JMP enterProtectedMode
 
 .fail:
