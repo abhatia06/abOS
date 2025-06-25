@@ -11,9 +11,13 @@ void main() {
 	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in)
 	PIC_remap(0x20) // Look at the table, all external interrupts begin at 0x20. 
 
-	//idt_set_descriptor(0x20, PIT, 0x8E);
+	idt_set_descriptor(0x20, PIT_handler, 0x8E);
 	idt_set_descriptor(0x21, (uint32_t)keyboard_handler, 0x8E);	// We can finally have a keyboard handler and accept user input!!
+	IRQ_clear_mask(0);	// We need to re-enable listening to interrupts from IRQ0, which is connected to the PIT channel 0
 	IRQ_clear_mask(1);	// We need to re-enable listening to interrupts from IRQ1, which is connected to the keyboard device
+
+	//Set default PIT timer IRQ rate to be about 1 millisecond (1193182hz/1193hz is roughly 1000 hz)
+	set_PIT(0, 2, 1193)
 
 	//uint8_t div0test = 0/0;	// This SHOULD throw an interrupt (NOTE FROM THE FUTURE: it does)
 	
