@@ -7,6 +7,14 @@
 #include "../x86.h"
 #include "keyboard.h"
 
+// input stuff for keyboard
+char input_buffer[INPUT_BUFFER_SIZE] = {0};
+unsigned int input_pos = 0;
+bool input_ready = false;
+
+// PIT tick tracker
+volatile uint64_t ticks = 0;        // This is likely temporary. Since we don't have scheduling, the PIT is a little bit useless, but who cares. I'll enable it.
+
 __attribute__((interrupt)) void div_by_0_handler(int_frame_32_t *frame) {
         kprintf("DIVIDE BY 0 ERROR\r\n");
 
@@ -128,4 +136,10 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                 }
         }
         PIC_sendEOI(1);
+}
+
+__attribute__((interrupt)) void PIT_handler(int_frame_32_t *frame) {
+        (void)frame;
+        ticks++;
+        PIC_sendEOI(0);
 }
