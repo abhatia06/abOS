@@ -460,3 +460,85 @@ doing a HIGHER PRIORITY task/doing a different interrupt", OR, it can say "alrig
 and it allows for the CPU to effectively multitask multiple things, and that is why it is so desired.
 Next up, the keyboard handler. I'm too lazy to explain it. So, instead, I will link to a very good website I found that explained it quite nicely:
 https://www.basicinputoutput.com/2024/11/the-keyboard-controller-interface.html
+
+----------------------------------
+DAY 18
+Today was a more productive day than yesterday. I managed to set up the keyboard handler to actually display the characters the user is typing, AND I've managed to
+make it so the user can use stuff like caps lock, shift characters, etc. AND, I've managed to make it so I can use the stuff the user types (this will be very useful for
+when I switch to user mode and create system calls/programs). 
+The way I've managed to do this is because, again, how the keyboard handler works. I was lazy and didn't explain it yesterday, so I'll explain it a little bit today, or
+at least, I'll explain the parts that are important to us. First and foremost, whenever the user presses a key, there is an external piece of hardware on the computer 
+that puts in a SCANCODE into the port 0x60. Notice how I said scancode and not the hex code, or ASCII code of the characters. The scan code is... Weird.. Thankfully, scan
+codes are similar to hex and ASCII codes, where each character corresponds to its own unique character. So "A" = 0x1E. To see all the scan codes and their mapping, go
+to the OSDev wiki: https://wiki.osdev.org/PS/2_Keyboard. Anyway, to fix this, all we need is an array that maps the scan codes to their respective keys, (which is exactly
+what we do). The way that I do it might not be the most elegant or nicest looking, but I don't care. It works. As for actually handling the inputs, it's pretty simple. 
+We simply define an input buffer array that accepts a certain number of characters (I used 256, it doesn't really matter though). We also create various boolean values, 
+particularly the "input_ready" boolean value, that basically tells us that the user has created a message for us to use. We will specify that the message is only available
+to be used IF the user has pressed the "enter" key. Since a string of characters, when it is read, must have the \0 at the end of it as a sentinel, whenever the user
+inputs a new character, or deletes a character, we will ALWAYS have the current index pointer for the array be pointing to the \0 sentinel at the end of the string.
+Example:             this is where our pointer is 
+                                  V
+"H, e, l, l, o, , W, o, r, l, d, \0, (NULL), (NULL), (NULL), ..."
+
+If we add another character, we simply override the \0 to be the newly pressed character, then we increment the pointer (so it's pointing to nothing), and then place
+a \0 there. We do a similar thing but in reverse for whenever the user presses backspace or wants to delete a character. We decrement the pointer, and then override 
+whatever character was there with \0. 
+
+Now that's the keyboard stuff. That is IRQ1. As I've stated before, there are multiple IRQ lines, and one of the most IMPORTANT IRQ lines is IRQ0. I have yet to fully
+implement IRQ0, and I have yet to finally understand the external thing connected to IRQ0, but I will explain everything I understand right now. 
+IRQ0 is connected the PIT. The PIT, though, isn't only connected to IRQ0. The PIT, (known as the Programmable Interval Timer), is simply a timer. It has multiple uses,
+primarily for the system to keep track of the time, enable multi-tasking/scheduling (whatever you wanna call it), and to stop one process from taking too much time/hang
+for too long. It's relatively simple in the way it works. It's simply an oscillator, a prescaler and three independent frequency dividers. The oscillator is what creates
+the frequency. The PIT is, historically, known to have a default frequency of 1.193182 MHz. The reasoning for this frequency is due to history, but just know, this is
+the frequency we're working with. The purpose of a frequency divider is to achieve a slower frequency, and we can do it relatively simple in software by using a counter
+that counts down from a tick. If we have a frequency divider of 3, then we basically can have a counter that counts down every tick from the 1.193182 mhz frequency 
+until it reaches 0, where it will send a signal to SOMETHING. As we said, the PIT has three independent frequency dividers. These independent frequency dividers are more
+commonly known as the PITs channels, and each channel does something different and, thus, we can also specify the program to not only have different frequencies in each
+channel, but also execute/do different things in each channel, (duh). "Each PIT channel also has a "gate input" pin which can be used to control whether the input signal
+(the 1.193182MHz one) gets to the channel or not. For PIT channels 0 and 1, the associated gate input pin is not connected to anything. The PIT channel 2 gate is
+controlled by IO port 0x61, bit 0." (stole this from the OSDev wiki because they explained this really well). Now to explain what each channel is contected to and what
+each channel does. 
+Channel 0 is directly connected to IRQ0. Therefore, that makes it incredibly good for setting up a system clock. Typically during boot, the BIOS sets channel 0 with a
+count of 65535, (which is the frequency divisor), thus having the frequency be 18.2065 Hz (or about 54.9254 ms).
+Channel 1 is useless. Literally. It used to be used for refreshing the DRAM (Dynamic Random Access Memory) or RAM (Random Access Memory), but on later machines, the
+refreshing of the DRAM and RAM is now done by dedicated hardware, and now channel 1 is utterly useless and sometimes not even allowed to be touched.
+Channel 2 is directly connected to the PC Speaker, so the frequency of the output determines the frequency of of the sound produced by the speaker. I won't be explaining
+the PC Speaker here, because I haven't read about it yet, but if you want more information, here it is: https://wiki.osdev.org/PC_Speaker. 
+Next up are the ports and the stuff accepted by the PIT. Instead of explaining it in my own words, I think the OSDev wiki does an excellent job in this scenario, so
+I will just copy and paste it here:
+"The PIT chip uses the following I/O ports:
+I/O port     Usage
+0x40         Channel 0 data port (read/write)
+0x41         Channel 1 data port (read/write)
+0x42         Channel 2 data port (read/write)
+0x43         Mode/Command register (write only, a read is ignored)"
+
+"The Mode/Command register at I/O address 0x43 contains the following:              (AGAIN, THIS IS FOR 0x43)
+Bits         Usage
+7 and 6      Select channel :
+                0 0 = Channel 0
+                0 1 = Channel 1
+                1 0 = Channel 2
+                1 1 = Read-back command (8254 only)
+5 and 4      Access mode :
+                0 0 = Latch count value command
+                0 1 = Access mode: lobyte only
+                1 0 = Access mode: hibyte only
+                1 1 = Access mode: lobyte/hibyte
+3 to 1       Operating mode :
+                0 0 0 = Mode 0 (interrupt on terminal count)
+                0 0 1 = Mode 1 (hardware re-triggerable one-shot)
+                0 1 0 = Mode 2 (rate generator)
+                0 1 1 = Mode 3 (square wave generator)
+                1 0 0 = Mode 4 (software triggered strobe)
+                1 0 1 = Mode 5 (hardware triggered strobe)
+                1 1 0 = Mode 2 (rate generator, same as 010b)
+                1 1 1 = Mode 3 (square wave generator, same as 011b)
+0            BCD/Binary mode: 0 = 16-bit binary, 1 = four-digit BCD"
+
+The stuff you put into a channel port, (0x40, 0x41, or 0x42), the number you put will be the DIVISOR. Basically, if you put 1000, the frequency in the channel, or
+the independent frequency divisor will be (1.193182Mhz/divisor).
+
+To create an actual tick/clock thing, I still don't know how it works, lol. I will get back tomorrow to explain how to make an actual clock, I think.
+
+
