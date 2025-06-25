@@ -6,6 +6,62 @@ KERNEL_START_ADDR equ 0x100000
 
 start:
     JMP main
+    
+mmap_ent equ 0x9000    ; I am not going to explain all this code. If you want an explanation, go look at the OSDev wiki, I just copied it from there.
+do_e820:               ; https://wiki.osdev.org/Detecting_Memory_(x86)#Getting_an_E820_Memory_Map
+    MOV DI, 0x9004
+    XOR EBX, EBX
+    XOR BP, BP
+    MOV EDX, 0x0534D4150
+    MOV EAX, 0xE820
+    MOV [ES:DI + 20], DWORD 1
+    MOV ECX, 24
+    INT 0x15
+    JC .error
+
+    MOV EDX, 0x0534D4150
+    CMP EAX, EDX
+    JNE .error
+
+    TEST EBX, EBX
+    JE .error
+
+    JMP .jmpin
+
+.e820lp:
+    MOV EAX, 0xE820
+    MOV [ES:DI + 20], DWORD 1
+    MOV ECX, 24
+    INT 0x15
+    JC .e820f
+    MOV EDX, 0x0534D4150
+
+.jmpin:
+    JCXZ .skipentry
+    CMP CL, 20
+    JBE .notext
+    TEST BYTE [ES:DI + 20], 1
+    JE .skipentry
+
+.notext:
+    MOV ECX, [ES:DI + 8]
+    OR ECX, [ES:DI + 12]
+    JZ .skipentry
+    INC BP
+    ADD DI, 24
+
+.skipentry:
+    TEST EBX, EBX
+    JNE .e820lp
+
+.e820f:
+    MOV [ES:mmap_ent], bp
+    CLC
+    RET
+
+.error:
+    STC
+    RET
 
 loadKernelToMem:
     MOV DH, 0x0
@@ -72,6 +128,7 @@ retry:
 
    CALL loadKernelToMem
    CALL enableFastA20
+   CALL do_e820
    JMP enterProtectedMode
 
 .fail:
