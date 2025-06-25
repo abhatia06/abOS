@@ -30,5 +30,7 @@ void main() {
 	kprintf("Type your name: ");
 	char* name = readline();
 	kprintf("Hello, %s!\n", name);
+
+	//__asm__ volatile("iret");	This will ALSO throw an interrupt (interrupt 13, chcek the OSDev IDT to see what it does)
 	return;
 }
