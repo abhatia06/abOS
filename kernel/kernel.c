@@ -15,7 +15,7 @@ void main() {
 	idt_set_descriptor(0x21, (uint32_t)keyboard_handler, 0x8E);	// We can finally have a keyboard handler and accept user input!!
 	IRQ_clear_mask(1);	// We need to re-enable listening to interrupts from IRQ1, which is connected to the keyboard device
 
-	//uint8_t div0test = 0/0;	// This SHOULD throw an interrupt
+	//uint8_t div0test = 0/0;	// This SHOULD throw an interrupt (NOTE FROM THE FUTURE: it does)
 	
 	const char* not_really_far_string = "far string";
 	puts("Hello World from C!\n");
