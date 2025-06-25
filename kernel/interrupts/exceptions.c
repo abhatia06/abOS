@@ -45,7 +45,8 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                 key_info.caps = true;
                         }
                         else if(key == 0xE0) {
-                                e0 = true;
+                                e0 = true;        // E0 is for when stuff like the arrow keys are pressed. We don't actually handle these keys just yet, but we will
+                                                  // eventually, I hope.
                         }
 
                         if(!(key & 0x80)) {
@@ -119,6 +120,9 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                         }
                                                 }
                                         }
+                                }
+                                if(e0) {
+                                        e0 = false;
                                 }
                         }
                 }
