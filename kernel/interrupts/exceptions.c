@@ -102,6 +102,7 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                                 // complete, and we can process it now
                                                                 input_ready = true;
                                                                 kprintf("\n");
+                                                                input_pos = 0;      // We need to reset the buffer to allow for more messages.
                                                         }
                                                         else {
                                                                 //input_pos always points to the sentinel, so we just
