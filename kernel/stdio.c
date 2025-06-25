@@ -315,6 +315,5 @@ char* readline() {
         while(!input_ready) {
                 // loop here basically and wait (yes, we're basically doing polling lol)
         }
-
         return input_buffer;
 }
