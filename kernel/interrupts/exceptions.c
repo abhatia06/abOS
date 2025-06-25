@@ -84,8 +84,11 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                 }
                                         }
                                         if(keypressed != 0) {   // so we don't create spaces whenever we press shift
-                                                // Max number of characters is 255
-                                                if(input_pos <= 255) {
+                                                // Another case of incorrect if statement that I was too lazy to fix the indentations for so I just used if(true).
+                                                // The reasoning for this change is because the previous one, if the if condition wasn't satisfied, didn't allow the
+                                                // user to do anything at all, (couldn't even press enter), so I just decided to use this. It still works just fine,
+                                                // but we can only accept 256 characters the user types, but we can allow the user to type an infinite number of characters
+                                                if(true) {
                                                         if(keypressed == '\b') {
                                                                 // We only allow the user to delete what they've typed
                                                                 if(input_pos > 0) {
