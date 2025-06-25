@@ -95,3 +95,25 @@ uint16_t pic_get_irr(void) {
 uint16_t pic_get_isr(void) {
         return __pic_get_irq_reg(PIC_READ_ISR);
 }
+
+// might move PIT stuff to its own file (pit.c and pit.h)
+void set_PIT(uint8_t channel, uint8_t operating_mode, uint16_t frequency) {
+        if(channel > 2) {
+                return;
+        }
+
+        __asm__ volatile("cli");
+
+        // Send command byte to PIT control port (0x43) and configure the stuff for it (operating mode, frequency, etc)
+        // For a system clock, use channel 0 (so we can connect to IRQ0), mode 2 (rate generator, always repeat),
+        // divider = 1193, which is going to be 1000, or 1 millisecond
+        outb(0x43, (channel << 6) | (0x3 << 4) | (operating_mode << 1));
+
+        // For a specified channel (channel 0, 1, or 2), send a frequency divider
+        // To know what each channel is for, consult the OSDev wiki:
+        // https://wiki.osdev.org/Programmable_Interval_Timer
+        outb(0x40 + channel, (uint8_t)frequency);        // low byte
+        outb(0x40 + channel, (uint8_t)(frequency >> 8)); // high byte
+
+        __asm__ volatile("sti");
+}
