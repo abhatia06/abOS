@@ -5,7 +5,8 @@
 #include "interrupts/pic.h"
 
 void main() {
-	
+	print_memory_map();
+	kprintf("\r\n");
 	initIDT();	// Set up the IDT
 	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
 	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in)
