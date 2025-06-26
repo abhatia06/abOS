@@ -82,6 +82,13 @@ $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 always:
         mkdir -p $(BUILD_DIR)
 
-
 clean:
         rm -rf $(BUILD_DIR)/*
+
+run:
+        qemu-system-i386 -m 128M -drive format=raw,file=build/os-image.img,if=ide,index=0,media=disk
+
+runDebug:
+        # -s -S are flags that let us use GDB along with our QEMU emulator for debugging. 
+        qemu-system-i386 -m 128M -drive format=raw,file=build/os-image.img,if=ide,index=0,media=disk -s -S 
+        
