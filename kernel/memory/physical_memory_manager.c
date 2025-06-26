@@ -111,6 +111,7 @@ void deinit_memory_region(uint32_t base_address, uint32_t size) {
 void initialize_pmm() {
         // We begin by setting the entire bitmap to be inactive.
         // Of course, they will still have access
+        used_blocks = max_blocks;
         deinit_memory_region(0x0, 0xFFFFFFFF);
 }
 
