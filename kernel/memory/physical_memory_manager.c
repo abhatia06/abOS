@@ -22,3 +22,28 @@ void unset_block(uint32_t bit) {
         // bit-wise AND oepration with 0, (duh).
         memory_map[bit/32] &= ~(1 << (bit % 32));
 }
+
+// This function is quite unoptimized. You will find better versions/make a better version yourself, but for now, I only
+// care about if it works or not. This function will scan every bit 1-by-1, so the performance is quite slow.
+int32_t find_free_blocks(uint32_t num_blocks) {
+        if(num_blocks <= 0) {
+                return -1;
+        }
+
+        int count = 0;
+        uint32_t holder = 0;
+        for(uint32_t i = 0; i < max_blocks; i++) {
+                holder = memory_map[i/32];      // Holds the 32-bit integer inside index i/32
+                if(!(holder & (1 << (i%32)))) { // Check to see if the current bit is 0 (not mapped/unset)
+                        count++;
+                        if(count == num_blocks) {
+                                return (i-num_blocks+1)*BLOCK_SIZE;     // Return starting address of available memory
+                        }
+                }
+                else {
+                        continue;
+                }
+        }
+        // Unable to find available memory
+        return -1;
+}
