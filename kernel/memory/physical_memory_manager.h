@@ -15,3 +15,4 @@ void* allocate_blocks(uint32_t num_blocks);
 void free_blocks(uint32_t num_blocks);
 void deinit_memory_region(uint32_t base_address, uint32_t size);
 void initialize_memory_region(uint32_t base_address, uint32_t size);
+void initialize_pmm();
