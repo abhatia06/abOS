@@ -43,7 +43,7 @@ int32_t find_free_blocks(uint32_t num_blocks) {
                         }
                 }
                 else {
-                        continue;
+                        count = 0;        // Forgot about this. If the current bit is 1, we should rese the count
                 }
         }
         // Unable to find available memory
