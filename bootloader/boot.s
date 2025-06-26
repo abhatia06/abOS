@@ -65,6 +65,9 @@ do_e820:               ; https://wiki.osdev.org/Detecting_Memory_(x86)#Getting_a
     STC
     RET
 
+; I have come to realize that loading the kernel temporarily at 0x10000 is not a very good idea, because that part of the memory is reserved.. But oh well, for now I
+; will continue to do this. Eventually, I will need to come up with a different strategy (I will likely use unreal mode, or perhaps I'll drop a custom bootloader altogether
+; and use GRUB or limine or whatever. But for now, we will stay with this, as it hasn't led to any issues as of right now.
 loadKernelToMem:
     MOV DH, 0x0
     MOV DL, 0x80
