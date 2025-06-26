@@ -9,4 +9,6 @@ extern uint32_t max_blocks;
 
 void set_block(uint32_t bit);
 void unset_block(uint32_t bit);
-int32_t find_free_blocks(uint32_t blocks);
+int32_t find_free_blocks(uint32_t num_blocks);
+void* allocate_blocks(uint32_t num_blocks);
+void free_blocks(uint32_t num_blocks);
