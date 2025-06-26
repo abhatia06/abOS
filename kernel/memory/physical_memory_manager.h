@@ -6,6 +6,7 @@
 
 extern uint32_t *memory_map;
 extern uint32_t max_blocks;
+extern uint32_t used_blocks);
 
 void set_block(uint32_t bit);
 void unset_block(uint32_t bit);
