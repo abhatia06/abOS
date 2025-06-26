@@ -8,3 +8,4 @@ extern uint32_t *memory_map;
 
 void set_block(uint32_t bit);
 void unset_block(uint32_t bit);
+int32_t find_free_blocks(uint32_t blocks);
