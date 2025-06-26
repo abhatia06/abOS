@@ -345,6 +345,13 @@ void print_physical_memory() {
             default: kprintf(" (Reserved)\r\n"); break;
         }
     }
-	// TODO: Print total amount of memory 
-	// TODO: Print out memory manager block info (pages and whatnot)
+     
+    kprintf("\r\n");
+    kprintf("Total memory in bytes: ");
+    entry--;
+    // This basically does 0xfffc0000 + 0x40000 (from entry 5). This is equal to 0x100000000. But the limit for 32-bit
+    // is 4 gigabytes is 0xffffffff, not 0x100000000, so we do length-1.
+    uint64_t total_mem = entry->base_address+entry->length-1;
+    kprintf("0x%llx\r\n", total_mem);
+    // TODO: Print out memory manager block info (pages and whatnot) ((requires physical memory manager, cuz how tf would I know how many 4kb pages/frames I have lol))
 }
