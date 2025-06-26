@@ -9,6 +9,8 @@ start:
     
 mmap_ent equ 0x9000    ; I am not going to explain all this code. If you want an explanation, go look at the OSDev wiki, I just copied it from there.
 do_e820:               ; https://wiki.osdev.org/Detecting_Memory_(x86)#Getting_an_E820_Memory_Map
+    XOR AX, AX
+    MOV ES, AX     ; the OSDev wiki version assumes 0x0000 for ES because they're going to do some segmentations stuff with ES:DI, so I need ES to be 0x0000 too.
     MOV DI, 0x9004
     XOR EBX, EBX
     XOR BP, BP
@@ -127,9 +129,7 @@ retry:
    INT 0x10
 
    CALL loadKernelToMem
-   MOV AX, 0x0000    ; the OSDev wiki version assumes 0x0000 for ES because they're going to do some segmentations stuff with ES:DI, so I need ES to be 0x0000 too.
-   MOV ES, AX 
-   CALL do_e820
+   CALL do_e820 
    CALL enableFastA20
    JMP enterProtectedMode
 
