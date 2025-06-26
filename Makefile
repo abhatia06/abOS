@@ -12,7 +12,7 @@ LD = ld
 # The CFLAGS below are for compiling my kernel.c. For some reason, GCC assumes code is aligned to 16-bytes, because most modern OS, like Windows and Linux are. I'm 
 # not making a normal OS, and I'm certainly not on 64-bit, so I have to use the 32-bit version, which is 4 bytes, so we use -mpreferred-stack-boundary=2. The other
 # flags are there for other reasons, which I will explain later (im too lazy).
-CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c
+CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 
