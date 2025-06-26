@@ -2,6 +2,7 @@
 
 uint32_t *memory_map = (uint32_t*)start_addr;
 uint32_t max_blocks = 0xFFFFFFFF/BLOCK_SIZE;    // Maximum number of available blocks
+uint32_t used_blocks = 0;
 
 void set_block(uint32_t bit) {
         // We've told the compiler that everything starting at the start_addr has 32-bit integers. In a bitmap, we
