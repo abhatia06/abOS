@@ -5,6 +5,7 @@
 #define start_addr      0x7EE0000  // Close to the end of available memory for us
 
 extern uint32_t *memory_map;
+extern uint32_t max_blocks;
 
 void set_block(uint32_t bit);
 void unset_block(uint32_t bit);
