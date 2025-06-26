@@ -348,6 +348,11 @@ void print_physical_memory() {
             case 4: kprintf(" (ACPI NVS Memory)\r\n"); break;
             default: kprintf(" (Reserved)\r\n"); break;
         }
+
+	// Open up the regions that are considered type 1 (or available) by the SMAP
+	if(entry->type == 1) {
+        	initialize_memory_region((uint32_t)entry->base_address, (uint32_t)entry->length);
+        }
     }
      
     kprintf("\r\n");
