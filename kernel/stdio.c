@@ -306,7 +306,7 @@ void kprintf(const char* fmt, ...) {
         va_end(args);
 }
 
-// THIS IS TEMPORARY. I WILL LIKELY MOVE IT INTO ITS OWN I/O THING LATER
+// EVERYTHING BELOW THIS COMMENT IS TEMPORARY. I WILL LIKELY MOVE IT ALL TO THEIR OWN RESPECTIVE FILES, BUT FOR  NOW, I AM LAZY.
 char* readline() {
         input_pos = 0;
         input_buffer[0] = '\0';
@@ -325,7 +325,7 @@ typedef struct SMAP_entry {
         uint32_t acpi;
 }__attribute__((packed)) SMAP_entry_t;
 
-
+// Eventually, once we enter user mode, I might make this a program, because why not?
 void print_physical_memory() {
     uint32_t num_entries = *(uint32_t *)0x9000;
     SMAP_entry_t *entry = (SMAP_entry_t *)0x9004;
