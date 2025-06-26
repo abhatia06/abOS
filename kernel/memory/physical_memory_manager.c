@@ -48,3 +48,28 @@ int32_t find_free_blocks(uint32_t num_blocks) {
         // Unable to find available memory
         return -1;
 }
+
+void* allocate_blocks(uint32_t num_blocks) {
+        int32_t first_starting_bit = find_free_blocks(num_blocks);
+        if(first_starting_bit == -1) {        // If the function is unable to find free blocks for any reason, we return
+                return 0;
+        }
+
+        for(uint32_t i = 0; i < num_blocks; i++) {
+                set_block(first_starting_bit + i);        // Otherwise, we just set the blocks
+        }
+
+        used_blocks += num_blocks;        // We make sure to record the blocks set
+
+        uint32_t address = first_starting_bit * BLOCK_SIZE;
+
+        return (void*)address;  // Physical memory location of allocated blocks
+}
+
+void free_blocks(uint32_t bit, uint32_t num_blocks) {
+        for(uint32_t i = 0; i < num_blocks; i++) {
+                unset_block(bit + i);
+        }
+
+        used_blocks -= num_blocks;
+}
