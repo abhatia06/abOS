@@ -107,3 +107,25 @@ void deinit_memory_region(uint32_t base_address, uint32_t size) {
                 used_blocks++;
         }
 }
+
+void initialize_pmm() {
+        // We begin by setting the entire bitmap to be inactive.
+        // Of course, they will still have access
+        deinit_memory_region(0x0, 0xFFFFFFFF);
+}
+
+// And I believe that is the entire physical memory manager. So far, here is my gameplan, which I will be putting into
+// my explanations.txt too:
+// I begin by calling initialize_pmm(), which will set the entire bitmap to be 1's. This will effectively state,
+// "hey, the entire memory is in usage/reserved". But in reality, it is not. Then, in the kernel, based on the available
+// entries in the SMAP (from INT 0x15, EAX E820), I will call initialize_memory_region with their base addresses and
+// lengths (all of which is given by the SMAP). Then, I will manually go in and deinitialize some of the memory from
+// 0x100000 (a few KB, maybe a full MB), because I want that to be reserved for the kernel. I will also deinitialize
+// some of the memory from 0x7EE0000, because that is where the bitmap is, and I don't want it to ever override it.
+// Finally comes the creation of malloc, or the memory file in general. My plan for memory is that I will have two
+// functions, at least. One function will find the size/length of a process/program/file. How I will find the size,
+// I don't know yet. I'll have to look at some tutorials, maybe. After that, I will have a memory allocation function,
+// (kmalloc), that will put a given program/file/process into memory based on the base_address that is going to be
+// provided when I use allocate_blocks(num_blocks). And then, boom! I think that'll be everything. I'll need to make
+// a de-allocation method too, that will also free memory of the process. Then that should be it.. I should have a
+// genuine physical memory manager then.
