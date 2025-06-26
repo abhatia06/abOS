@@ -1,10 +1,19 @@
 #include "stdint.h"
-#include "stdio.c"
+#include "stdio.h"
 #include "interrupts/idt.h"
-#include "interrupts/exceptions.h"
 #include "interrupts/pic.h"
+#include "interrupts/exceptions.h"
+#include "memory/physical_memory_manager.h"
+
+void memorysetup() {	// Right now the function is really only for testing purposes, but it does seem to work, so that's nice.
+        initialize_pmm();
+        initialize_memory_region(0x100000, 4096);
+        int32_t checker = find_free_blocks(1);
+        kprintf("bit address: %d\r\n", checker);
+}
 
 void main() {
+	memorysetup();
 	print_memory_map();
 	kprintf("\r\n");
 	initIDT();	// Set up the IDT
