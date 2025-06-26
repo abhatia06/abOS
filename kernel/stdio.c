@@ -317,3 +317,34 @@ char* readline() {
         }
         return input_buffer;
 }
+
+typedef struct SMAP_entry {
+        uint64_t base_address;
+        uint64_t length;
+        uint32_t type;
+        uint32_t acpi;
+}__attribute__((packed)) SMAP_entry_t;
+
+
+void print_physical_memory() {
+    uint32_t num_entries = *(uint32_t *)0x9000;
+    SMAP_entry_t *entry = (SMAP_entry_t *)0x9004;
+
+    for (uint32_t i = 0; i < num_entries; i++, entry++) {
+        kprintf("Entry %u: base=0x%llx length=0x%llx type=%u",
+            i,
+            (unsigned long long)entry->base_address,
+            (unsigned long long)entry->length,
+            entry->type);
+
+        switch (entry->type) {
+            case 1: kprintf(" (Available)\r\n"); break;
+            case 2: kprintf(" (Reserved)\r\n"); break;
+            case 3: kprintf(" (ACPI Reclaim)\r\n"); break;
+            case 4: kprintf(" (ACPI NVS Memory)\r\n"); break;
+            default: kprintf(" (Reserved)\r\n"); break;
+        }
+    }
+	// TODO: Print total amount of memory 
+	// TODO: Print out memory manager block info (pages and whatnot)
+}
