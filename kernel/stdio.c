@@ -2,6 +2,10 @@
 #include "x86.h"
 #include <stdarg.h>
 #include <stdbool.h>
+#include "interrupts/idt.h"
+#include "interrupts/pic.h"
+#include "interrupts/exceptions.h"
+#include "memory/physical_memory_manager.h"
 
 const unsigned VGA_WIDTH = 80;
 const unsigned VGA_HEIGHT = 25;
@@ -354,4 +358,6 @@ void print_physical_memory() {
     uint64_t total_mem = entry->base_address+entry->length-1;
     kprintf("0x%llx\r\n", total_mem);
     // TODO: Print out memory manager block info (pages and whatnot) ((requires physical memory manager, cuz how tf would I know how many 4kb pages/frames I have lol))
+    kprintf("Maximum number of blocks: %d\r\n", max_blocks);
+    kprintf("Used blocks: %d\r\n", used_blocks);
 }
