@@ -13,12 +13,13 @@ void memorysetup() {	// Right now the function is really only for testing purpos
 }
 
 void main() {
+	// I moved this up here because, somehow, interrupts were being fired as soon as the IDT was being initialized, leading to a double fault. So, I moved it up here
+	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in). 
 	memorysetup();
 	print_memory_map();
 	kprintf("\r\n");
 	initIDT();	// Set up the IDT
 	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
-	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in)
 	PIC_remap(0x20) // Look at the table, all external interrupts begin at 0x20. 
 
 	idt_set_descriptor(0x20, PIT_handler, 0x8E);
