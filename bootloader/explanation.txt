@@ -541,4 +541,90 @@ the independent frequency divisor will be (1.193182Mhz/divisor).
 
 To create an actual tick/clock thing, I still don't know how it works, lol. I will get back tomorrow to explain how to make an actual clock, I think.
 
+----------------------------------
+DAY 19
+Today was a bit of a bad day, because I ended up sleeping super late yesterday, waking up super late today, and then thus, not getting a whole lot
+of work done. Despite that, though, I did manage to do SOME things today, though I don't feel very accomplished. For one, we finished the IDT. Well, sort of. 
+Not really. See, I finished implementing the PIT, and so now, the CPU will be sent an interrupt by the PIT through channel 0 every millisecond or so, (it's a little bit
+more than a millisecond, but it's basically a millisecond). For now, this millisecond interruption is utterly useless, and all we do with it is increment a 64 bit 
+(long long unsigned) tick counter that starts counting up from 0 as soon as the kernel is loaded into memory, (or almost as soon as the kernel is loaded into memory. 
+See, my kernel is very disorganized, and the IRQ0 line is only unmasked until quite a bit later, but who cares! It's basically from as soon as the kernel is loaded
+into memory). So, now that the IDT is (basically) finished, (if we ever need more interrupts for the various IRQ lines, or more in-depth interrupt handlers for any other
+interrupt, we can always implement them later. It's not as though they are all necessary to have), we can move onto the next, and one of the scariest things about OS
+development: memory allocation. I did a LITTLE BIT of studying on memory allocation prior to getting into this, so I know a little bit about how I'm going to do this. 
+I will basically be planning it like so:
+1. I will implement a physical memory manager. This is the part that I understand, I believe, the 2nd-most, or most about. A physical memory manager is quite important,
+as once we get into having processes floating around in our memory, we would like to be able to manage each process, so that we do not have one process's information
+overriding the information of another process. Furthermore, memory is SMALL. I believe I talked about this earlier, but RAM is very quick and easy for the CPU to access,
+however, the downside is that it is 1. volatile, meaning its contents are lost when the PC shuts down, and 2. it is SMALL. For a 32-bit CPU, (which is what we're dealing 
+with), the memory only has 4GB, which, if you have ever looked at your storage, or looked at any application ever, you will realize "oh wow, that is literally nothing". 
+Indeed, if you have ever actually looked at your VRAM, and RAM, you will also realize you actually don't have a lot of space in memory, (for example, I have 16GB of RAM,
+which is nothing! But I've played huge games that have been over 60+ GB. How do we play with all of these?). The answer to this is with the MMU, or Memory Management Unit.
+What is the MMU? Well, as the name implies, it's a component of many computers that handles memory translation, protection, and other stuff related to memory in an 
+architecture. What is memory translation and protection? I'm so glad you asked. Memory protection is the physical memory manager, basically. As I stated previously, 
+when we have multiple processes on the memory, we don't want one process to override a part of another process when we load it into memory, and thus, we need a way to 
+handle allocating an deallocating memory for each process. This is, again, where the physical memory manager comes into play. I have decided to take on the very simple
+(although very inefficient) bitmap approach to creating a physical memory manager. Basically, the way that my plan will work is the following:
+1. The memory will be divided into 4KB chunks. This is because paging does it the same way. 4KB is nice for a couple of reasons, but before I explain any of those reasons,
+I should probably explain the bitmap. The bitmap is simply a very long array in which each index of the array corresponds to a page/block/chunk in the memory. So, for
+a very simple example, imagine that the memory is 10 bytes. If we decide to make every page 2 bytes, then we will have a 5-length bitmap array/list, and each index of
+the bitmap will correspond to its own unique 2-byte page in the physical address space. Simple, right? There are a couple issues with this, though. First and foremost, 
+the size of the pages. Lets say our memory is the standard 32-bit size, 4GB, and we decide to make each page 1 byte. Then, we will have an array of size 4000000000, which
+isn't feasible, because, although we can use 32-bit or 64-bit integers to mark the indicies, we still need this bitmap to be on the memory, and our bitmap is size
+4 billion, that means our bitmap is the ENTIRE MEMORY, and so we can't actually do this at all, (it isn't feasible). I'm sure you've seen the issue now, if we make our
+pages/chunks too small, then our bitmap consumes a large portion of the memory. But, I hear you say, what if we just make it super big? That still has its own issues. 
+First, lets say we decide to make the chunks 10 megabytes. Then, our bitmap is super tiny, and doesn't consume a lot of memory. Great! Now, we load in a program that is
+a mere 500 bytes into the memory. That 500 bytes goes into the first 10 megabyte chunk and, oh no, would you look at that, the rest of the 9+ megabytes become unusable, 
+because the bitmap has 1 bit that corresponds to each chunk. 0 means that nothing is in that chunk, and 1 means something is in that chunk. So, if our chunks are TOO large,
+then we end up wasting a lot of memory and have nothing in them. That is why we need a nice middleground, and it is mostly believed the middleground is 4 kilobytes, 
+because Linus Trovalds (creator of Linux) used 4 kilobytes for his paging, and so why not, right? You might have looked at my incomplete physical_memory_manager.h and
+noticed the other defined thing and asked what that is. That is simply there because generally the physical memory is split into bytes. So, we have that there to say that
+one byte will manage 8 different chunks, because 8 bits = 1 byte, and 1 bit manages 1 chunk. Furthermore, as I stated previously, the bit map must exist on the memory.
+Of course, that means we want the bitmap to never be touched, because if it ever is touched, that means our PC will likely explode (not really, exaggeration, but it will
+be VERY bad). So where would be a good place to put? Well, our kernel is untouched, and we like to put at 0x100000, right? The user space is generally higher up, and sits
+at at 0x200000, (or even higher, I haven't really studied the user space yet). So, why not put the bit map as close as we can to the end of memory? This will mean that
+we will have to have a LOT of programs running on the memory concurrently for it to actually mess up the bitmap, therefore giving us good leeway. So, to figure out how
+much memory we have, we use some fancy schmancy stuff (particularly INT 0x15, EAX 0xE820. For more information, look at the OSDev wiki: 
+https://wiki.osdev.org/Detecting_Memory_(x86)), and load it into memory in a safe spot. Then, we can read that information in the kernel, and display it onto the screen
+so that we can actually SEE the reserved and available memory. There is also one extra benefit for doing this. Once we implement a genuine physical memory manager, then
+we can actually see how many pages exist in our memory, see if it lines up, allocate some new pages/deallocate some pages, and once again see if it lines up. So,
+doing this step is just good for debugging (and is why I did it). Anyway, once we have a bitmap, we must simply start the chunking process, create a way to allocate/free
+memory chunks, create a way to FIND memory contiguous memory chunks for larger processes (bigger than 4 kilobytes), and then boom! We have a physical memory manager.
+Next up is the virtual memory manager. The virtual memory manager is also for paging, (as paging allows us to create virtual memory addresses). Basically, the virtual
+address space is not real, but we give each process the illusion that it has access to the full physical address space, when it really doesn't. Then, we can simply 
+manage each process, assigning them to a differnet page (or, I guess, frame. It's called pages for virtual memory and frames in physical memory, I believe). I believe
+this is how the virtual memory manager works, but admittedly, I haven't studied it yet, so I am mostly spitballing here. After we have a physical and virtual memory manager
+I believe we will be safe to turn on paging. We can turn on paging whenever we want, but I decided to make memory managers first. As far as I know, virtual memory only
+exists when paging is turned on. It doesn't exist before then, but I may be wrong about this, as, again, I haven't studied this. Anyway, oh yeah, as I was saying 
+for my plan:
+1. Implement physical memory manager
+2. Implement virtual memory manager (will be useless without paging, I THINK?)
+3. Turn on paging
+And then boom! Our kernel now has memory management! There are other things we can do after we have both memory management AND interrupts (particularly the PIT), like
+setting a scheduler, but that is complicated and I want to stay as a single-task/single-thread kernel for now. Later on, if I feel confident, I might make a multi-thread
+system. Multi-threads are scary, because they can completely mess up how we manage interrupts (according to Tanenbaum, at least), and how memory might be managed too,
+but they have the benefit of being far more efficient. The best way I can explain threads is with this example, (which I HOPE I am getting correct, because if not, then
+I will come back later and fix this explanation):
+
+void print_A() {
+    while (1) {
+        putchar('A');
+    }
+}
+
+void print_B() {
+    while (1) {
+        putchar('B');
+    }
+}
+
+This entire piece of code is a process. But, the process includes two threads, print_A, and print_B. Each thread has its own stack, register set, (duh), thread ID, and PC
+and much more. Furthermore, if there exists more threads in a process (which there are), then it will share, with the other thread, its code section, data section, and 
+other OS resources. A single thread system will basically say "ok, I see print_A() is first, so I will follow that thread, complete it, then come back and see if there
+exists any other threads". But, a multi-thread system, (along with some functions in the threads, like maybe a yield() function), can jump between two threads whilst also
+saving the state that each thread originally was in. So, in a multi-thread system, you could feasibly have the code above print something like "ABABAB", (for the sake of
+this example, assume the two threads are being called 3 times each), while a single-thread system can only ever print "AAABBB". I hope I got threads right, it is also
+a big confusing to me, because a lot of explanations literally just use the definition, "basic unit of CPU utilization", which I think is a stupid definition, because to
+a noob like me, it doesn't really make sense. Again, if I am wrong, I will come back and edit my explanation of threads so that future me (and anyone else reading this),
+doesn't get confused/get the wrong idea. That is all for today. Tomorrow I will finish the physical memory manager, and hopefully start on the virtual memory manager. 
 
