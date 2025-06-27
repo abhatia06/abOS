@@ -628,3 +628,58 @@ a big confusing to me, because a lot of explanations literally just use the defi
 a noob like me, it doesn't really make sense. Again, if I am wrong, I will come back and edit my explanation of threads so that future me (and anyone else reading this),
 doesn't get confused/get the wrong idea. That is all for today. Tomorrow I will finish the physical memory manager, and hopefully start on the virtual memory manager. 
 
+----------------------------------
+DAY 20
+
+Today I did quite a bit, though it might not seem like a lot. Today I started on the development of my memory manager, and I began by working on the physical memory manager
+and I've actually (I hope) finished the physical memory manager. The way our physical memory manager works is through a bitmap, (I think I mentioned this yesterday).
+While a bitmap has glaring issues, and a lot of people seem to use a buddy-allocator or a stack instead to manage physical memory, I found those to be a lot more
+complicated to not only understand, but also implement, so I stuck with the bitmap approach. In fact, my approach is so bad that, even amongst bitmap physical memory
+mappers, mine is by far one of the most inefficient, because when looking free chunks, it scans through EVERY bit, instead of trying to do some optimization (like by
+scanning 32-bits first, or something. The OSDev wiki talks about it). But I don't care. All I care about is getting it to work first, then I can optimize it to my hearts
+content later on, when I feel like it. Anyway, to really understand the physical memory manager, I had to do one other thing before that, and that was to get the 
+information regarding the physical memory. There is one really good way to do that, which the OSDev wiki outlines, and it is through INT 0x15, EAX 0xE820. For information
+on how this works, I would just suggest looking at the OSDev wiki: https://wiki.osdev.org/Detecting_Memory_(x86), because I don't fully understand it, and I don't really
+care (not yet at least). But anyway, all we did with this method is store the information regarding physical memory at a safe address, (I picked 0x9000. The OSDev wiki
+uses 0x8000. I can't use that because that's where my second-stage bootlader is). Then, all we have to do is read through 0x9000, and print to the screen the information
+regarding the physical memory. INT 0x15, EAX 0xE820 is actually very useful because it also tells us what parts of the memory are reserved or available to us, which
+is nice. Anyway, through this I learned that I'm actually temporarily loading my kernel at a reserved section of the memory! This is not good at all, and I should
+honestly switch it, but I have yet to encounter a mistake/bug, sooooooo... If it ain't broke, don't fix it. There was actually one bug I was encountering when I was working
+on the physical memory manager, and it was a very very odd one. You see, randomly, whenever I tried to run my code via the qemu emulator command, in SOME cases, my code
+would run just fine and it'd be all fine and dandy. In other cases, as soon as it finished loading in the physical memory information, it would experience an interrupt
+(interrupt number 8). What's even MORE confusing is that it had an error code! Yes, I know that interrupt 8 is supposed to have an error code, but according to OSDev wiki
+the error code should be 0. This one was NOT 0. Also, again, it was happening randomly. Eventually, I figured out it was because whenever I initialized my IDT, I was
+turning on interrupts and giving interrupts free reign to do whatever they liked before I could actually disable the IRQ interrupts. So, the fix for this was to simply
+move the PIC_disable to be the first command run by the kernel, so that even when I do initialize the IDT, nothing funky happens with interrupts just yet until I say
+they're allowed to do whatever they like. Also, in more exciting news, the physical memory manager was one of the things I've managed to (mostly) implement myself! I feel
+quite proud, and I feel as though I am becoming more and more confident in my ability to code in C. Anyway, enough with the random talk, I should probably talk about my
+future plans. So far, here is my gameplan: I begin by calling initialize_pmm(), which will set the entire bitmap to be 1's. This will effectively state, 
+"hey, the entire memory is in usage/reserved". But in reality, it is not. Then, in the kernel, based on the available entries in the SMAP (from INT 0x15, EAX E820), 
+I will call initialize_memory_region with their base addresses and lengths (all of which is given by the SMAP). Then, I will manually go in and deinitialize some of 
+the memory from 0x100000 (a few KB, maybe a full MB), because I want that to be reserved for the kernel. I will also deinitialize some of the memory from 0x7EE0000,
+because that is where the bitmap is, and I don't want it to ever override it. Finally comes the creation of malloc, or the memory file in general. My plan for memory is 
+that I will have two functions, at least. One function will find the size/length of a process/program/file. How I will find the size, I don't know yet. I'll have to look
+at some tutorials, maybe. After that, I will have a memory allocation function, (kmalloc), that will put a given program/file/process into memory based on the base_address
+that is going to be provided when I use allocate_blocks(num_blocks). And then, boom! I think that'll be everything. I'll need to make a de-allocation method too, that will
+also free memory of the process. Then that should be it.. I should have a genuine physical memory manager then.
+Buuuttt, this was all the stuff I typed in my physical_memory_manager.c, which I thought was going to be my plan back then. This is  no longer my plan now, (though it is
+still very similar). Tomorrow I was planning on making the memory allocation stuff, but then I decided "hold on, I'm gonna need a virtual memory manager soon anyway, and
+the entire reason I made my PMM like this, using 4KB chunks, is because of paging. I should probably enable paging tomorrow and develop the VMM before going into malloc".
+Indeed, this is also something the OSDev wiki, and some tutorials/videos I've been watching, agree with it. The OSDev wiki claims that malloc should be one of the last 
+things you implement for a memory manager, and so I will do the same. Also, I believe I've come to realize the POINT of a virtual memory manager. See, today, after I
+finished implementing the physical memory manager, I decided to then follow my initial plan, which was setting the entire bitmap to be 1's (or reserved). Then, I went
+and changed the parts of of the bitmap that memory said were supposed to be available, (as stated by the SMAP). I noticed some nice things. First, we have quite a lot
+of memory to work with, almost 32,639 available memory blocks! (Remember, each block is 4KB, so this is quite a lot). Of course, we are going to be decrementing from
+some of those blocks, as those blocks still take into account a few things, like our kernel, the bitmap itself, and some other spaces that we would like to reserve
+for the kernel to use. But regardless, we have quite a lot of space. I also went and thought about virtual addresses, and I came to realize something. See, available
+memory isn't contiguous in the physical memory. There are reserved chunks, available chunks, then reserved, then available, then reserved, reserved, reserved. So, say that
+a lot of the available chunks have been filled with processes, and there is a little bit each available chunk left, (say 12 KB in total, but 6KB in 1 chunk, and 6KB in
+another chunk). Then, based on my PREDICTION OF VIRTUAL MEMORY, (again, I need to study it), I am guessing that if we try to load in a 12 KB process, virtual memory
+management will be able to split up the process and map them into the physical memory (thanks to PMM), but since the process believes the illusion of the virtual memory,
+it won't have any issues with this, and it will run as if it were contiguously mapped to the memory. If this is indeed how virtual memory is intended to be used then,
+great, that sounds like it's quite useful and important. If it's not, then I really need to figure out what the point of virtual memory is.
+Anyway, that's all for today. Tomorrow will be FINALLY turning on paging, (I've been putting it off for SOO long), and implementing the VMM, (I do sincerely believe the 
+PMM is easier to implement, but I am hoping I'm wrong, and I'm hoping it turns out that the VMM is much easier to implement than the PMM). After I've done the PMM, we
+might make the heap memory allocator. I gotta see, but I will eventually need a way to actually take processes from the disk and put it onto memory based on the specified
+address and size of it, (it was easy in real mode- just use INT 0x13 and CHS addressing, or LAS if you're weird, but we don't have that luxury now). 
+Ok, bye.
