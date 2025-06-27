@@ -17,4 +17,5 @@ long int strlen(const char* str1) {
 		length++;
 		str1++;
 	}
+	return length; 	// oops forgot
 }
