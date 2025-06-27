@@ -16,7 +16,7 @@
 // PDE        PTE        offset into page
 #define PD_INDEX(address) (((address) >> 22) & 0x3FF) 	// bits 22-31 specify index of the PD entry
 #define PT_INDEX(virtual_address) (((virtual_address) >> 12) & 0x3FF)
-#define PAGE_FRAME_INDEX(dir_entry) ((*dir_entry) & ~0xFFF) // 1111111111111111111000000000000. We don't want those 
+#define GET_FRAME(dir_entry) ((*dir_entry) & ~0xFFF) // 1111111111111111111000000000000. We don't want those 
 							     // lower 12 bits, just the top ones. If you look at the
 							     // enums below, 0x7FFFF000 is the huge binary I just 
 							     // typed up there
