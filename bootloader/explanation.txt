@@ -681,5 +681,16 @@ great, that sounds like it's quite useful and important. If it's not, then I rea
 Anyway, that's all for today. Tomorrow will be FINALLY turning on paging, (I've been putting it off for SOO long), and implementing the VMM, (I do sincerely believe the 
 PMM is easier to implement, but I am hoping I'm wrong, and I'm hoping it turns out that the VMM is much easier to implement than the PMM). After I've done the PMM, we
 might make the heap memory allocator. I gotta see, but I will eventually need a way to actually take processes from the disk and put it onto memory based on the specified
-address and size of it, (it was easy in real mode- just use INT 0x13 and CHS addressing, or LAS if you're weird, but we don't have that luxury now). 
+address and size of it, (it was easy in real mode- just use INT 0x13 and CHS addressing, or LAS if you're weird, but we don't have that luxury now). Oh, I almost forgot
+to mention too. I decided I wanted to get a taste of programming commands. I haven't studied how to do that just yet, so I decided to make a really simple one: basically,
+the user gets stuck into a while loop that, obviously, always loops and uses the readLine() function I implemented to read what the user wrote. Then, I wanted to compare
+what the user wrote to a specific phrase, and if they say that, it'll print out what we want! But, oh wait, I don't have <string.h>, which is apart of the C standard 
+library. So, I had to implement string.h and string.c. It was quite simple, so there is no issues there (simply have a pointer to each character in the string, and since
+characters can be checked if they're equal via ==, we can just check each character, and increment each character to their next character IF they are equal. If they are
+either not equal, or if they land upon their sentinel, then we terminate. Then, again, since characters are just fake integers, we can subtract their difference. If
+they are the same (i.e., they are both the sentinel), they will return 0, (just like the actual strcmp), otherwise, it will return the difference of the first non-equal
+characters in both strings, (just like strcmp). Anyway, we used this, and the length function (quite simple, just have a counter that increments for each character in the
+string that isnt the sentinel), to make our first "program!". (It's not really a program), but it works! If the user types printmem, it'll showcase the physical
+memory! 
+Anyway, that's all for today.
 Ok, bye.
