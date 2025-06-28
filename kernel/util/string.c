@@ -24,6 +24,7 @@ void* memset(void* ptr, uint8_t value, uint32_t length) {
 
         unsigned char* ptr_byte = (unsigned char*)ptr;
         for(uint32_t i = 0; i < length; i++) {
-                ptr_byte[i] = (unsigned char)value;                                                                             }
+                ptr_byte[i] = (unsigned char)value;
+	}
         return ptr;
 }
