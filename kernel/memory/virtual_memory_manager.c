@@ -65,23 +65,84 @@ void flush_tlb_entry(virtual_address address) {
 	__asm__ volatile("cli; invlpg (%0); sti" : : "r"(address) : "memory" );
 }
 
+bool map_page(void* phys_address, void* virt_address) {
+        pdirectory* pageDirectory = (pdirectory*)current_pd_address;
 
-// UNFINISHED. WILL COME BACK TO IT TOMORROW, TOO TIRED TODAY. Didn't do a lot of work unfortunately today :(
-/*
-bool map_page(void* physical_address, void* virtual_address) {
-	pdirectory* pageDirectory = get_directory();
+        pd_entry* e = &pageDirectory->m_entries[PD_INDEX((uint32_t)virt_address)];
+        if( (*e & PTE_PRESENT) != PTE_PRESENT) {
+                ptable* table = (ptable*)allocate_blocks(1);
+                if(!table) {
+                        return false;
+                }
 
-	pd_entry* e = &pageDirectory->m_entries[PD_INDEX((uint32_t)virtual_address)];
-	if( (*e & PTE_PRESENT) != PTE_PRESENT) {
-		ptable* table = (ptable*)allocate_blocks(1);
-		if(!table) {
-			return;
-		}
+                memset(table, 0, sizeof(ptable));
 
-		
-	}
+                pd_entry* entry = &pageDirectory->m_entries[PD_INDEX((uint32_t)virt_address)];
+
+                SET_ATTRIBUTE(entry, PDE_PRESENT);
+                SET_ATTRIBUTE(entry, PDE_WRITABLE);
+                SET_FRAME(entry, (physical_address)table);
+
+        }
+        ptable* table = (ptable*)GET_FRAME(e);
+
+        pt_entry* page = &table->m_entries[PT_INDEX((uint32_t)virt_address)];
+        SET_ATTRIBUTE(page, PTE_PRESENT);
+        SET_FRAME(page, (physical_address)phys_address);
+        return true;
 }
-*/
+
+void init_vmm() {
+        ptable* table = (ptable*)allocate_blocks(1);
+        if(!table) {
+                return;
+        }
+
+        ptable* table2 = (ptable*)allocate_blocks(1);
+        if(!table2) {
+                return;
+        }
+
+        memset(table, 0, sizeof(ptable));
+        memset(table2, 0, sizeof(ptable));
+
+        for(uint32_t i = 0, frame=0x0, virt=0x00000000; i<1024; i++, frame+=4096, virt+=4096) {
+                pt_entry page = 0;
+                SET_ATTRIBUTE(&page, PTE_PRESENT);
+                SET_FRAME(&page, frame);
+
+                table2->m_entries[PT_INDEX(virt)] = page;
+        }
+
+        for(uint32_t i = 0, frame = 0x100000, virt=0xC0000000; i<1024; i++, frame+=4096, virt+=4096) {
+                pt_entry page = 0;
+                SET_ATTRIBUTE(&page, PTE_PRESENT);
+                SET_FRAME(&page, frame);
+
+                table->m_entries[PT_INDEX(virt)] = page;
+        }
+
+        pdirectory* dir = (pdirectory*)allocate_blocks(3);
+        if(!dir) {
+                return;
+        }
+
+        memset(dir, 0, sizeof(pdirectory));
+
+        pd_entry* entry = &dir->m_entries[PD_INDEX(0xC0000000)];
+        SET_ATTRIBUTE(entry, PDE_PRESENT);
+        SET_ATTRIBUTE(entry, PDE_WRITABLE);
+        SET_FRAME(entry, (physical_address)table);
+
+        pd_entry* entry2 = &dir->m_entries[PD_INDEX(0x00000000)];
+        SET_ATTRIBUTE(entry2, PDE_PRESENT);
+        SET_ATTRIBUTE(entry2, PDE_PRESENT);
+        SET_FRAME(entry, (physical_address)table2);
+
+        set_pd(dir);
+
+        __asm__ volatile("movl %%cr0, %%eax; orl 0x80000001, %%eax; movl %%eax, %%cr0" ::: "eax");
+}
 
 /*
 pt_entry* get_page(virtual_address address) {
