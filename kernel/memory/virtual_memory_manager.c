@@ -4,7 +4,16 @@
 #include "../stdio.c"
 #include "physical_memory_manager.h"
 
+#define EnablePaging()              \
+    asm volatile (                  \
+        "mov %%cr0, %%eax\n\t"      \
+        "or $0x80000000, %%eax\n\t" \
+        "mov %%eax, %%cr0"          \
+        ::: "eax")
 
+ptable* table = 0;
+pdirectory* directory = 0;
+physical_address current_pd_address = 0;
 
 bool alloc_page(pt_entry* e) {
 	void* p = (void*)allocate_blocks(1);
@@ -136,12 +145,12 @@ void init_vmm() {
 
         pd_entry* entry2 = &dir->m_entries[PD_INDEX(0x00000000)];
         SET_ATTRIBUTE(entry2, PDE_PRESENT);
-        SET_ATTRIBUTE(entry2, PDE_PRESENT);
-        SET_FRAME(entry, (physical_address)table2);
+        SET_ATTRIBUTE(entry2, PDE_WRITABLE);
+        SET_FRAME(entry2, (physical_address)table2);
 
         set_pd(dir);
 
-        __asm__ volatile("movl %%cr0, %%eax; orl 0x80000001, %%eax; movl %%eax, %%cr0" ::: "eax");
+        EnablePaging();
 }
 
 /*
