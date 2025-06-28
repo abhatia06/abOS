@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../stdint.h"
+#include <stdbool.h>
 
 // For the VMM, I decided to follow the broken thorn tutorial and the OSDev wiki 
 #define PAGE_SIZE 4096		// It is common practice to have each page be 4096 bytes. (4KB)
@@ -78,9 +79,9 @@ typedef struct {
 	pd_entry m_entries[PAGE_DIRECTORY_SIZE];
 } pdirectory __attribute__((aligned(4096)));
 
-ptable* table = 0;
-pdirectory* directory = 0;
-physical_address current_pd_address = 0;
+extern ptable* table;
+extern pdirectory* directory;
+extern physical_address current_pd_address;
 
 // If we used the OSDev version, to access an index we would just have to do uint32_t entry = page_table[index];
 // for the second option, it's more blehhh, we have to do: pt_entry entry = table->m_entries[index];
@@ -88,5 +89,11 @@ physical_address current_pd_address = 0;
 // pt_entry* entry = &table->m_entries[index];
 
 
+bool alloc_page(pt_entry* e);
+void free_page(pt_entry* e);
 pt_entry* get_pt_entry(ptable *pt, virtual_address address);
-pd_entry* get_pt_entry(pdirectory *pd, virtual_address address);
+pd_entry* get_pd_entry(pdirectory *pd, virtual_address address);
+bool set_pd(pdirectory* dir);
+void flub_tlb_entry(virtual_address address);
+bool map_page(void* phys_adress, void* virt_address);
+void initialize_vmm();
