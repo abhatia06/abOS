@@ -143,3 +143,14 @@ __attribute__((interrupt)) void PIT_handler(int_frame_32_t *frame) {
         ticks++;
         PIC_sendEOI(0);
 }
+
+__attribute__((interrupt)) void page_fault_handler(int_frame_32_t *frame, uint32_t error_code) {
+
+        uint32_t bad_address;
+        __asm__ volatile ("mov %%cr2, %0" : "=r"(bad_address));
+
+        kprintf("PAGE FAULT AT 0x%x. Error code: 0x%x\n", bad_address, error_code);
+        __asm__ volatile("cli ; hlt");
+
+        // handling page faults comes later
+}
