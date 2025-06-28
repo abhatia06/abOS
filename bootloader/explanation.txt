@@ -694,3 +694,11 @@ string that isnt the sentinel), to make our first "program!". (It's not really a
 memory! 
 Anyway, that's all for today.
 Ok, bye.
+
+
+----------------------------------
+DAY 21
+Today was not a great day. I didn't finish implementing virtual memory manager, but I did come to understand the point of paging, and virtual memory as a whole. 
+Tomorrow, even though it is supposed to be a weekend, I will finish implementing virtual memory management, so I'm not super behind.
+
+I will also add more info (what I learned today) to this devlog entry tomorrow.
