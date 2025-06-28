@@ -65,6 +65,8 @@ void flush_tlb_entry(virtual_address address) {
 	__asm__ volatile("cli; invlpg (%0); sti" : : "r"(address) : "memory" );
 }
 
+
+// UNFINISHED. WILL COME BACK TO IT TOMORROW, TOO TIRED TODAY. Didn't do a lot of work unfortunately today :(
 /*
 bool map_page(void* physical_address, void* virtual_address) {
 	pdirectory* pageDirectory = get_directory();
