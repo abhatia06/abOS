@@ -702,3 +702,38 @@ Today was not a great day. I didn't finish implementing virtual memory manager, 
 Tomorrow, even though it is supposed to be a weekend, I will finish implementing virtual memory management, so I'm not super behind.
 
 I will also add more info (what I learned today) to this devlog entry tomorrow.
+
+It is now DAY 22, and I will be finishing the devlog today.
+On day 21, I mostly learned stuff regarding virtual memory and paging, particularly, I learned about the concepts and I had started work on it by following the broken
+thorns tutorial, along with the OSDev tutorial. And it turns out, my suspicions were correct regarding virtual memory. It's there to make management of memory and 
+processes easier, (duh), but more importantly, it is there to make the management of processes easier. So, one of the biggest issues regarding memory is loading stuff
+in from the disk. This takes a lot of time, and it is inefficient for the CPU to be constantly accessing the disk. That is where the power of virtual memory can come in.
+Every process can be loaded into their own virtual address, (or, more specifically, each process can have its own page directory, or 4GB of virtual address space). If
+the CPU is not using a process, and the OS deems the process to be wasting memory/believes the CPU is in need of memory, it can de-allocate some of the process's pages
+from the physical RAM and put it back into the hard disk, before setting the present bit in the page table entry to 0. IF, for some reason, the CPU is in need of that
+page again, it will FIRST check the flags and see the "present bit" in the page table entry. If the page table entry says the page is NOT present (present bit is 0),
+then the CPU will send a page fault exception (or interrupt 14) to the OS, which it can then handle with its own page fault handler. Now, this might seem complicated,
+and to me it was, but I believe it becomes much more clearer with an example.
+
+So, when the computer first boots and everything, and a process is FIRST EXECUTED, the first thing that happens is that it is loaded from the disk into memory by the OS.
+The OS then provides the process its own virtual address, by mapping its physical address to some random virtual address, (lets say, I don't know, 0x8000000). Now,
+for the sake of this example, and to understand virtual addressing better, lets say this process is fairly large, taking up multiple pages (remember, each page is
+4KB, or 4096 bytes). Without the virtual memory manager, if the CPU wanted to run the process, it would have to load in the entire process into memory before executing it,
+which is obviously quite wasteful, because the CPU doesn't need the ENTIRE process at once. It first needs the first page, then the second page, then the third page, etc.
+until it finishes the process. Basically, if you've ever played a game before, do you remember seeing that "invisible bridge" thing, where you cannot see the bridge,
+but as soon as you, the player, start walking over the bridge, the bridge would become visible right under your feet? This is basically what we want to do in the future.
+If a process is gigantic, like thousands of pages, (say it is a 5GB process, but we only have 4GB of RAM), we can basically create the illusion of having more RAM than 
+we actually do by using this "invisible bridge" illusion. Parts of the process will be first loaded in, (for this example, assume physical memory 0x1000 for simplicity's
+sake). Then it will be mapped to a virtual address (assume 0x0 in the virtual address). It will execute that first page, and get to the ending of the
+first page, which is around 0x2000 or whatever, (or 0x1000 in virtual memory). The CPU will check the present bit and see the next page is not available, so it will
+throw a page fault exception, or interrupt 14, to which the OS will handle. The OS will first see if there is available free memory, and if there isn't, it must then
+de-allocate some of the memory. Assume the CPU has completely finished handling the first page, so the OS will then de-allocate that first page, and it MIGHT swap the
+contents of the the first page from the physical RAM into the disk. DO NOTE, the OS will only do this if another one of the flags for the page entry was set, that flag
+being the DIRTY FLAG, (which means the page was modified). If the page was NOT modified, and it was 100% processed by the CPU, then the OS doesn't care, and it simply
+discards the first page entirely. Anyway, the first page will be de-allocated by the CPU, and then the CPU will put the 2nd page where the 1st page originally, (0x1000). 
+BUT, it this time maps the 2nd page to virtual address 0x1000, therefore making the process have the illusion that it is still running on contiguous memory, even though it
+clearly is not. This is end-goal of virtual memory, and it is one of the reasons for why it is so important. Other important reasons include memory protection, and 
+ensuring that no processes override each others data, memory isolation, and whatnot. But, this is the one thing that made really go "oh, that makes sense for why virtual
+memory is so seemingly important". 
+
+Now that is the motivation for virtual memory, later today I will come back and explain the way virtual memory actually works.
