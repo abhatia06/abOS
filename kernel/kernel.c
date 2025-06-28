@@ -17,9 +17,11 @@ void main() {
 	pic_disable();	// temporarily stop listening to interrupts (mask all interrupts coming in). 
 	memorysetup();
 	print_memory_map();
+	initialize_vmm();	// Initialize the VMM
 	kprintf("\r\n");
 	initIDT();	// Set up the IDT
 	idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);	// 0x8E is the interrupt gate flag. Others might use trap gate, but idc rn
+	idt_set_descriptor(0x0E, (uint32_t)page_fault_handler, 0x8E); 	// page fault handler is interrupt 14, and it sends an error code 
 	PIC_remap(0x20) // Look at the table, all external interrupts begin at 0x20. 
 
 	idt_set_descriptor(0x20, PIT_handler, 0x8E);
@@ -38,6 +40,18 @@ void main() {
 	kprintf("Formatted %d %i %x %p %o %hd %hi %hhu %hhd\n", 1234, -5678, 0xdead, 0xbeef, 012345, (short)27, (short)-42, (unsigned char)20, (signed char)-10);
 	kprintf("Formatted %ld %lx %lld %llx\n", -100000000l, 0xdeadbeeful, 10200300400ll, 0xdeadbeeffeebdaedull);
 
+	// This is a test to see if our VMM actually works:
+        map_page((void*)0xB8000, (void*)0xC00B8000);
+        volatile char* vid = (volatile char*)0xC00B8000;        // 0xB8000 should map to 0xC00B8000 now, so writing at
+                                                                // 0xC00B00 should write to 0xB8000 instead. Inside the
+                                                                // page table, (I believe it is entry 184, PD 768),
+                                                                // bits 31-12 will be the address (0xB8000), with the
+                                                                // rest of the bits being the flags (in this case, it
+                                                                // will be PRESENT and WRITABLE). So, writing to
+                                                                // 0xC00B8000 MUST write to 0xB8000.
+        vid[0] = 'X';
+        vid[1] = 0x07;
+	
 	kprintf("Type your name: ");
 	char* name = readline();
 	kprintf("Hello, %s!\n", name);
