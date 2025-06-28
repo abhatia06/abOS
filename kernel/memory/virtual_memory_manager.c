@@ -153,20 +153,4 @@ void init_vmm() {
         EnablePaging();
 }
 
-/*
-pt_entry* get_page(virtual_address address) {
-        //Get page directory
-        pdirectory* pd = current_page_directory;
-
-        //Get page table in directory
-        pd_entry* entry = get_pd_entry(pd, address);
-        page_table* table = (ptable*)PAGE_PHYS_ADDRESS;
-
-        //Get page in table
-        pt_entry* page = get_pt_entry(table, address);
-
-        //Return page
-        return page;
-}
-*/
 
