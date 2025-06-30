@@ -69,8 +69,9 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/util/string.c -o $(BUILD_DIR)/string.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR4)/virtual_memory_manager.c -o $(BUILD_DIR)/virtual_memory_manager.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/kernelHigher.c -o $(BUILD_DIR)/kernelHigher.o
+        $(ASM) $(SRC_DIR2)/kernelHigher.s -f elf32 -o $(BUILD_DIR)/kernelHASM.o
         $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o
-        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/kernelH.elf $(BUILD_DIR)/kernelHigher.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/string.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/virtual_memory_manager.o
+        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/kernelH.elf $(BUILD_DIR)/kernelHASM.o $(BUILD_DIR)/kernelHigher.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/string.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/virtual_memory_manager.o
 #
 #This part is SUPER necessary because I only JUST learned this recently. The --oformat binary that directly links
 # files together and puts them into binary is not actually good, as it COMPLETELY ignores the .bss sections.
@@ -99,4 +100,4 @@ run:
         qemu-system-i386 -m 128M -drive format=raw,file=build/os-image.img,if=ide,index=0,media=disk
 
 runDebug:
-        qemu-system-i386 -m 128M -drive format=raw,file=build/os-image.img,if=ide,index=0,media=disk -s -S
+        qemu-system-i386 -m 128M -drive format=raw,file=build/os-image.img,if=ide,index=0,media=disk -s -S & gdb
