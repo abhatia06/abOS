@@ -1,4 +1,4 @@
-ORG 0x7E00
+ORG 0x7E00   ; 512 bytes after 0x7c00. We do this because I kinda ran out of bytes in the bootloader lol (it should be max 512)
 BITS 16
 
 KERNEL_LOAD_SEG equ 0x1000
