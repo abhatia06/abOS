@@ -1,22 +1,22 @@
-ENTRY(kernel_main)
+ENTRY(kernel_start)
 
 SECTIONS {
         . = 0xC0000000;
 
-        .text : ALIGN(0x1000) {
+        .text : {
                 *(.text*)
         }
-        .rodata : ALIGN(0x1000) {
+        .rodata ALIGN(4096) : {
                 *(.rodata)
                 *(.rodata*)
         }
-        .data : ALIGN(0x1000) {
+        .data ALIGN(4096) : {
                 *(.data)
         }
-        .bss : ALIGN(0x1000) {
-                bss_start = .;
+        .bss ALIGN(4096) : {
+                bss_begin = .;
                 *(.bss)
                 *(COMMON)
-                bss_end = .;
+                bss_final = .;
         }
 }
