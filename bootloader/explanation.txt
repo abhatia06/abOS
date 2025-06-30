@@ -736,4 +736,95 @@ clearly is not. This is end-goal of virtual memory, and it is one of the reasons
 ensuring that no processes override each others data, memory isolation, and whatnot. But, this is the one thing that made really go "oh, that makes sense for why virtual
 memory is so seemingly important". 
 
-Now that is the motivation for virtual memory, later today I will come back and explain the way virtual memory actually works.
+Now that is the motivation for virtual memory, I will now explain the basics of how virtual memory works, or at least the implementation of it.
+Virtual memory is really only applicable when we have paging. Paging is what enables virtual memory to exist in the first place, and a virtual memory manager, without
+paging enabled, is completely useless and is just taking up precious memory, and readability, away from your code. Before we implement a virtual memory manager, we first
+need a physical memory manager, and I have already explained the motivation and the implementation of a PMM beforehand. The reason we need a PMM is because virtual memory
+manages pages, and each page is 4096 bytes, or 4KB. This should sound familiar, because we also just so happen to divide our memory into 4KB blocks in the PMM. The way
+paging works is that we have 4GB of physical memory, which is not a lot. As stated previously, we want to create the illusion of having more memory than we actually do,
+so we achieve this via the usage of page tables and page directories. Each page table has 1024 entries, and each table entry points to a page, (each entry is a 32-bit 
+integer). The entries in the table also point to a physical FRAME, which is just the term for a block in physical memory. Now, I mentione dearlier that pages are 4KB,
+and our physical frames are also 4KB. Why 4KB? Historical reasons. It's just considered the standard in most systems today, so we stick to the modern conventions. 
+Anyway, each page is 4KB. Page tables have 1024 entries, so they have 1024 pages. 1024 * 4KB is 4MB. Now, we have a page directory, which is just an array of page tables
+so 1024 * 4MB = 4GB. If 4GB sounds familiar, it should. 4GB is the maximum amount of physical memory a 32-bit system has. Therefore, we have just created 4GB of virtual
+memory. We can create more of these directories, and we WILL, and I will explain why later (I did briefly talk about it in the paragraph above). Anyway, back to 
+page tables. Each entry is a 32-bit integer, and the 32 bits are split up: 
+Bits 31-12 are the address. They point to the physical frame address
+The reset of the bits are simply flags that the CPU uses. Some important bits include: the dirty bit, and the present bit. The present bit is what the CPU uses to see if
+a page is present IN the physical memory right now. If it is not, it throws a page fault exception (interrupt 14). If it is, then it continues. The dirty bit is for 
+the OS. If the OS deems a page necessary to be relinquished, (as it has been 100% processed), then it will check the dirty bit to see if it has been modified. If it has
+been modified, the OS will assume it will be important in the future, so it will save it to the disk. Otherwise, it will merely throw it away and forget about it.
+Here are the page table bits:
+Bit 0 (P): Present flag
+0: Page is not in memory
+1: Page is present (in memory)
+Bit 1 (R/W): Read/Write flag
+0: Page is read only
+1: Page is writable
+Bit 2 (U/S):User mode/Supervisor mode flag
+0: Page is kernel (supervisor) mode
+1: Page is user mode. Cannot read or write supervisor pages
+Bits 3-4 (RSVD): Reserved by Intel
+Bit 5 (A): Access flag. Set by processor
+0: Page has not been accessed
+1: Page has been accessed
+Bit 6 (D): Dirty flag. Set by processor
+0: Page has not been written to
+1: Page has been written to
+Bits 7-8 (RSVD): Reserved
+Bits 9-11 (AVAIL): Available for use
+Bits 12-31 (FRAME): Frame address
+
+Page directory also stores 32-bit integers, and they have similar meanings to the page table entries. However, instead of having bits 31-12 point to the frame address,
+they just point to the page table instead:
+Bit 0 (P): Present flag
+0: Page is not in memory
+1: Page is present (in memory)
+Bit 1 (R/W): Read/Write flag
+0: Page is read only
+1: Page is writable
+Bit 2 (U/S):User mode/Supervisor mode flag
+0: Page is kernel (supervisor) mode
+1: Page is user mode. Cannot read or write supervisor pages
+Bit 3 (PWT):Write-through flag
+0: Write back caching is enabled
+1: Write through caching is enabled
+Bit 4 (PCD):Cache disabled
+0: Page table will not be cached
+1: Page table will be cached
+Bit 5 (A): Access flag. Set by processor
+0: Page has not been accessed
+1: Page has been accessed
+Bit 6 (D): Reserved by Intel
+Bit 7 (PS): Page Size
+0: 4 KB pages
+1: 4 MB pages
+Bit 8 (G): Global Page (Ignored)
+Bits 9-11 (AVAIL): Available for use
+Bits 12-31 (FRAME): Page Table Base address
+
+When paging is enabled, memory addresses follow a certain format based on the page directory, table, and whatnot. We want every memory address to reference the directory,
+then the table in the directory, so that the memory addresses are not simply identity-mapped (identity mapping is simply when virtual addresses = physical addresses),
+and instead point to their respsective frame addresses.
+SO, memory addresses will follow THIS format, (example of 0xC0000000):
+
+1100000000         0000000000        000000000000 (this is 0xC0000000 in binary)
+ 
+AAAAAAAAAA         BBBBBBBBBB        CCCCCCCCCCCC
+directory index    page table index  offset into page
+
+As you can see, 0xC0000000 points to the 768th table, 1st page, and has a 0x0 offset into the page (I forgot to mention, but every page is 4KB aligned, duh).
+So, if we want 0xC0000000 to point to 0x100000, we simply go into the 768th page table in whatever directory, and have the 768th table house the frame address
+0x100000, and boom! Now 0x100000 maps to 0xC0000000. 
+For more information, (and a better explanation, honestly), go to the brokenthorns guide on virtual memory management and paging:
+http://www.brokenthorn.com/Resources/OSDev18.html
+
+Ok, that is all. I am writing this on Sunday, so I will be coming back the next day to work lol
+
+----------------------------------
+DAY 22 & 23 
+
+Look at DAY 21 to see what I did on these days.
+
+----------------------------------
+DAY 24
