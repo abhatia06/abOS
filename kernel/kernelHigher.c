@@ -8,6 +8,8 @@
 #include "memory/virtual_memory_manager.h"
 
 void kernel_main() { 
+	// For right now, everything is messed up. We need to re-initialize the stack, and re-clear-out the bss section. But, this green K is a good way to know that
+	// we are now in higher kernel, and our VMM works.
 	volatile int *ptr = (int*)0xB8000;
 	*ptr = 0x2F4B;
 	while(1);
