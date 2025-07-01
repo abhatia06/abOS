@@ -2,6 +2,7 @@
 #include "memory/virtual_memory_manager.h"
 #include "util/string.h"
 #include "stdint.h"
+#include "global_addresses.h"
 
 void main() {
 	initialize_pmm();
