@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 SECTIONS {
-	. = 0x50000; /* higher kernel will be at physical address 0x100000, (mapped to VA 0xC0000000), so we load this 3rd-stage bootloader to 0x50000 instead.
+	. = 0x100000; 
 	.text : {
 		*(.text*)
 	}
