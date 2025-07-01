@@ -828,3 +828,32 @@ Look at DAY 21 to see what I did on these days.
 
 ----------------------------------
 DAY 24
+
+Today was quite a bad day in terms of progress.
+By that, I mean I didn't progress at all. What I tried to do today, since I had finished memory management, was try and set up the next big thing. That being, I tried
+to set up a higher kernel. I thought this was going to be relatively easy, as my plan was simple: 
+Have one link loader present for the lower kernel, (which will be setting up the PMM and VMM, maybe even the IDT). Then, once paging is enabled, jump to 0xC0000000.
+We'll have another link loader present for the higher kernel at 0xC0000000, which will have the same libraries and it'll all work fine and dandy.
+It did not work fine and dandy. My idea was solid, we were able to jump to 0xC0000000 via the usage of another link loader being physically at 0x100000, and then having
+the lower kernel (physically at 0x50000) jump to 0xC0000000, that was then mapped to 0x100000 at the lower memory kernel, but for some reason, and I have NO idea why,
+all of the libraries (like stdio), were completely unfunctional. After hours and hours of testing and checking, I realized the issue was due to the global variables
+I was using in stdio, but I had to use global variables, especially for stuff like the cursor position, because how else am I supposed to keep track of it?? Can I use
+macros for that?.. Maybe.. I dunno actually... But, regardless, it was odd why I couldn't use global variables, because it worked just fine in the lower kernel memory, 
+so what the hell was the issue now?? Again, I still don't know what the issue is. I checked literally everything, and I do mean everything. I checked the .rodata section,
+it was properly loaded in, same with the .data section, same with .bss. I even went as far as to make another assembly file that would zero out the bss section, and set
+up another stack, but nothing worked. Even MORE odd was, when I tried debugging in gdb, was that the higher kernel was NOT at 0xC0000000 exactly, it was at 0xC000200.
+WHY? 0xC0000000 is aligned to 4KB, there is no reason for that offset to exist, especially because I didn't specify it in the link loader. What the hell is going on??
+Why is this happening??
+And after going insane for almost the entire day, I came to the conclusion to revert everything (except for the existence of the files), and go back to where we started
+for today. Tomorrow, I will shift focus towards trying to implement a heap memory allocation thing (malloc), and then probably, maybe, hopefully, (I am really hoping),
+enter into user mode finally.... I did find a video by Queso Fuego that talks about shifting kernel into higher memory but... I don't know, I'm quite worried. I'll
+give it one last try tomorrow, and if it doesn't work, for whatever reason, then that's it. I'll just keep the kernel un-divided, existing in 0x100000 FOR NOW. Later on
+I might try to actually have it separated and so we can actually say "aha! We use 0xC0000000 to virtually map our kernel!" but, for now, again, none of those shenanigans.
+Actually, before I move on, I think I was going about it the wrong way. See, what I tried to do was keep my existing kernel.c, and then just create a new kernelHigher.c,
+but what might be better would be to create just a new prekernel.c and keep kernel.c (or, maybe even make a new kernel.c), and have the prekernel.c just do the bare
+minimum to see if it even works (which is just setting up paging and whatnot), then jump to the higher half kernel. THAT might work, I hope, but I have no clue. 
+Anyway, that is all for today. Today was a bad day and it really left a sour taste in my mouth. I know that no project will always have every day be a smash-hit home run,
+or even have every day achieving something, but I really wanted to at least get this higher half kernel stuff out of the way. The issue might've actually been
+related to the linker stuff, but I have no clue, because I have never studied linkers. Whatever, though.
+That is all for today.
+Bye.
