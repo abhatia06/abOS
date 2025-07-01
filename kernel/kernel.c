@@ -6,7 +6,11 @@
 #include "memory/physical_memory_manager.h"
 #include "util/string.h"
 #include "memory/virtual_memory_manager.h"
+#include "global_addresses.h"
 
+extern void* recovery_point;
+
+/*
 void memorysetup() {
         initialize_pmm();
         //deinit_memory_region(0x0, 0x12000);
@@ -21,15 +25,20 @@ void memorysetup() {
         kprintf("ESP: 0x%x\r\n", esp);
 
 }
+*/
 
 void main() {
+        directory = (pdirectory*)*(uint32_t *)CURRENT_PAGE_DIR_ADDRESS;
+        memory_map = (uint32_t *)MEMMAP_AREA;
+        max_blocks = *(uint32_t *)MAX_BLOCKS;
+        used_blocks = *(uint32_t *)USED_BLOCKS;
         pic_disable();
-        memorysetup();
+        //memorysetup();
 
         kprintf("\n");
-        print_physical_memory();
+        print_memmap_command();
         kprintf("\n");
-        initialize_vmm();
+        //initialize_vmm();
 
         initIDT();
         idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);
@@ -56,16 +65,17 @@ void main() {
         char* name = readline();
         kprintf("Hello, %s!\r\n", name);
 
-        map_page((void*)0xB8000, (void*)0xC00B8000);
-        volatile char* vid = (volatile char*)0xC00B8000;        // 0xB8000 should map to 0xC00B8000 now, so writing at
+        //map_page((void*)0xB8000, (void*)0xC00B8000);
+        //volatile char* vid = (volatile char*)0xC00B8000;      // 0xB8000 should map to 0xC00B8000 now, so writing at
                                                                 // 0xC00B00 should write to 0xB8000 instead. Inside the
                                                                 // page table, (I believe it is entry 184, PD 768),
                                                                 // bits 31-12 will be the address (0xB8000), with the
                                                                 // rest of the bits being the flags (in this case, it
                                                                 // will be PRESENT and WRITABLE). So, writing to
                                                                 // 0xC00B8000 MUST write to 0xB8000.
-        vid[0] = 'X';
-        vid[1] = 0x0F;
+        //vid[0] = 'X';
+        //vid[1] = 0x0F;
+
 
         while(true) {
                 char* command = readline();
@@ -75,4 +85,13 @@ void main() {
                         kprintf("\r\n");
                 }
         }
+
+
+
+        //uint32_t check = (uint32_t *)0xC0000000;
+        //kprintf("First word printed at 0xC0000000 = 0x%x\n", check);
+
+        //clrscr();
+        //kprintf("reaching here");
+        //((void (*)(void))0xC0000000)();
 }
