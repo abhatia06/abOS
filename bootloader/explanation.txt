@@ -857,3 +857,17 @@ or even have every day achieving something, but I really wanted to at least get 
 related to the linker stuff, but I have no clue, because I have never studied linkers. Whatever, though.
 That is all for today.
 Bye.
+Ok I lied, I am back (I am writing this around 2 hours later). I couldn't go to bed in good conscious knowing I did effectively nothing today, so I came back and thought 
+about why it didn't work a lot, and I also looked at Queso Fuego's OS, along with other peoples OS. I noticed some things: yes, some people were doing what I was thinking,
+which was using 2 linker scripts for the different kernel separations, good job me. But, when I examined how they compiled the linker scripts and what was in each script,
+I noticed something:
+The libraries that had global variables (usually the ones containing printf) were exclusively saved for the higher kernel memory page, while the lower kernel memory page
+did the bare minimum, and acted as a trampoline (thanks OSDev wiki for that terminology: https://wiki.osdev.org/Higher_Half_Kernel). I should note, OSDev DOES have a wiki
+providing a tutorial on higher half kernel, but it assumes the user is using GRUB, (which... Okay, that's fair, the bare bones tutorial has the user set up GRUB, so I
+am not very surprised. By the way, I am not using GRUB, I am using a custom bootloader.). So, I have an idea now, which I have somewhat implemented. I will remove the 
+pmm and vmm libraries from my kernel.c (duh), and I will have it act as the higher kernel, setting up everything, and housing everything. I know the VMM and PMM have
+global variables, which is a little bit confusing, because OS's like Queso Fuego's AmateurOS have both the kernel and pre-kernel housing the VMM and PMM, but I think if
+they can do it, so can I. I just can't use something like stdio.h in both kernels, so I will save it for the higher half kernel exclusively. AAnyways, again, I have created
+the prekernel.c file, and I have housed within it everything that I think is necessary. Tomorrow, I will create malloc and whatnot, and then I will try to, once again, 
+enter higher half kernel. I will be following Queso Fuego's video on it, mostly because I failed when I did it by myself: https://www.youtube.com/watch?v=pm2L0TxofQU.
+Ok, that is ACTUALLY all for today. Thank you, and Goodbye. (I just didn't want to sleep in a sour mood, I wanted to sleep convincing myself I did SOMETHING)
