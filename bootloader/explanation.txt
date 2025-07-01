@@ -874,3 +874,26 @@ exclusively. AAnyways, again, I have created the prekernel.c file, and I have ho
 whatnot, and then I will try to, once again, enter higher half kernel. I will be following Queso Fuego's video on it, mostly because I failed when I did it by myself: 
 https://www.youtube.com/watch?v=pm2L0TxofQU. Ok, that is ACTUALLY all for today. Thank you, and Goodbye. (I just didn't want to sleep in a sour mood, I wanted to sleep 
 convincing myself I did SOMETHING)
+
+----------------------------------
+DAY 25
+Alright, so, I told myself I was going to abandon tring to do the higher-half kernel stuff, but for some reason, I was physically unable to forget about it. I just felt
+the need to do it, so I spent today trying to figure it out. And it turns out, I believe my prediction from yesterday was right. The issues were arising due to global
+variables being funky, and two linkers sharing the same compiled libraries (stdio.c), which was causing issues with the global variables within the compiled libraries. Of
+course, it is fine if two linkers both share something like stdint, because that library has no global variables, only macros. This was the key. I figured out that I could
+make use of libraries like the PMM and VMM in both linkers, with one compiled version, as long as I align the global variables in both versions to be the same, (or at least
+align the higher kernel to have the same global variable data when it jumped to the higher kernel). So, I created a file called "global_addresses.h" that has a bunch of
+macros, which I can edit in the prekernel whenever I modify a global variable, and then, as soon as I enter the higher kernel C file (after setting up the stack and 
+clearing out the BSS and whatnot), then I can simply set the global variables to be whatever they were assigned. I am, like, PRETTY sure this works. I tested it out
+and it did seem to correctly update the macro in global_address, and then the kernel.c (or higher half kernel) did correctly manage to grab the stuff from global_address
+and put it into its global variables, so I am pretty sure it works, and that the higher half kernel is stable.. I hope.
+Of course, during this process I've realized a few things that I kind of want to implement in the future, just not for this project right now. One of those things is a
+file manage system, like the FAT32. I won't make a file management system on my own, since I believe OSDev considers that a "master-level difficulty" thing to do, so I'll
+just implement the FAT32 file system and use that. But, I won't do it just right now for this project. I will likely do it in the future after I have "finished", (finished
+as in I've done what I wanted to do, which was make a monolithic kernel that goes to user mode and allows the user to do certain processes/use certain programs via
+system calls and whatnot). Which, after that, I will come back and optimize the code, (there is a HUGE unoptimization happening with my pmm initialization, apparently. This
+unoptimization wasn't happening when I had the kernel as one, for some reason.. I can't figure out why it's happening now, but oh well), along with doing stuff that I was
+too scared to do, like making the C standard library, implementing FAT32, and MAAYYBBEEE getting into networking, creating a GUI, and MAAYYBEEE switching to 64-bit UEFI
+stuff. But that is a big maybe. I do think I am approaching the end-goal of my project, as I believe the next step might honestly be entering user-mode now that I have
+a functioning GDT, IDT, and memory manager. I might also dip my toes in scheduling, and then back out if the water is too cold (if I find it too hard to implement, or 
+something). 
