@@ -67,7 +67,6 @@ void main() {
         vid[0] = 'X';
         vid[1] = 0x0F;
 
-        /*
         while(true) {
                 char* command = readline();
                 if(strcmp((const char*)command, "printmem") == 0) {
@@ -76,11 +75,4 @@ void main() {
                         kprintf("\r\n");
                 }
         }
-        */
-
-        //uint32_t check = (uint32_t *)0xC0000000;
-        //kprintf("First word printed at 0xC0000000 = 0x%x\n", check);
-
-
-        ((void (*)(void))0xC0000000)(); // jump to higher kernel 
 }
