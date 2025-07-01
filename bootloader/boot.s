@@ -7,24 +7,6 @@ KERNEL_START_ADDR equ 0x100000
 start:
     JMP main
 
-loadHKernelToMem:
-    MOV DH, 0x0
-    MOV DL, 0x80
-    MOV CL, 0x18        ; lower kernel is 20 sectors, so we start at sector 24
-    MOV CH, 0x0
-    MOV AX, 0x2000      ; Load higher kernel temporarily at 0x20000
-    MOV ES, AX
-    MOV BX, 0x0000
-    MOV AH, 0x02
-    MOV AL, 21
-    MOV DI, 3
-
-.retry:
-    STC
-    INT 0x13
-    JC DISK_READ_ERROR
-    RET
-
 ; For the CPU to process data from disk, (which is what we're doing), the data must first be transfered over to the
 ; main memory, (or RAM) by CPU-generated I/O calls, (which is again, what we're doing). But we need the I/O call to
 ; KNOW what part of the disk we want to access and store into memory, (if we put the entire disk, memory would likely
