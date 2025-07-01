@@ -9,7 +9,6 @@ LD = ld
 CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
-KERNELHIGHER_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernelH.bin ) + 511 ) / 512 )))
 
 .PHONY: all floppy_image kernel bootloader clean always run
 
@@ -32,9 +31,7 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
         @echo "BOOT2 BIN size:" && stat -c%s $(BUILD_DIR)/boot2.bin
         #Loads the kernel into sector 2
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=3 count=$(KERNEL_SECTORS) conv=notrunc
-        dd if=$(BUILD_DIR)/kernelH.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=24 count=$(KERNELHIGHER_SECTORS) conv=notrunc
         @echo $(KERNEL_SECTORS)
-        @echo $(KERNELHIGHER_SECTORS)
 
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
         $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
@@ -68,11 +65,7 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR4)/physical_memory_manager.c -o $(BUILD_DIR)/physical_memory_manager.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/util/string.c -o $(BUILD_DIR)/string.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR4)/virtual_memory_manager.c -o $(BUILD_DIR)/virtual_memory_manager.o
-        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/kernelHigher.c -o $(BUILD_DIR)/kernelHigher.o
-        $(ASM) $(SRC_DIR2)/kernelHigher.s -f elf32 -o $(BUILD_DIR)/kernelHASM.o
         $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o
-        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/kernelH.elf $(BUILD_DIR)/kernelHASM.o $(BUILD_DIR)/kernelHigher.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/string.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/virtual_memory_manager.o
-#
 #This part is SUPER necessary because I only JUST learned this recently. The --oformat binary that directly links
 # files together and puts them into binary is not actually good, as it COMPLETELY ignores the .bss sections.
 # my stack is INITIALIZED in the .bss section of the kernel.s code. Therefore, by linking with --oformat meant that
@@ -81,9 +74,7 @@ $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
         @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
         objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
         @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernel.bin
-        @echo "Higher Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernelH.elf
-        objcopy -O binary $(BUILD_DIR)/kernelH.elf $(BUILD_DIR)/kernelH.bin
-        @echo "Higher Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernelH.bin
+
 
 
 #
