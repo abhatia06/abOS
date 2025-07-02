@@ -897,3 +897,25 @@ too scared to do, like making the C standard library, implementing FAT32, and MA
 stuff. But that is a big maybe. I do think I am approaching the end-goal of my project, as I believe the next step might honestly be entering user-mode now that I have
 a functioning GDT, IDT, and memory manager. I might also dip my toes in scheduling, and then back out if the water is too cold (if I find it too hard to implement, or 
 something). 
+I have come back a few hours after posting the stuff above, and have come to decide that I need to take a step back. I am going to spend tomorrow really just testing
+stuff out, seeing how stuff works, really understanding my code, and then also studying about user mode, along with better understanding the GDT. See, as I have mentioned
+before, I have finished setting up the IDT, GDT, and a memory manager, meaning, according to OSDev at least, I am now officially ready to enter user mode for real. I have
+already studied user mode a little bit, and I understand the grave importance of syscalls, and why virtual memory is so important for stuff like scheduling, or context
+switching. And that is where the issue lies. I don't fully understand scheduling, neither do I understand how to implement system calls, nor do I understand what the 
+importance of the TSS is. I believe my lack of understanding for the TSS comes from the fact that I actually don't know all too much about the GDT or LDT, (I don't even
+have an LDT... What's the point of it??). I understand the IDT, (very simply put it's the 32-bit protected mode, or long mode, version of the IVT), but I don't truly get
+the GDT or LDT. So, I've decided. Tomorrow will be a study day where I will go back, study up on the GDT, understand user mode better, maybe even study scheduling/
+multitasking, understand context switching, and understand the TSS. I saw an OSDev forum post talking about the TSS, and they also talked about context switching there.
+I need to understand the connection between the two. So, yeah, I have a pretty decent gameplan going forward. 
+Tomorrow, study day, maybe develop a LITTLE bit.
+Day after, try get a little bit into entering user mode. If I do manage to enter user mode, great
+Friday, saturday, sunday will be off-days. I'm going to be hanging out with friends for 4th of July and whatever (maybe I'll do SOME work on Saturday)
+Then monday, I will either enter user mode, OR, if I have already managed to enter user mode, I will start implementing syscalls, (like open and exit. I dunno, haven't 
+studied syscalls enough). Tuesday, I will keep developing syscalls, then after I am satisfied, I might start writing programs the user can use. Then, I'll take a step back
+and add the FAT32 file system, so that I can (maybe) create a framework for multitasking and whatnot, (basically, having a file system can make it easier for me allow for
+page swapping, which is something some schedulers use, and I too would like to maybe make use of it). I will also finish implementing the page fault handler hopefully,
+(currently it just says "page fault exception" then stops. I want it to be perform a page swap if a fault occurs). Then, after all that, I will be "finished" with the OS,
+or at least I will have achieved what I wanted to achieve, and slow down the grind to spend the rest of the summer either making some other stuff or hanging out with
+friends. I will still continue working on the OS, and work towards making it even better, (there are some huge unoptimizations I am likely doing). And, if I feel confident
+enough, who knows, I might try to go beyond and make a GUI or something.
+That is all for today, bye.
