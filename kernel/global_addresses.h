@@ -7,3 +7,4 @@
 #define MAX_BLOCKS      0x1808
 #define USED_BLOCKS     0x1804
 #define TOTAL_MEMORY    0x180C
+#define GDT_ADDRESS     0x1810
