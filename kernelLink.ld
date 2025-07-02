@@ -1,22 +1,28 @@
-ENTRY(kernel_start)
+ENTRY(prekernel_main)
 
 SECTIONS {
-        . = 0xC0000000;
+    . = 0x50000;
 
-        .text : {
-                *(.text*)
-        }
-        .rodata ALIGN(4096) : {
-                *(.rodata)
-                *(.rodata*)
-        }
-        .data ALIGN(4096) : {
-                *(.data)
-        }
-        .bss ALIGN(4096) : {
-                bss_begin = .;
-                *(.bss)
-                *(COMMON)
-                bss_final = .;
-        }
+    .text : {
+        *(prekernel_entry);
+        *(.text)
+        *(.text*)
+    }
+
+    .rodata : {
+        *(.rodata)
+        *(.rodata*)
+    }
+
+    .data : {
+        *(.data)
+        *(.data*)
+    }
+
+    .bss : {
+        bss_begin = .;
+        *(.bss)
+        *(COMMON)
+        bss_final = .;
+    }
 }
