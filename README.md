@@ -13,3 +13,6 @@ This 32-bit OS has, as of writing this:
 3. Performs a two-stage boot process to load the kernel into its proper memory position (0x100000) from disk via CHS addressing
 4. Sets up its own Interrupt Descriptor Table, along with the various things that come with interrupt handling, like 8259 PIC 
 5. Partially implements various parts of the C standard library, like stdint and stdio, (printf).
+6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
+7. Sets up a Virtual Memory Manager & enables paging
+8. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
