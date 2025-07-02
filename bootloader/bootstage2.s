@@ -81,9 +81,9 @@ enterProtectedMode:
 
 
 TSS:
-    dd 0h
-    dd 100000h
-    dd 10h
+    dd 0h       ;previous tss
+    dd 100000h  ;esp0
+    dd 10h      ;ss0
     dd 0        ;esp1
     dd 0        ;ss1
     dd 0        ;esp2
@@ -146,6 +146,14 @@ gdt_data3:
     DB 0xF2
     DB 0b11001111
     DB 0x0
+
+tss:
+    DW TSS.end - TSS - 1        ; first 16 bits - sizeof(TSS)-1
+    DW TSS                      ; next 16 bits is the base, which is &TSS
+    DB 0h
+    DB 10001001b                ; access byte, 8 bits, 0x89 according to OSDev
+    DB 0h                       ; flags = 0
+    DB 0h
 
 ; EVENTUALLY, I will need to add two more descriptors for ring lvl 3 (user mode). The current descriptors are only for
 ; ring lvl 0 (kernel mode), as I do not have a need for that just yet. Eventually, I will, and eventually, I will addit
