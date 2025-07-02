@@ -155,9 +155,10 @@ tss:
     DB 0h                       ; flags = 0
     DB 0h
 
-; EVENTUALLY, I will need to add two more descriptors for ring lvl 3 (user mode). The current descriptors are only for
-; ring lvl 0 (kernel mode), as I do not have a need for that just yet. Eventually, I will, and eventually, I will addit
-; but for now. Nuh uh!
+; We want to divide the limit and base to be like low bytes, medium bytes, high bytes, but that isn't possible
+; because the NASM assembler doesn't allow us to use bit-wise shifts (>>) or bit-wise anding or oring (& |). So,
+; we have to put the tss stuff to 0 for right now, and then we can change it later in like a C file. But to do that, we need to save
+; the address of the GDT, then use offset 0x28 to access the TSS and its stuff, then change it later.
 
 gdt_end:
 
@@ -177,4 +178,7 @@ PModeMain:
     MOV GS, AX
     MOV SS, AX
 
+    MOV EAX, GDT_START
+    MOV [0x1810], EAX   ; check global_addresses.h 
+    
     JMP 0x08: 0x8000 
