@@ -59,6 +59,7 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         *(uint32_t*)USED_BLOCKS = used_blocks;
         *(uint32_t*)MAX_BLOCKS = max_blocks;
         // Reload CR3 register to flush TLB to update unmapped pages (literally move it to ECX, then back to CR3)
+        // Admittedly, this is useless for right now because I don't unmap any pages lol, but whatever
         __asm__ __volatile__ ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
 
         printS("Pre-kernel setup done! Getting ready to jump to virtual address 0xC0000000\n");
