@@ -8,3 +8,4 @@
 #define USED_BLOCKS     0x1804
 #define TOTAL_MEMORY    0x180C
 #define GDT_ADDRESS     0x1810
+#define USER_STACK      0xBFFFF000
