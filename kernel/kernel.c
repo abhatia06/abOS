@@ -77,7 +77,13 @@ void main() {
         //vid[1] = 0x0F;
 
         map_page((void*)0x700000, (void*)0xBFFFF000); // for user stack. Picked an arbitrary position (7MB) and an arbitrary virtual address for testing purposes
-        
+
+        // Code to enter user mode. Again, the current stuff is just for testing and seeing if it actually works. Eventually, I will create their own stuff for it. 
+        // The current code actually causes a page fault error, at 0xC0000228, with error code 0x5. This is actually a GOOD thing, because based on this OSDev wiki
+        // page that lets us translate page fault error codes: https://wiki.osdev.org/Exceptions#Page_Fault. This tells us that the error code (binary 101), that
+        // the error IS in fact coming from user mode! That means we are successfully entering user mode without any issues, (no TSS issue, no user stack issue), 
+        // and that the issue is really just user privilege error (or at least, I think it is. The OSDev wiki says that it doesn't GUARANTEE a user privilege error,
+        // but I feel as though it is 99% likely to be a user privilege error).
         __asm__ volatile("cli\n"
                 "mov $0x23, %%eax\n"
                 "mov %%ax, %%ds\n"
