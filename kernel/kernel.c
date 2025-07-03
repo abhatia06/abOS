@@ -1,4 +1,4 @@
-#include "stdint.h"
+        #include "stdint.h"
 #include "stdio.h"
 #include "interrupts/idt.h"
 #include "interrupts/pic.h"
@@ -76,6 +76,28 @@ void main() {
         //vid[0] = 'X';
         //vid[1] = 0x0F;
 
+        map_page((void*)0x700000, (void*)0xBFFFF000); // for user stack. Picked an arbitrary position (7MB) and an arbitrary virtual address for testing purposes
+        
+        __asm__ volatile("cli\n"
+                "mov $0x23, %%eax\n"
+                "mov %%ax, %%ds\n"
+                "mov %%ax, %%es\n"
+                "mov %%ax, %%fs\n"
+                "mov %%ax, %%gs\n"
+
+                "pushl $0x23\n"
+                "pushl %[stack]\n"
+                "pushf\n"
+                "pop %%eax\n"
+                "or $0x200, %%eax\n"
+                "push %%eax\n"
+                "pushl $0x1B\n"
+                "pushl %[entry]\n"
+                "iret\n"
+                :
+                : [stack] "r"(USER_STACK), [entry] "r"(user_mode_entry_point)
+                : "eax"
+        );
 
         while(true) {
                 char* command = readline();
