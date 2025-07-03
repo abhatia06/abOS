@@ -8,7 +8,7 @@
 #include "memory/virtual_memory_manager.h"
 #include "global_addresses.h"
 
-extern void* recovery_point;
+void user_mode_entry_point();
 
 /*
 void memorysetup() {
@@ -116,4 +116,11 @@ void main() {
         //clrscr();
         //kprintf("reaching here");
         //((void (*)(void))0xC0000000)();
+}
+
+// will rename this to shell eventually. Because it all started in the shell
+void user_mode_entry_point() {
+        while(1) {
+                __asm__ volatile("hlt");
+        }
 }
