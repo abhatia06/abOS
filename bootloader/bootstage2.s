@@ -81,9 +81,9 @@ enterProtectedMode:
 
 
 TSS:
-    dd 0h       ;previous tss
-    dd 100000h  ;esp0
-    dd 10h      ;ss0
+    dd 0x0       ;previous tss
+    dd 0xC0003808  ;esp0
+    dd 0x10      ;ss0
     dd 0        ;esp1
     dd 0        ;ss1
     dd 0        ;esp2
@@ -147,13 +147,14 @@ gdt_data3:
     DB 0b11001111
     DB 0x0
 
+; I don't know why this TSS works, but it does. I still need to study more of this to understand why it works
 tss:
     DW TSS.end - TSS - 1        ; first 16 bits - sizeof(TSS)-1
     DW TSS                      ; next 16 bits is the base, which is &TSS
-    DB 0h
-    DB 10001001b                ; access byte, 8 bits, 0x89 according to OSDev
-    DB 0h                       ; flags = 0
-    DB 0h
+    DB 0x0
+    DB 0x89                     ; access byte, 8 bits, 0x89 according to OSDev
+    DB 0x0                      ; flags = 0
+    DB 0x0
 
 ; We want to divide the limit and base to be like low bytes, medium bytes, high bytes, but that isn't possible
 ; because the NASM assembler doesn't allow us to use bit-wise shifts (>>) or bit-wise anding or oring (& |). So,
