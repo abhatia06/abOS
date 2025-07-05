@@ -5,9 +5,11 @@
 #include "global_addresses.h"
 #include "printlite.h"
 
+
 __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         // For some reason, the prekernel setup is INCREDIBLY slow. I don't know why, I am guessing it's due to the SMAP stuff?
 
+        asm volatile ("ltr %0" :: "r"(0x28));
         printS("Successfully entered Protected Mode!\n");
         printS("Successfully entered Lower-Memory Kernel!\n");
         printS("Initializing Physical Memory Manager...\n");
@@ -37,10 +39,10 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         //*(uint32_t*)MAX_BLOCKS = max_blocks;
 
         deinit_memory_region(0x100000, 81920);  // Deinitialize some of the physical memory at 1MB, because that is for kernel
-        deinit_memory_region(0x7EE0000, 20480); // Same with 0x7EE0000, but that is where the memory map lives
+        deinit_memory_region(0x30000, 20480);   // Same with 0x7EE0000, but that is where the memory map lives
 
         printS("Initialized Physical Memory Manager!\n");
-        *(uint32_t *)CURRENT_PAGE_DIR_ADDRESS = (uint32_t)directory;    // Save the current directory we're in
+        //*(uint32_t *)CURRENT_PAGE_DIR_ADDRESS = (uint32_t)directory;
 
         printS("Initializing Virtual Memory Manager & Enabling Paging...\n");
         initialize_vmm();       // Initialize VMM
@@ -59,11 +61,14 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         *(uint32_t*)USED_BLOCKS = used_blocks;
         *(uint32_t*)MAX_BLOCKS = max_blocks;
         // Reload CR3 register to flush TLB to update unmapped pages (literally move it to ECX, then back to CR3)
-        // Admittedly, this is useless for right now because I don't unmap any pages lol, but whatever
         __asm__ __volatile__ ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
 
+        *(uint32_t *)CURRENT_PAGE_DIR_ADDRESS = (uint32_t)directory;
+        //*(uint32_t *)CURRENT_PD_ADD = (uint32_t)current_pd_address;   // already a uint32_t, but whatever
         printS("Pre-kernel setup done! Getting ready to jump to virtual address 0xC0000000\n");
         clear();
+        map_page((void*)0x200000, (void*)0xBFFFF000);
+        map_page((void*)0x500000, (void*)0x500000);
         // Jump to 0xC0000000 (which is mapped to 0x100000). (void (*)(void)) is a function pointer cast (void ret type & void args)
         ((void (*)(void))0xC0000000)();
 
