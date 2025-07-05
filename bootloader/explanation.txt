@@ -919,3 +919,36 @@ or at least I will have achieved what I wanted to achieve, and slow down the gri
 friends. I will still continue working on the OS, and work towards making it even better, (there are some huge unoptimizations I am likely doing). And, if I feel confident
 enough, who knows, I might try to go beyond and make a GUI or something.
 That is all for today, bye.
+
+----------------------------------
+DAY 26
+Hello, I am writing this actually on DAY 28, (or Saturday) because I forgot to do it the day of. 
+Anyway, I didn't do a whole lot of work, really, I just studied a little bit and found the exact root of the issue that was not allowing me to enter user mode properly.
+The reason why the page fault occuring was, of course, due to the the fact that:
+1. The pages I was mapping to did NOT have the user_present bit in the PTE set to 1, so, when in user mode, I had no privilege to actually access the pages at the
+specified virtual addresses and 
+2. Though the pages were set to "present", there wasn't actually anything there, so that's an issue too.
+But the previous 2 aren't even real issues, the real issue was the following:
+3. Another linker issue with global variables! Wooho!
+See, I forgot about what I typed in day 25, so I might've said this, but, I actually did a little bit more testing and found out there is a critical issue occuring with
+my VMM in the higher half kernel. Whenever I mapped more than one page, (ex: map_page(0x500000, 0x500000) and then in the next line, map_page(0x600000, 0x600000)), then
+everything would fall apart. My IDT sometimes wouldn't even load, some exception handlers would fail, (like the keyboard interrupt handler), among other things. I have
+since figured out the issue is most definitely with global variables, and I have been re-writing my VMM and PMM ever so slowly to make use of less and less global 
+variables, so that I don't have to shove all of these into the global_addresses.h and then move them all over. I know the issue is with the linker global variable stuff
+because I moved the mapping of pages to the pre-kernel, and it worked just fine--no issues at all were present. The  only issue that happened next were the issues I
+specified in the first two parts, which can be fixed via simply
+1. Making a file loader, (or sticking to the CHS addressing stuff, which is very tedious)
+2. Set the pages to be ser present
+And then boom! I'll be operating in user mode. After that, I simply need to make a bunch of syscalls, the two most important of which being sysexit and sysenter, (I think
+that's what they're called), which basically just allow for the entering and exiting of the kernel mode/user mode. After that, it's as simple as making a bunch of other
+systemcalls for various other programs/commands (like a sysprint, maybe, that calls like my kprintf based on what the user typed... Which should be pretty easy, as I 
+already have my keyboard handler to put the stuff typed into an input buffer. All I have to do is to make it possible for the user mode to also have access to these
+interrupts, and voila! It works! I'll have a print command, I guess). But yeah, that's the game plan. I may or may not make a file system, BUT, I might be forced to 
+if I really wanna call my kernel a monolithic kernel. A monolithic kernel is one that has:
+1. IDT stuff
+2. Memory management stuff
+3. File system stuff
+4. System calls stuff
+5. scheduler/dispatcher stuff (I haven't studied these all too well. I still need to read about them)
+So yeah, that's the plan. On day 27 I actually didn't do anything, as it was July 4, and I decided to celebrate it with my friends. And now it's Saturday, so I may or
+may not do stuff. Dunno, I'll see. That's all for today, goodbye
