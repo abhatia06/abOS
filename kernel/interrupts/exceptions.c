@@ -30,7 +30,7 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                 if(key == ENTER) {
                         // we do nothing for now, but eventually, we'll want to save whatever the user types
                         // idk how to do that just yet, but we'll probably need to use a global buffer of some
-                        // sort
+                        // sort        this is me from the future. We did figure it out. This if statement is utterly useless now
                 }
                 if(key) {
 
