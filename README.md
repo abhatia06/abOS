@@ -16,3 +16,4 @@ This 32-bit OS has, as of writing this:
 6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
 7. Sets up a Virtual Memory Manager & enables paging
 8. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
+9. Attemps to enter user mode 
