@@ -9,3 +9,4 @@
 #define TOTAL_MEMORY    0x180C
 #define GDT_ADDRESS     0x1810
 #define USER_STACK      0xBFFFF000
+#define CURRENT_PD_ADD  0x1900
