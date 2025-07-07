@@ -1,4 +1,4 @@
-        #include "stdint.h"
+#include "stdint.h"
 #include "stdio.h"
 #include "interrupts/idt.h"
 #include "interrupts/pic.h"
@@ -7,8 +7,7 @@
 #include "util/string.h"
 #include "memory/virtual_memory_manager.h"
 #include "global_addresses.h"
-
-void user_mode_entry_point();
+#include "interrupts/syscalls.h"
 
 /*
 void memorysetup() {
@@ -27,11 +26,17 @@ void memorysetup() {
 }
 */
 
+void user_mode_entry_point();
+
 void main() {
-        directory = (pdirectory*)*(uint32_t *)CURRENT_PAGE_DIR_ADDRESS;
+        directory = (pdirectory*)*(uint32_t*)CURRENT_PAGE_DIR_ADDRESS;
+        //current_pd_address = *(uint32_t*)CURRENT_PD_ADD;
         memory_map = (uint32_t *)MEMMAP_AREA;
         max_blocks = *(uint32_t *)MAX_BLOCKS;
         used_blocks = *(uint32_t *)USED_BLOCKS;
+
+        kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
+
         pic_disable();
         //memorysetup();
 
@@ -41,12 +46,15 @@ void main() {
         //initialize_vmm();
 
         initIDT();
-        idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);
+
+        // TODO: swap out magic hexadecimal numbers (0x8E and 0xEE) for actual macros that define what the flags are
+        idt_set_descriptor(0, (uint32_t)div_by_0_handler, 0x8E);        // present, DPL 0, 32-bit interrupt gate
         PIC_remap(0x20);
 
         idt_set_descriptor(0x20, (uint32_t)PIT_handler, 0x8E);
         idt_set_descriptor(0x21, (uint32_t)keyboard_handler, 0x8E);
         idt_set_descriptor(0x0E, (uint32_t)page_fault_handler, 0x8E);
+        idt_set_descriptor(0x80, (uint32_t)syscall_handler, 0xEE);      // present, DPL 3, 32-bit interrupt gate
 
         IRQ_clear_mask(0); // Enable keyboard interrupts
         IRQ_clear_mask(1); // Enable timer (PIT)
@@ -65,7 +73,9 @@ void main() {
         char* name = readline();
         kprintf("Hello, %s!\r\n", name);
 
-        //map_page((void*)0xB8000, (void*)0xC00B8000);
+
+        //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
+        //kprintf("boolean: %d\n", tester2);
         //volatile char* vid = (volatile char*)0xC00B8000;      // 0xB8000 should map to 0xC00B8000 now, so writing at
                                                                 // 0xC00B00 should write to 0xB8000 instead. Inside the
                                                                 // page table, (I believe it is entry 184, PD 768),
@@ -76,34 +86,46 @@ void main() {
         //vid[0] = 'X';
         //vid[1] = 0x0F;
 
-        map_page((void*)0x700000, (void*)0xBFFFF000); // for user stack. Picked an arbitrary position (7MB) and an arbitrary virtual address for testing purposes
+        //name = readline();
+        //bool tester1 = map_page((void*)0xB000000, (void*)0x300000);
+        //kprintf("boolean: %d\n", tester1);
+        //name = readline();
 
-        // Code to enter user mode. Again, the current stuff is just for testing and seeing if it actually works. Eventually, I will create their own stuff for it. 
-        // The current code actually causes a page fault error, at 0xC0000228, with error code 0x5. This is actually a GOOD thing, because based on this OSDev wiki
-        // page that lets us translate page fault error codes: https://wiki.osdev.org/Exceptions#Page_Fault. This tells us that the error code (binary 101), that
-        // the error IS in fact coming from user mode! That means we are successfully entering user mode without any issues, (no TSS issue, no user stack issue), 
-        // and that the issue is really just user privilege error (or at least, I think it is. The OSDev wiki says that it doesn't GUARANTEE a user privilege error,
-        // but I feel as though it is 99% likely to be a user privilege error).
+        //bool tester3 = map_page((void*)0x800000, (void*)0x800000);
+        //name = readline();
+
+        //pt_entry* stack_page = get_page((virtual_address)0xBFFFEFFC);
+        //SET_ATTRIBUTE(stack_page, PTE_PRESENT);
+        //SET_ATTRIBUTE(stack_page, PTE_USER);
+        //SET_ATTRIBUTE(stack_page, PTE_WRITABLE);
+
+        for(uint32_t i = 0; i < 4; i++) {
+                uint32_t va = USER_STACK - i * 0x1000;
+                map_page((void*)0x600000 - i * 0x1000, (void*)va);
+        }
+        //map_page((void*)0x600000, (void*)0xBFFFEFFC);
+
         __asm__ volatile("cli\n"
-                "mov $0x23, %%eax\n"
-                "mov %%ax, %%ds\n"
-                "mov %%ax, %%es\n"
-                "mov %%ax, %%fs\n"
-                "mov %%ax, %%gs\n"
+                        "mov $0x23, %%eax\n"
+                        "mov %%ax, %%ds\n"
+                        "mov %%ax, %%es\n"
+                        "mov %%ax, %%fs\n"
+                        "mov %%ax, %%gs\n"
 
-                "pushl $0x23\n"
-                "pushl %[stack]\n"
-                "pushf\n"
-                "pop %%eax\n"
-                "or $0x200, %%eax\n"
-                "push %%eax\n"
-                "pushl $0x1B\n"
-                "pushl %[entry]\n"
-                "iret\n"
-                :
-                : [stack] "r"(USER_STACK), [entry] "r"(user_mode_entry_point)
-                : "eax"
-        );
+                        "pushl $0x23\n"
+                        "pushl %[stack]\n"
+                        "pushf\n"
+                        "pop %%eax\n"
+                        "or $0x200, %%eax\n"
+                        "push %%eax\n"
+                        "pushl $0x1B\n"
+                        "pushl %[entry]\n"
+                        "iret\n"
+                        :
+                        : [stack] "r"(USER_STACK), [entry] "r"(user_mode_entry_point)
+                        : "eax"
+                );
+
 
         while(true) {
                 char* command = readline();
@@ -124,9 +146,24 @@ void main() {
         //((void (*)(void))0xC0000000)();
 }
 
-// will rename this to shell eventually. Because it all started in the shell
+
+/*
+ * A few error codes that can appear from interrupt 13 (general protection fault):
+ * bit 0: segment error (privilege, type, limit, read/write rights)
+ * bit 1: executing a privileged instruction outside of CPL 0 (or outside of ring 0)
+ * bit 2: writing a 1 in a reserved register field or writing invalid value combinations (e.g. CR0 with PE=0 and PG=1).
+ * bit 3: referencing or accessing null descriptor
+ * bit 4: accessing a memory address with bits 48-63 not matching bit 47, (I don't really get this one lol)
+ * bit 5: executing instruction that requires memory operands to be aligned (like movaps) without proper alignment
+ * realistically, the only ones I will be seeing (for now, I hope) are error codes 0x0, and 0x2.
+ */
 void user_mode_entry_point() {
+
+        __asm__ volatile("movl $0, %%eax" : : : "eax");        // according to OSDev, most OS's read which syscall to use from the EAX register. We shall do the same
+        __asm__ volatile("int $0x80");        // we set the interrupt to be 0x80
+
+        __asm__ volatile("cli");        // this is a privilege protected instruction. Using "cli" in user mode SHOULD cause a general protection exception (interrupt 13)
         while(1) {
-                __asm__ volatile("hlt");
+
         }
 }
