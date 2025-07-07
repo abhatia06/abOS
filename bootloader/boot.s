@@ -7,6 +7,24 @@ KERNEL_START_ADDR equ 0x100000
 start:
     JMP main
 
+loadPrekernel:
+    MOV DH, 0x0
+    MOV DL, 0x80
+    MOV CL, 0x1A 
+    MOV CH, 0x0
+    MOV AX, 0x2000
+    MOV ES, AX
+    MOV BX, 0x0000
+    MOV AH, 0x02
+    MOV AL, 10
+    MOV DI, 3
+
+.retry:
+    STC
+    INT 0x13
+    JC DISK_READ_ERROR
+    RET
+
 ; For the CPU to process data from disk, (which is what we're doing), the data must first be transfered over to the
 ; main memory, (or RAM) by CPU-generated I/O calls, (which is again, what we're doing). But we need the I/O call to
 ; KNOW what part of the disk we want to access and store into memory, (if we put the entire disk, memory would likely
@@ -21,7 +39,7 @@ loadKernelToMem:
     MOV ES, AX
     MOV BX, 0x0000
     MOV AH, 0x02
-    MOV AL, 20
+    MOV AL, 22
     MOV DI, 3
 
 .retry:
@@ -67,12 +85,10 @@ puts:
 
 main:
     CLI
-
-    MOV SI, message_test
-    CALL puts
     MOV AX, 0x0         ; We put 0x0 into AX because we cant directly put values into the segment registers
     MOV SS, AX          ; SS:SP is a segment for the stack segment. We are trying to basically initialize our stack
     MOV SP, 0x7C00      ; We initialize our stack at 0x7C00
+
     STI
 
     ; The code below follows the CHS reading format
@@ -91,13 +107,15 @@ main:
 .mainretry:
     STC
     INT 0x13            ; The final piece of the puzzle. Interrupt 0x13 is for the BIOS Disk Service
+    MOV SI, message_test
+    CALL puts
     JC DISK_READ_ERROR  ; BIOS sets the carry flag if the call failed. JC jumps if carry flag is set.
     MOV AH, 0x0
     MOV AL, 0x3
     INT 0x10
 
     CALL loadKernelToMem
-    CALL loadHKernelToMem
+    CALL loadPrekernel
     CALL load2ndstage
     CALL enable_a20_fast
     JMP 0x0000:0x7E00
