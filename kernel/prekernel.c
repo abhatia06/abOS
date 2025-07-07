@@ -38,11 +38,14 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         //*(uint32_t*)USED_BLOCKS = used_blocks;
         //*(uint32_t*)MAX_BLOCKS = max_blocks;
 
+        // These were part of the issue I was having. Apparently, since we weren't de-initializing the regions that house our OS stuff among other things, it was 
+        // causing issues? I don't fully know WHY it was causing issues, since, y'know, the PMM and the VMM don't actually load anything onto the addresses that are
+        // "mapped" or "allocated", (we still haven't made a malloc yet), but alright, I guess. I need to do more research to figure out why this was an issue.
+        deinit_memory_region(0x0, 0x12000);
+        deinit_memory_region(MEMMAP_AREA, max_blocks/BLOCK_SIZE);
         deinit_memory_region(0x100000, 81920);  // Deinitialize some of the physical memory at 1MB, because that is for kernel
-        deinit_memory_region(0x30000, 20480);   // Same with 0x7EE0000, but that is where the memory map lives
 
         printS("Initialized Physical Memory Manager!\n");
-        //*(uint32_t *)CURRENT_PAGE_DIR_ADDRESS = (uint32_t)directory;
 
         printS("Initializing Virtual Memory Manager & Enabling Paging...\n");
         initialize_vmm();       // Initialize VMM
@@ -50,12 +53,10 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         printS("Initialized Virtual Memory Manager!\n");
         printS("Enabled Paging!\n");
 
-        /*
+        // managed to get this to work
         for(uint32_t virt = 0x100000; virt < 0x400000; virt += PAGE_SIZE) {
-                free_page((void *)virt);
+                unmap_page((void *)virt);
         }
-        */      // I wanted to unmap the kernel from the virtual address, but it didn't work, sooo.. Whatever, who cares, not a big issue rn
-
 
         *(uint32_t*)TOTAL_MEMORY = total_memory;
         *(uint32_t*)USED_BLOCKS = used_blocks;
@@ -66,9 +67,10 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         *(uint32_t *)CURRENT_PAGE_DIR_ADDRESS = (uint32_t)directory;
         //*(uint32_t *)CURRENT_PD_ADD = (uint32_t)current_pd_address;   // already a uint32_t, but whatever
         printS("Pre-kernel setup done! Getting ready to jump to virtual address 0xC0000000\n");
+
+        //map_page((void*)0x200000, (void*)0xBFFFF000);
+        //map_page((void*)0x500000, (void*)0x500000);        //these are for testing. Will remove eventually
         clear();
-        map_page((void*)0x200000, (void*)0xBFFFF000);
-        map_page((void*)0x500000, (void*)0x500000);
         // Jump to 0xC0000000 (which is mapped to 0x100000). (void (*)(void)) is a function pointer cast (void ret type & void args)
         ((void (*)(void))0xC0000000)();
 
