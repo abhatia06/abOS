@@ -12,7 +12,7 @@
         "mov %%eax, %%cr0"          \
         ::: "eax")
 
-pdirectory* directory = 0;
+pdirectory* directory = 0;	// also managed to get rid of the other two global variables, because I realized they were actually kinda useless lol
 
 bool alloc_page(pt_entry* e) {
         void* p = (void*)allocate_blocks(1);
