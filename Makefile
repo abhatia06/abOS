@@ -15,8 +15,12 @@ PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel
 floppy_image: $(BUILD_DIR)/main_floppy.img
 
 #
-# disk image
+#Floppy Image
 #
+
+#NOTE: The prekernel sectors thing was actually the 2nd issue, and it was the issue causing our IDT and whatnot to explode. Basically, our kernel was 21 sectors,
+# being loaded into sector 3. We were loading prekernel into sector 23, overriding the last 512 bytes, which is where our .bss section is, causing some things to break.
+# very simple fix, though. We are going to have to be wary in the future.
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
         @echo "drive size:" && stat -c%s $(BUILD_DIR)/os-image.img
@@ -31,7 +35,7 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
         @echo "BOOT2 BIN size:" && stat -c%s $(BUILD_DIR)/boot2.bin
         #Loads the kernel into sector 3 (and prekernel sector 23)
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=3 count=$(KERNEL_SECTORS) conv=notrunc
-        dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=23 count=$(PREKERNEL_SECTORS) conv=notrunc
+        dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=25 count=$(PREKERNEL_SECTORS) conv=notrunc
         @echo $(KERNEL_SECTORS)
         @echo $(PREKERNEL_SECTORS)
 
@@ -69,7 +73,8 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR4)/virtual_memory_manager.c -o $(BUILD_DIR)/virtual_memory_manager.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/prekernel.c -o $(BUILD_DIR)/prekernel.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/printlite.c -o $(BUILD_DIR)/printlite.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o
         $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/printlite.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o
 
 #
