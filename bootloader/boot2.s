@@ -1,3 +1,5 @@
+; TODO: This file is kind of useless. I can delete this and honestly just move it to bootstage2.s to save more space (barely any space, but more space nontheless)
+
 BITS 32
 ORG 0x8000
 
