@@ -952,3 +952,69 @@ if I really wanna call my kernel a monolithic kernel. A monolithic kernel is one
 5. scheduler/dispatcher stuff (I haven't studied these all too well. I still need to read about them)
 So yeah, that's the plan. On day 27 I actually didn't do anything, as it was July 4, and I decided to celebrate it with my friends. And now it's Saturday, so I may or
 may not do stuff. Dunno, I'll see. That's all for today, goodbye
+
+----------------------------------
+DAY 30
+Hello, 
+I am again  writing this late (DAY 31), but, we have officially reached day 30! Soon enough I have been technically working on this project for over a month now! Awesome!
+The end is in sight, though. I managed to fix the issues that I talked about on DAY 26, that being the IDT breakking apart, and the fact that I could not map multiple 
+pages. I actually found the root cause of both the issues, for the IDT breaking apart, it wasn't actually a global variable issue, which I came to realization after I
+started playing around more and more with the higher half kernel, and noticed only certain keys working. Also, when I say "my IDT broke apart", that's wrong. What was
+actually breaking was just my keyboard handler, but, my keyboard handler was breaking due to memory issues. See, what was happening was a sector issue and reading files
+into memory issue. I load in the higher half kernel at sector 3, (or 4, I forget), and then I load in the prekernel AFTER the higher half kernel. The higher half kernel
+is 21 sectors large, so it was taking up sectors 3-24, (including sector 24). I was then loading my prekernel INTO sector 24, therefore overriding the last 512 bytes, or
+1 sector, of information in the higher half kernel. This overriding was then effecting the .bss section, because the .bss section is the last part of the bin file. So,
+the fix was simple. Just move things over, make sure I copy the right amount of sectors, and boom! My keyboard handler was working again. Quite a simple fix, and honestly,
+I have had so many issues related to memory in this project, that it is becoming easier and easier to spot and understand how to fix these memory issues (thank goodness).
+But, yeah, the keyboard handler breaking stuff was not a global variable issue. But, I did decide to re-write my VMM anyway just for niceness sakes. Anyway, the second
+issue was my map_page function causing a triple fault if I used two or more calls to it. This is not entirely right. With more testing I figured out that it was having
+an issue if I every subsequent map_page call did not follow the rules of the previous map_page call. What does this mean? Let me give you a very specific example, that
+just so happened to actually be my issue. Say I map a page with frame address <8MB. Then, every subsequent call must also map a page with frame address <8MB. (0-8MB). 
+I could also have first mapped a page with frame address between 8-12MB, or 12-16MB, etc., but then every subsequent call must've also mapped a frame address between those
+4MB intervals. "But wait," I hear you say, "4MB sounds awfully familiar". Indeed it is, that just so happens to be how large our page table virtual addresses are, as they
+are big size 1024 arrays with 4KB pages in each entry, therefore making them 4MB. So, my first idea was "Oh, we're getting stuck in a page table for whatever reason".
+This turned out to be... Not true? Somehow? The issue was actually, for some reason, the fact that I was not de-initializing the first 12KB of physical memory, (we store
+some important information in those first 12KB), and that I was also not deinitializing the memory map region. Which.. Ok, that's fair, but then it's odd that my lack
+of de-initializing was causing this issue. After all, the PMM and VMM don't actually put anything into memory, I don't have a malloc or file system just yet. So, what's
+happening? I don't know. I think the 4-day break I took kind of messed up my brain a little bit, so I have to get back into the groove of things, but it is odd as to why
+this issue was occuring. Also, I don't even know for a fact if I fixed the issue, I just THINK I fixed the issue, because all my tests seemed to work. Soo... Whatever.
+Anyway, onto the next thing, and that was entering user mode. We OFFICIALLY managed to enter user mode on day 30, and it was relatively simple. I had already set up my
+TSS, (which, again, I don't know why my TSS works, I just know it does for whatever reason. Still need to study up on why it worked, when it clearly doesn't follow the
+expected rules for the limit, base, and whatever the TSS should have). All I had to do was to create a dummy function in my higher kernel, which will temporarily act
+as the user_mode region, and then I also had to create a custom stack for the user mode. To do that, I just needed to set the PTE_USER and PDE_USER bits to be 1 for the
+higher kernel region (0xC0000000), because that is also where our dummy user mode function is. And furthermore, I needed to map like 2-3 pages for the user stack, which
+I randomly picked to be like virtual address 0xBFFFF000, (I also had to set the user bit to be 1 here too). And then, we just needed the inline assembly function to do its
+magic that switches to user mode, (Again, have to read up on this), and then boom! We're in user mode. And we can verify by using a privileged instruction, like 
+__asm__ volatile("cli");, and we can see that sweet sweet general protection fault with error code 0x0, which will tell us "hey! We're running a ring 0 privileged command 
+from ring 3! Not allowed!". Now, we can start implementing system calls, and I slowly did. See, system calls are actually quite easy to implement. All we do is we create
+a separate function that is going to be the MAIN SYSTEM CALL HANDLER, and we set it to be tied to vector 0x80. Why vector 0x80? I dunno, I saw other people use it, so I
+used it too. Then, that system call handler will read whatever integer is in the EAX register, and compare it to a big array that we have that houses each function call.
+So, for example, say that we have syscall0 and syscall1 as functions inside a void* syscalls[2] array. Then, the syscall handler will read whatever the user put into
+EAX before calling INT 0x80, see if it is 0 or 1, then call syscall0 if it's 0 or syscall1 if it's 1, or just nothing if it's >= the length of the array. So, that's
+that. Then, all we do in the higher half kernel is just set the descriptor for vector 0x80 to point to the syscallhandler, and assign the flags 0xEE, which just tells
+the CPU that the interrupt handler is: present, for DPL 3 (ring 3), and is a 32-bit interrupt gate. And that's it. We can do a 32-bit trap gate for it too, but, no..
+I don't think it's a good idea to have a syscall handler be a trap gate. And, yeah, that's pretty much all we did. I should probably explain system calls now that 
+we've gotten to them. System calls are incredibly important because, well, as I just explained, the user in user mode can't really do any privileged instructions, like
+cli, hlt, or whatever. This is an issue, because what if the user wants to run a program? Well, we can't really give user access to the physical memory, that'll defeat
+the entire purpose of privilege, as privilege really only exists for security and for protection of the physical memory. So, we use system calls. System calls is basically
+the way for the user and kernel to communicate with each other without giving the user access to the privilege that the kernel has. Say the user wants to load a program,
+instead of giving user access to the memory, the user instead executes a system call (again, INT 0x80 with a specific value in the EAX register). But, it's not usually
+just one system call. See, the CPU first has to switch from ring 3 to ring 0, and it does that THROUGH the segment selector (which is also defined in the descriptor
+for the IDT entry). See, as I explained earlier in some other day (I hope I did, at least), each IDT entry has a relatively complex descriptor, similar to the GDT, that
+requires a couple things. Most generally, you have the offset, segment selector, a few reserved bits, the flags, and the higher offset for 32-bit. The segment selector
+is what tells the CPU to perform a switch from ring 3 to ring 0 or not. If the segment selector for the IDT entry is pointing to the ring 0 code segment, (which will be
+0x08 in the GDT), then the CPU will perform a switch from ring 3 to ring 0 in order to execute that syscall. Basically, the general structure is, imagine a big wall
+exists between ring 3 and ring 0. In that wall exists a booth that allows for things to travel between each side. Ring 3 wants to talk to Ring 0, so it executes a syscall
+through int 0x80. The booth checks the interrupt, and, say for this example, the segment selector does NOT point to the ring 0 CS, but instead points to the ring 3 
+CS. The booth will then deny the syscall from entering the kernel, and instead allow the syscall handler to execute in ring 3, with the ring 3 privilege rules. Knowing 
+when and when not to do a privilege switch is a bit annoying, and honestly, I don't fully care about it just yet, so for now, I will have every syscall be performing
+a privilege switch into ring 0, (so every idt descriptor entry will have segment selector 0x08). Anyway, now assume that its segment selector does point to 0x08. Then,
+the booth will say, "ok", and allow the syscall to execute the interrupt in kernel mode, and do all its shenanigans there, before once again going back to entering 
+ring 3. This is important. The syscall does NOT stay in ring 0. It must return back to ring 3, so it is effectively performing 2 context switches, and passing the
+big wall, or the booth, twice. That is the general gist of how syscalls work. Syscalls can get more complicated, as each syscall handler can call another syscall handler,
+making a big chain of syscall handlers. In reality, this is actually how some systems work, as there is no one syscall to perform anything. Instead, each syscall handler
+is short, (also like each IDT handler), in order to, obviously, not allow other interrupts from interrupting an interrupt (this would be quite bad). I have seen a lot
+of times from people to keep interrupt handlers short, so I will be likely doing that for syscall stuff (unfortunately, though, I feel like my keyboard handler is a bit
+large... But whatever, no issues have arised just yet). Anyway, that was all for today. Tomorrow (or well, today, I guess), I will be finishing up some syscalls, most
+likely the sysopen and sysexit, or whatever people wanna call them. After that, I might have to get a file system, which then means I'll have to implement malloc, 
+and then I can get into writing programs, make a shell, and then.. That might just be it for what I wanted to achieve for now.
