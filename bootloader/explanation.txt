@@ -1017,4 +1017,28 @@ is short, (also like each IDT handler), in order to, obviously, not allow other 
 of times from people to keep interrupt handlers short, so I will be likely doing that for syscall stuff (unfortunately, though, I feel like my keyboard handler is a bit
 large... But whatever, no issues have arised just yet). Anyway, that was all for today. Tomorrow (or well, today, I guess), I will be finishing up some syscalls, most
 likely the sysopen and sysexit, or whatever people wanna call them. After that, I might have to get a file system, which then means I'll have to implement malloc, 
-and then I can get into writing programs, make a shell, and then.. That might just be it for what I wanted to achieve for now.
+and then I can get into writing programs, make a shell, and then.. That might just be it for what I wanted to achieve for now. 
+
+----------------------------------
+DAY 31
+Last time I said "and then.. That might just be it for what I wanted to achieve for now", making it sound very simple, as if I have nothing left, but it is not. I still
+have a lot of complicated stuff left to go. For one, the entire reason I am implementing malloc, (or specifically kmalloc honestly) is so that I can have dynamic 
+allocation of memory for my programs. Now, for that, I need a file system. I was already planning on making a file system already, because I do not want to say "My OS 
+still boots from a floppy disk!", (TECHNICALLY IT DOESN'T. I AM USING THE FLAG -HDA WHEN I USE QEMU, SO I AM TECHNICALLY USING A HARD DISK, BUT ALSO, I AM NOT.. IT'S KIND
+OF CHEATING). I need to study up on file systems, like a lot, and I might look at Tanenbaum's MINIX for inspiration, and I will most definitely be following along with
+Queso Fuego's filesystem, OR, I might follow along with OSTEP and implement the vsfs, (Very Simple File System). I don't know. I don't know anything about file systems
+just yet, so I don't really wanna jump the gun. I am a bit confused, though. I read a little (just the bare minimum) about file systems, so I have a SORT OF basic idea of
+how it works. Basically, if we want to be able to start reading from a hard disk, we need to use ATA PIO, (well not NEED to, but it is recommended I guess). ATA PIO is
+just a way of communicating with the hard drive to extract information from it and put it into the memory. It's actually really useful for also setting up a file system,
+as all we need to do is just exploit the ports available in the ATA PIO hardware, (I believe they are ports 0x1F0 through 0x1F7 and 0x170 through 0x177 for each bus). We
+can still access these ports, so we simply just have to create a read/write system that accesses these ports and, obviously, reads/writes to the sectors. I guess, my
+current question is "why is making a file system so seemingly complex, when you can simply just read/write from these ports?". Like, upon initialization, I can just
+load in my file system into some place in memory, then, I can have the file system read through the disk, and I can tell it, like "hey, sectors 3-20 is for this program"
+and then I can save its information into the file system, like its size in sectors, AND the sector location of each thing. Then, if the kernel/user want to load in a file,
+they will call upon the filesystem to check if there actually does exist a file at the sector specified, and if it does, then the file system can COPY the file, and 
+however large it is, into memory, (I am guessing I can do a bit of a bitmap approach thing. So like, big array that houses 32-bit integers. First like, I dunno, 5 bits
+can be for location, the rest of the bits can be for size. This unfortunately limits how many files can exist in the disk, but whatever). Then, if we don't want it
+anymore, we can just tell the PMM/VMM to unmap the pages/set the bits for the frames to be 0, so that it can be overridden. This seems like a relatively easy to implement
+file system, no? Of course, you don't really get access to naming things, and I don't think you really have the ability to make directories, or any hierarchy system, so
+yeah. But, I don't really care about all that complicated jargon just yet for this project. This project is mostly to learn about low level programming, so I might
+actually go with the approach I talked about here.
