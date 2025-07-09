@@ -32,6 +32,7 @@ void* syscalls[MAX_SYSCALLS] = {
         sys_free,
 };
 
+// This stuff below is defined by the OSDev wiki in their syscall page: https://wiki.osdev.org/System_Calls
 __attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
 
@@ -50,7 +51,7 @@ __attribute__((naked))  void syscall_handler() {
                           "push ecx\n"
                           "push ebx\n"
                           "push esp\n"
-                          "call [syscalls+eax*4]\n"
+                          "call [syscalls+eax*4]\n"        // Each function pointer is 4 bytes, so it's not as simple as just syscalls+eax, (eax holds which syscall)
                           "add esp, 4\n"
                           "pop ebx\n"
                           "pop ecx\n"
