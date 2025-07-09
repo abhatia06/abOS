@@ -21,7 +21,7 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
 # I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
 # able to ACTUALLY make a hard disk image, and read from it! (Though, I am 90% sure the process is the same in the Makefile.
-# It just changes in the code and we use ATA PIO instead of just CHS addressing.
+# It just changes in the code and we use ATA PIO instead of just CHS addressing.)
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
         @echo "drive size:" && stat -c%s $(BUILD_DIR)/os-image.img
