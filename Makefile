@@ -18,9 +18,10 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #Floppy Image
 #
 
-#NOTE: The prekernel sectors thing was actually the 2nd issue, and it was the issue causing our IDT and whatnot to explode. Basically, our kernel was 21 sectors,
-# being loaded into sector 3. We were loading prekernel into sector 23, overriding the last 512 bytes, which is where our .bss section is, causing some things to break.
-# very simple fix, though. We are going to have to be wary in the future.
+#NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
+# I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
+# able to ACTUALLY make a hard disk image, and read from it! (Though, I am 90% sure the process is the same in the Makefile.
+# It just changes in the code and we use ATA PIO instead of just CHS addressing.
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
         @echo "drive size:" && stat -c%s $(BUILD_DIR)/os-image.img
