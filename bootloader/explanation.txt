@@ -1042,3 +1042,19 @@ anymore, we can just tell the PMM/VMM to unmap the pages/set the bits for the fr
 file system, no? Of course, you don't really get access to naming things, and I don't think you really have the ability to make directories, or any hierarchy system, so
 yeah. But, I don't really care about all that complicated jargon just yet for this project. This project is mostly to learn about low level programming, so I might
 actually go with the approach I talked about here.
+
+I am coming back to this to rant a little bit about my worries right now. I'm starting to hit a wall with my understanding of the code, and I'm also starting to hit a wall
+with my understanding of what I am supposed to do next, (well, not really. I KNOW I need to make a dynamic memory allocator, and to do that I need a malloc and file
+system, so that my programs do not eternally live on memory). I'm getting quite worried that I don't have a solid understanding of everything, so I have decided to make
+the executive decision of temporarily halting progress on the OS. I don't want my entire code to be built off of stuff everyone else wrote, (which it isn't entirely. 
+There are parts of each code that I wrote myself a little bit, but I still don't want to be this reliant on tutorials and whatnot). I am going to finish reading OSTEP,
+and I might even finish reading Modern Operating Systems by Tanenbaum. I want to have a really solid understanding of OS's and how they work before I continue, because
+I am getting near the end, I don't want to rush the end. So, for the rest of the week, (WEDNESDAY, THURSDAY, FRIDAY, or days 32, 33, 34) will be just me studying and 
+reading OSTEP, and putting whatever I learned into there.
+
+I tried to implement malloc today, but I didn't understand how malloc really worked, how to implement it, so I need to really learn about it. I don't want to just copy
+and paste someone elses code, because that defeats the purpose of learning to do it by myself. So, it is back to the notebook for me to learn about EVERYTHING, including
+things I may have already learned (like paging and whatnot) so I can have a more fundamental grasp on those topics. While I am learning more about OS, I might also decide
+to refine my understanding of C, because, as I have stated before in a previous day, I am starting to reach a point where my understanding of what is happening in the code
+is being worse and worse. Single pointers and whatnot are easy enough, but double pointers is when the confusion starts, so I would like to have a better grasp of C.
+Anyway, that is all for today. Today might've seemed like a relatively bad day, but, that's fine. I have re-organized and I have a better plan for the future.
