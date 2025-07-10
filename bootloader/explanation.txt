@@ -1058,3 +1058,319 @@ things I may have already learned (like paging and whatnot) so I can have a more
 to refine my understanding of C, because, as I have stated before in a previous day, I am starting to reach a point where my understanding of what is happening in the code
 is being worse and worse. Single pointers and whatnot are easy enough, but double pointers is when the confusion starts, so I would like to have a better grasp of C.
 Anyway, that is all for today. Today might've seemed like a relatively bad day, but, that's fine. I have re-organized and I have a better plan for the future.
+
+
+----------------------------------
+DAY 32
+
+As I said before, I decided to make the rest of the week into a study week, and hopefully finish reading OSTEP so that I can have a better understanding of what I want
+to do next and how to implement the stuff. Though the stuff I read I had already read about from other textbooks and the OSDev wiki, I did still learn about some stuff.
+Below are my notes from the first few chapters in OSTEP.
+
+VIRTUALIZATION
+
+The main crux of the problem is how to make processes believe
+that they have access to the entire physical memory, when,
+in reality, we only have one physical memory available to
+house all the processes. We need to give each process the
+illusion they are operating in virtual memory in order to
+Create the illusion that we have more physical memory than
+we really do
+Allow for the fragmentation of processes/code, so that
+they do not require running in contiguous memory, (i.e.
+the first 4KB of a process runs in block 2, then the next
+4KB of a process runs in block 6, but it believes it is
+running contiguously in virtual memory)
+
+TIME SHARING
+The CPU is a single-task processor, which means that it
+executes each instruction one at a time. But, modern OS's
+make it seem as though the CPU is a parallel processor. They
+achieve this through time sharing, which basically means that
+each process gets a little bit of process time, before the
+CPU jumps to another process. If the CPU does this fast
+enough, it can create the illusion of parallelism and
+multitasking.
+
+CONTEXT SWITCHING
+Context switching is a bit tricky. If a process is running on the
+CPU already then, by definition, the OS is not running. Therefore, we
+have no way of actually performing a context switch, because a process
+is hogging the CPU (assuming the CPU only has 1 core, and thus, can
+only do 1 process at a time). So, how can we actually perform a
+context switch?
+The first approach to fixing this problem is a cooperative approach
+in which the OS trusts the process. As we've stated before, with
+system calls, processes in user mode are effectively forced to perform
+hundreds, if not thousands, of system calls. So, when a system call
+is performed, the CPU switches back to ring 0, therefore reviving the
+OS and giving it control again. Then, once the OS has control again,
+it can now perform a context switch to other processes if it sees fit.
+But, there are issues with this approach. The most glaring issue is
+that it is too trusting on the process. What if the user programmer
+is an awful programmer and codes in an infinite loop? Well, now the
+issue becomes that the OS is never revived, and we are now eternally
+stuck in the process.
+This is where the non-cooperative approach comes in to fix that. The
+non-cooperative approach uses the PIT built into the computer. The
+PIT is similar to the clock, but it can be programmed to have a
+different system clock for processes, (which is generally set to
+be 1 millisecond). So, what we can do is that every process is on a
+timer. If it either does not finish executing the process in its
+acquitted time (perhaps 30 ticks, or 30 milliseconds), then a
+timer interrupt will be performed by the PIT, giving control to the
+OS once more. Afterwards, based on what the scheduler says, a context
+switch can be performed, in which the OS saves a bunch of registers
+for the currently executing process onto the kernel stack, and restore
+a few registers for the soon-to-be executing process. There is an
+issue that can still arise with this solution: what if another
+interrupt occurs DURING a system call interrupt handler? --
+
+SCHEDULING
+The scheduler is in charge of managing what processes the CPU should
+give control to next. Generally, we want the scheduler to be as
+optimized as possible, and be picking only the most optimal of
+solutions in order to keep the average turnaround time of the
+processes as low as possible. Another thing the scheduler should keep
+track of is "fairness", but just like how "granularity" and "space"
+for a bitmap approach to a PMM are at odds with each other, so is
+"fairness" and "optimization". If we optimize performance, we may
+prevent a few processes from running, thus decreasing fairness. As of
+right now, I don't really see a point to fairness. Anyway, there are a
+few approaches you can go to implementing a scheduler, with the most
+basic of them being
+FIFO
+FIFO is arguably the most basic approach. The first process that comes
+into the process list is the first one executed, then the next one,
+then the next, etc. etc.. There are a few issues with this, though.
+It works well enough if each process is running for the same amount of
+time, and thus, also take the same amount of time to execute, (assume
+10 ms). So, if we have 3 processes, the cumulative average turnaround
+time will be (10 + 20 + 30)/3 or 20 ms. The issue comes, though, when
+we DON'T assume that every process takes the same amount of time to
+finish. Assume the first process takes a whopping 100 ms, but the
+subsequent two processes take a mere 10 ms. Well, the cumulative
+turnaround time is now (100 + 110 + 120)/3 or 110 ms. This is
+quite slow, but, personally, I feel like you COULD optimize it
+feasibly by not forcing each process to run fully. How about, instead,
+forcing each process to run for at most 10 ms, before switching to a
+different process. So, A runs for 10 ms, then B for 10ms, then C for
+10 ms. But B and C only needed 10ms to finish, so they're done now,
+so now we run A for 90 ms. So, our average cumulative turnaround time is
+(10 + 20 + 30 + 120)/3 or 60 ms! Is that not a huge improvement?
+
+SJF
+Alternatively to FIFO, we have SJF, or Shortest Job First. This should be
+pretty obvious as to how it works. Take the same example with the three 
+jobs, A = 100 ms, B = 10 ms, C = 10 ms. If we use SJF, then we get:
+(10 + 10 + 120) / 3 or 50 ms. Which is a crazy improvement. But, there are
+issues with this one too. We've been assuming that all the processes arrive
+into the process list at the same time, but this is simply not true in the 
+real world. If we do not assume this, then what if, for example, A
+is the first process to arrive, then B, then C? Well, then our SJF 
+algorithm for our scheduler achieves nothing, because we are forced to 
+process A first, (100 ms) followed by B, (10 ms), then  C, (10 ms). So, we
+achieved nothing. (Also, I should state now. Turnaround time is 
+completion time - arrival time). So, assume that A arrives first at 0ms
+and takes 100 ms to complete. Then B arrives at 10ms, and takes 10 ms to
+complete, then C arrives also at 10 ms, and also takes 10 ms to complete.
+So our average turnaround time is (100 + (110 - 10) + (120 - 10))/3, or
+103.333 seconds, which is, again, slow. 
+
+STCF
+The STCF algorithm is another algorithm for the scheduler, (also known as
+Shortest Time to Completion First). What this does is it uses the pre-emptive
+approach to scheduling. It is willing to pause a process IF the remaining time
+it takes to complete the process is longer than the time it would take to complete
+the newly appeared process. So, with our previous example, it executes A for 10 ms,
+then switches to B, finishes executing B, switches to C, finishes executing C, then 
+executes A for the rest of the time unless another process comes by. This gives us
+a turnaround time of 50 ms:
+((120 - 0) + (20 - 10) + (30 - 10))/3. 
+
+Next up is response time. We define response time to be the time from when a process
+firs arrives into the process list compared to the time it is first schedule. So,
+Response time = first schedule - arrival
+As you may expect, the three algorithms shown before are not great for response time,
+as they require running the previous processes in their entirety before the process
+you may care about actually runs. To fix this, we have the
+
+RR
+The RR algorithm, or Round Robin algorithm throws all the previous algorithms out the
+window and, like what I suggested in for the FIFO scheduler, only gives each process
+a set amount of time to run, before switching no matter what. So, if we give each process
+only 10 ms, then we go from A, to B, to C, back to A. This also gives us quite a nice 
+response time, much better than what STCF or SJF can perform, (duh). There is a worry to
+RR, though. We have also been assuming that context switching takes no performance, but it does,
+inherently. We don't want the time slices of RR to be too short, (microseconds, or even 1 ms), 
+because then the cost of context switches will become quite expensive as we are going to be doing
+them constantly. Furthermore, though the response time of RR is great, the turnaround time of
+RR is not. It is actually quite bad for turnaround time. 
+
+But there is still one fundamental issue regarding the scheduler that we haven't talked about.
+That being, we have been assuming that the OS knows the length and time required to execute
+each process. In reality, this is impossible, and would require the OS to be omniscient. 
+
+This is where we get to the most common scheduling algorithm, and the one that I am 
+90% sure literally everyone uses:
+MLFQ
+MLFQ, or the Multi-Level Feedback Queue optimizes the turnaround time, and it tries
+to optimize the response time too. The way that the MLFQ works is that it houses a 
+distinct number of queues, each with a different priority level. At any given time, if
+a process is ready to run and is in the ready state, it will exist in one of the queues.
+The MLFQ then uses priorities to decide which process to run based on which priority queue
+it exists in. The MLFQ assigns priorities to processes based on "observed behavior". If a 
+The MLFQ will then try to predict future behavior, and then assign priority based off of that.
+Furthermore, the MLFQ will give each process in a given priority queue an "allotment time", 
+which is just the amount of time a given process can spend at a given priority queue. If a
+process uses up that time, its priority will be reduced. So say a process is 100ms long, and
+allotment time is 10ms. It enters into the highest priority, runs for 10ms, then goes down 1
+priority, runs for another 10ms, repeats until it is either at the lowest priority, or it is 
+finished.
+So, here are the rules for MLFQ:
+1.	If Priority(A) > Priority(B). A runs but B does not
+2.	If Priority(A) = Priority(B). A and B run via RR.
+3.	When a process enters the system, it is first placed at the highest priority queue
+4.	If a process uses up its allotment, its priority will be reduced and allotment reset 
+5.	If a process gives up the CPU (via I/O operation or other) before allotment is up, it
+stays at the same priority level (allotment is reset)
+But... There are a couple issues with this approach still (we didn't implement MLFQ right).
+The biggest issue is starvation. If we have multiple processes that have I/O stuff, then
+the longer processes at the lower levels will likely never run. Furthermore, someone could
+cheat the scheduler by simply writing a program that, at the very end of their allotment,
+would do a very simple I/O call, and then hog the CPU forever, (infinite loop, but at the 
+very end, do an I/O call). One way we can  solve the issue of starvation is through the 
+following: After a time S, set the priority level of everything to the topmost priority. 
+What should S be? Who knows. 
+As for the issue of someone cheating the scheduler, we can change rules 4 and 5 to be 
+combined and simply state: if a process uses up its allotment time, regardless of how
+many I/O calls it makes, then we can reduce its priority. We can optimize MLFQ even
+further, by having each queue have its own varying time slice (maybe queue 0 is
+10 ms, queue 1 20 ms, etc.). So, here are the actual rules:
+1.	If Priority(A) > Priority(B). A runs but B does not
+2.	If Priority(A) = Priority(B). A and B run via RR.
+3.	When a process enters the system, it is first placed at the highest priority queue
+4.	Once a process uses up its allotment time, its priority is reduced
+5.	After some time period S, move all processes in the system to the
+topmost queue.
+And that's MLFQ. It's quite complicated, so I'll probably just implement RR
+with like a circular-linked list when I get to scheduling. 
+
+There are other types of schedulers, like lottery schedulers, but those 
+prioritize response time over turnaround time. In due time, I will come
+back here to talk about multiprocessor scheduling,
+
+PROCESSES
+In its most basic form, a process is simply a "running
+program". Each process is separated by varying machine states,
+as the CPU, obviously, has no idea what a process's
+name is. The machine state comprises of the address space
+of the process, the registers (duh), and the stack and
+frame pointers. Think back to CS252, where each process
+was basically its own function. That is basically what
+a process is, kind of. A processes APIs must have the
+following, (remember APIs are like user stuff. Not ABI):
+CREATE: A create function to create new processes
+DESTROY: A destroy function to delete existing processes
+WAIT: A wait function to suspend processes for a given
+period
+STATUS: A function which returns the status of a processes'
+execution to the user (register info, how long it has run
+for, etc.)
+Remember that processes cannot simply be executed from the
+disk. They must be loaded into memory first before being
+executed. The CPU can very efficiently communicate with
+volatile memory, caches, or registers, but it is incredibly
+inefficient and slow for the CPU to communicate with the disk for
+executing code. So, generally, most OS's will load programs from
+disk into memory. However, they may do it differently. My OS will
+likely load processes/programs eagerly, which means all at once,
+while most modern OS's load programs/processes lazily, or only
+loading the necessary things, and then, requiring a page fault to
+load in the next required thing, (page swapping, or invisible
+bridge technique).
+SOME THINGS TO CONSIDER:
+It seems as though each process has its own runtime stack, and
+don't necessarily rely on the kernel/user stack.
+When calling a program with specific parameters, the OS will
+load the parameters into the stack. Afterwards, the program
+can access said parameters via manipulating the ESP, (or more
+commonly the EBP).
+Processes also need a heap. Very simply, the heap is where the
+literal objects live, whilst the stacks simply point to where
+on the heap the objects are. Remember, since we are in C, we do
+not have access to a garbage collector of some sort, so we need
+to implement a malloc(), and have each process manually
+allocate memory and de-allocate memory for the heap of each
+program. (We will also need a kmalloc for the
+kernel in the future when we implement a file system, as we
+want the file system directory to be growing dynamically, not
+be fixed)
+Furthermore, there exist three different states a process can exist
+in:
+RUNNING: Obviously, the process is running and being executed
+READY: The process is ready to run is currently in line
+BLOCKED: The process is unable to run, and is currently waiting
+for something, (like an I/O request/interrupt).
+When a process switches from ready->running, it has been scheduled,
+when a process switches from running->ready, it has been
+de-scheduled.
+So, imagine process 0 is running first, then it becomes blocked.
+So, the OS decides that it should run process 1, and schedules it.
+Then, process 0 becomes ready, so now the OS comes to a decision
+that is decided by the scheduler. Does it continue running process
+1, and finish it, or does it go back to finish process 0? There
+are more states, and how many states a process can have is based
+on each OS, (xv7 has 3 extra states besides running, ready, blocked). Like for example, an "initial state" (basically, 0%
+execution on the process), and a "finished state" (100% execution,
+but it has not been cleared from memory just yet). Of course,
+if you have differing states for each process, you need a way to
+manage them all too. That is where a process list comes into play,
+where each entry in the list contains information about a specific
+process.
+
+RINGS
+One of the ways we can execute processes is via a Direct Execution
+Protocol, which simply creates an entry for process in the process
+list, allocates memory dynamically for the program (malloc),
+loads the program into memory from disk (which it does via
+a file system thing, which we get into later), sets up the stack
+with argc and argv (the arguments for a program), saves register
+values, and then jumps to the beginning of the program, where it
+executes it, then pops the register values, returns, frees memory
+of process, and removes the process from the process list.
+There are a few caveats with this, though, as the OS will have
+no control over the actual execution of the process. We have no
+way of dictating whether the process is following any rules or not,
+(like if it's accessing physical memory, when it really shouldn't).
+To get around this, the CPU has different privilege level rings
+that it automatically keeps track of. User processes obviously
+run on user mode (ring 3), while the kernel runs on kernel mode,
+or supervisor mode, (ring 0). The way these privileges work is that
+0 has the most privileges, whilst 3 has the least privileges. If
+the user in user mode tries to execute a privileged instruction,
+the CPU will automatically raise a "General Protection Fault"
+or INTERRUPT 13, which the OS can then manage (usually it just
+kills the process). But what if the user would like to access the
+disk and read from it? Well, again, we don't want to give the user
+direct access to this, so instead, we give the user access to
+various system calls that momentarily switch the operating mode
+from user mode to kernel mode, read from disk, and then switch
+immediately back to user mode and to the calling user program,
+which it does via a "return-from-interrupt" instruction, (iretd,
+since syscalls will generally be considered an interrupt).
+
+IDT
+This is all related to the IDT. We take great pains in ensuring that
+each interrupt, or trap, is associated with a certain handler on boot-time, which is when the system is in kernel mode. We create
+a descriptor table, that assigns each interrupts vector, so that
+when an interrupt occurs, the CPU can simply go to the descriptor
+table, match the associated vector to its handler, and then jump
+to the handler. We do the same with system calls, but specify that
+the user mode can use system call interrupts by using certain flags,
+(by setting the 2 DPL bits to be 3, or 11). Of course, we cannot
+have a million different vectors for each system call, so we have
+one vector for the main system call handler, then we read a register
+that the user sends in, and assign which system call the user wants
+based on the value they selected (ex: EAX register has 1, so we call
+syscall_1(). EAX register has 2, so we call syscall_2(), etc.)
