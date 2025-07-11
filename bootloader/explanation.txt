@@ -1374,3 +1374,243 @@ one vector for the main system call handler, then we read a register
 that the user sends in, and assign which system call the user wants
 based on the value they selected (ex: EAX register has 1, so we call
 syscall_1(). EAX register has 2, so we call syscall_2(), etc.)
+
+----------------------------------
+DAY 33
+Again, more studying. Didn't get through as many chapters as I'd like. I might actually do some studying over the weekend to make up for it.
+
+Everything before this has been on virtualizing the CPU. The next few
+notes will be on virtualizing the memory in order to isolate and keep
+processes from overriding another process, (also for other various reasons
+like to emulate more memory then we actually have). 
+
+SEGMENTATION
+
+One of the methods for creating a virtual address space for each process is to
+use the methods of base and bound registers. Basically, we specify bounds for 
+the virtual address space, and provide a base register. This base register, when
+added with the virtual address each memory address generates (ex: memory address
+1KB, base address 16KB) produces the physical address, so: phys_addr = virt_addr + base.
+But, this is super simplistic, and has a couple issues, because we are assuming
+quite a few things.
+1.	The user space processes are being loaded contiguously into physical memory
+2.	The user space processes are smaller than the available memory
+These are very laughable assumptions, and no process actually works like this. 
+Furthermore, even if we do make these assumptions, there are still quite a few 
+issues, one being that each process takes up a large amount of space, even if the
+program itself is very small. This is because the heap and the stack will allocate
+and reserve a large amount of memory, even if all that memory does not end up being
+used. So, all of this, and putting the entire address space of each process into the 
+memory can create problems very fast, so we have invented differing ways to go about 
+fixing these problems. The oldest and now outdated approach (that some people still use) 
+is segmentation. The idea of segmentation is simple. Instead of having one base and bounds 
+pair in our MMU, why not have a base and bounds pair per logical segment of the address
+space? We have three different logically-different segments (in our examples, at least. 
+In reality, we have a few more, but whatever). Those segments are code, stack, and heap.
+(x86 calls them code segment, data segment, stack segment, extra segment, and general 
+purpose segments, CS, DS, SS, ES, GS, FS). There are a few ways to achieve segmentation. 
+Take the following example with an example address space:
+
+---------------------- 0x0
+|		     |
+|    Program Code    | 
+|		     |
+|		     |
+|		     |
+---------------------- 2KB
+|	FREE	     |
+|    	FREE         |  
+|	HEAP	     |
+|	FREE	     |
+|	FREE	     |
+----------------------7KB
+|	FREE	     |
+|       FREE	     |
+|	FREE	     |
+|	FREE	     |
+|	STACK	     |
+----------------------16KB
+
+Ok, this is a bad example because I drew it poorly, but the idea is still there. The way
+we can achieve segmentation with this code here is by looking at the top two MSB (if in
+little endian or whatever). Imagine a 14-bit virtual address, then for the Heap, which
+starts at virtual address 4200, (hex 0x1068) has binary form 0001 0000 0110 1000. Again,
+we only care about the 14-bits, so really it's: 01 0000 0110 1000. If we set the first two
+bits (01) to be the separator for segmentation, specify that 01 is for the heap, 00 is for
+code, and 10 perhaps is for the stack, then we realize that this address is for the heap. 
+So, we ignore the first two bits and look at the offset, which is 0000 0110 1000, or 0x68
+in hexadecimal, 104 in decimal or base 10. So, the offset is 104, which we can add to the
+base register physical address (which, for example, assume is 34KB) to get the desired 
+physical address for this virtual address. So, 4200 -> 34,920. As for checking if an offset
+is legal, we can simply compare the offset to the bounds, and if the offset is greater, we throw
+an exception. There are issues with this approach, though. That issue being that it limits our
+virtual address space to a maximum size that is, evidently, less than the total memory.
+Another thing we can do with segmentation is specify which way we want the physical address
+for the virtual address space to be placed, (duh). So, for example, for the code segment and
+heap segment, we have been specifying they grow up, by adding the offset to the base. But,
+for the stack segment, we can specify that it must grow down, by subtracting the base from the
+offset. To do this, we must once again obtain the offset normally, (for example, consider
+virtual address 15KB, or 0x3C00). 15KB is 11 1100 0000 0000. The first 2 bits tell us this is
+a stack segment, and that we should grow downwards. So, we are left with 1100 0000 0000, which is
+roughly 3KB, (0xC00, decimal 3072). Now, for growing downwards, we subtract this from the total size
+a segment can be. In this example, since we are working with 12 bits, the max size a segment can be
+is almost 4KB. So, 3KB - 4KB, gives us a negative offset of -1KB. Then we add this negative offset
+to the base (28KB for example) to get 27KB. 
+(I should've stated. Assume the base for code segment is 32kb, heap 34kb, stack 28kb). If we would
+like to share segments between each process, we can assign an extra bit for protection (read-write-execute).
+Again, there are numerous issues with segmentation present. Here are a few:
+1.	If the OS wishes to perform a context switch, it'll have to save all the segment register values and restore
+them, which it can do, but it's still a lot.
+2.	We now need to manage malloc() a bit differently. With each call to malloc, we now need to, on top of
+allocating more memory for the heap, also update the segment size registers to be bigger so that the OS
+can know of the size of the heap
+3.	Most importantly, segmentation has issues with fragmentation. Imagine we allocate multiple processes of 
+varying sizes. We then free some processes in the middle and at the end or beginning. We now have 24KB free,
+and we wish to load in a 20KB process. The issue is, though, the OS doesn't allow it, because, though we have
+24KB free, those 24KB are split across multiple smaller chunks. The 20KB process wants a full contiguous
+20KB of memory, which we simply do not have access to. We can go around this by having the OS periodically
+compact memory, but this has a lot of overheard for the CPU, and consumes a lot of resources. There are other
+methods, but there is no "perfect method" for addressing the issue of fragmentation in segmentation, whilst 
+also keeping the processing time near 0. 
+
+MALLOC
+Malloc is an interesting thing in C, as it is in charge of managing the heap physical memory of processes, 
+(or getting a certain number of bytes reserved in kernel memory with kmalloc). The header for the malloc 
+function is void* malloc(size_t size), where size_t size is obviously the size of bytes the process wishes to
+reserve. Generally, the idea that I have for my malloc implementation is the following:
+1.	Each process will begin by calling malloc_init(), and malloc_init will reserve a large chunk of memory for
+the heap, (maybe like 8kb or something). Each call to malloc will then simply store something into this
+already-reserved piece of memory, so as to limit the number of syscalls, (malloc isn't even supposed to be
+a syscall. It's just doing syscalls behind the scenes, like sbrk, which I will get into).
+2.	If, during a malloc library call, malloc sees that it has run out of memory space, then it will perform a
+brk or sbrk syscall to reserve MORE memory. 
+3.	Each process exists in its own directory, obviously, (we are using paging), so we will have the same malloc
+exist in every directory, along with the kernel, but malloc will ONLY reserve memory in a certain part of the
+memory, (like, for example, 8MB or 4MB or whatever). Since we are also making use of a pmm, then we have no
+need to worry about overriding. What we DO have to worry about is fragmentation, which we can kind of do a 
+band-aid fix and get around by having each syscall to brk or sbrk reserve the same amount of memory. Of course,
+sbrk and brk do not work like this, but I do not want to worry about implementing malloc_split, or a compact
+algorithm. 
+4.	Once malloc has actually found a piece of memory to ""reserve"", (it will, again, just look at the chunks of
+memory it has access to, which will be available on a linked list. Malloc will be a linked list, I forgot to 
+specify that, with a bunch of virtual addresses that point to reserved pages), then it will simply return
+that virtual address, and then pop it out of the linked list all the way until it reaches the end, where it 
+will then get more memory
+5.	If the process is done, then the addresses or memory reserved by malloc_init or sbrk/brk will be freed in
+the pmm. 
+There are, of course, issues with this implementation idea that I'm thinking of. First off is "internal fragmentation".
+Basically, I am reserving large pieces of memory that may not all be used. This is, in fact, a type of fragmentation, but
+I don't really care about it just yet. In the future I might. Furthermore, I talked about how, in order to reduce 
+external fragmentation, I'll have each call of brk and sbrk reserve the same amount of memory, (so that even if like, in
+the middle, some memory was freed, any and all calls to sbrk/brk will then reserve that memory to make it seem contiguous).
+Again, this is a very band-aid approach. In reality, I should use some of the algorithms discussed below:
+
+SPLITTING
+So, as I said before, my band-aid approach  isn't fantastic. Consider this:
+
+0		10		20		30
+-------------------------------------------------
+|	10B	|	10B	|	10B	|
+|		|	USED	|		|
+-------------------------------------------------
+
+So, our malloc linked list might look like this right now for available spaces:
+head -> (start addr: 0, len 10) -> (start addr: 20, len 10) -> null
+
+But if we free the middle part now, and we add it in all willy nilly
+
+0		10		20		30
+-------------------------------------------------
+|	10B	|	10B	|	10B	|
+|		|	FREED	|		|
+-------------------------------------------------
+
+Our malloc linked list now becomes:
+head -> (start addr: 10, len 10) -> (start addr: 0, len 10) -> (start addr: 20, len 10) -> null
+Clearly, this is an issue, because we are perpetuating fragmentation. Furthermore, the issue that could
+arise from my idea is the following, (go back to the first scenario where the middle one is used)
+I have an object that's 20 bytes. My malloc does a syscall to sbrk or brk to get 10B of memory, because that is what
+it is hard wired to get. It gets 10B, returns back, annndd it doesn't work. It's not enough. So, I am forced to get another 
+10B via the same syscall (inefficient). But, there are issues to this too, because the next 10B I get won't result in 20B that
+is contiguous. This is quite the issue, so my band aid approach might actually not work and I might be forced to do something
+more complicated (ughhh). 
+This is where splitting & coalescing come in. Again, go back to the first scenario. If the user decides they want only 1 byte, 
+then returning the full 10 bytes would be quite a waste, no? So what splitting does is simply split the 10 bytes into 9 byte and
+1 byte, and return the 1 byte. Simple enough.
+Coalescing also solves the issue I explained with the freeing of the middle part all willy nilly. What coalescing does is it
+checks the neighboring chunks to see if they can form a contiguous block. If they can, then they'll merge into one, making this
+linked list:
+
+head -> (start addr: 0, len 30) -> null
+
+
+FREE in MALLOC
+One of the issues I might encounter when implementing malloc is free(). The header for free is the following:
+void free(void* ptr). Basically, it takes in a pointer to the starting address of the chunk the user wishes to free from memory.
+But, how can we get the size of the chunk with just the starting address? To accomplish this, we must store a bit of extra info
+(the size of each block and starting addr) in a header block which is kept in memory, usually right before handing out the
+chunked memory via malloc. So, we can simply create a struct like so:
+
+typedef struct {
+	uint32_t size;
+	uint32_t whateverelselol;
+} header_t;
+
+And then in free, 
+header_t* hptr  (header_t*)ptr - 1; 
+So basically, right before the starting address, there will be header information, which we can access to check the size of the
+chunk of memory. This might also change up our other code a bit, because now, if the user wants to malloc N bytes, we can't just
+give them N bytes, we need N bytes + the size of the header. 
+
+Now, a linked list also has to follow the rules of a linked list, meaning we will also have to make a node_t for the linked list.
+So, 
+typedef struct node {
+	uint8_t size;
+	struct node next;
+} node_t;
+
+For a diagram on how this entire thing works, I would highly recommend looking at this page again:
+https://pages.cs.wisc.edu/~remzi/OSTEP/vm-freespace.pdf (page 10, 9, 8)
+
+PAGING
+For some reason, the authors decided to make this part of the textbook, where they had an introduction to paging
+and what not, super complex for relatively no reason, but I do believe I understand the point they're trying to make.
+Basically, as I have stated before, paging is quite simple to understand really. We partition the physical memory into chunks,
+(usually 4KB), and then also create pages that will exist in these partitioned pieces of memory. Each page is going to be an 
+entry in a page table that keeps track of the pages. Each page also points to its own physical frame, (or basically tells us
+where the physical frame is). So, already, we are experiencing quite a few issues regarding paging that are not small by any 
+means.
+1.	In order for data to understand where it is supposed to exist, it must first involve a memory access into the page table
+to find which table entry (or page) it exists in. It must then do ANOTHER memory access to actually understand where in the
+physical memory the data must actually exist in. (Or, more generally, for each virtual memory access it does at least this)
+2.	The page table can get quite large if we try to partition the entire physical memory, so not great. 
+Basically, paging can get quite big and slow very easily and very quickly.  
+That is where the TLB comes in to make things faster.
+The TLB is a hardware cache that houses a bunch of popular virtual-to-physical address translations, thus making the translations
+from the virtual memory to the physical memory (when paging is enabled) much faster. In the x86, this is enabled by default, I
+think, and are handled transparently by hardware. It is only if the page directory/table is not present in-core will the
+OS be notified by a page fault. The TLB is mostly transparent, but we can still do stuff with it, (though I don't see 
+why you would want to, really).
+
+TLB
+Basically, what we do then, when paging is enabled, is first look at the virtual addresses' first few bits to find the page table
+entry it corresponds with, which we will call it the Virtual Page Number, or VPN. (This is a horrendous name, but whatever).
+Then, we consult the TLB first, and see if the TLB contains a translation for this VPN to its correct frame. If it does, great,
+we use that frame, and we skip all the jargon of having to do multiple memory accesses through the table, then the page. If not,
+then unfortunately we have to go through it. (Though, as I said in the x86, it will actually give us a page fault instead). If
+we manage to find a translation in the TLB, it is called a TLB hit. Otherwise, it is called a TLB miss. When a TLB miss occurs,
+the CPU accesses the page table to find the translation, and if it manages to find it, cool, it puts the translation into the TLB
+for future references, recalls itself and looks through TLB again, TLB hit, and then carries on. Each TLB entry is quite simple.
+For example a TLB entry might look like so:
+VPN | FRAME | flags
+Apparently, the TLB is a fully-associative cache, which means that the CPU searches the entries in the TLB in parallel to see
+if there is a match. The flags are similar to the flags in a ptable, a present bit, protection bits, dirty bit, etc..
+There is an issue with the TLB, though, and it has to do with context switches. The TLB only contains virtual-physical 
+translations for the currently running process. Take for example process 1. Process 1 has its 10th entry in the page table
+point to a page with a specific page frame. Process 2 ALSO has its 10 entry in the page table point to a DIFFERENT page with a
+specific frame. This creates an issue in the TLB, because it has two different VPNs, (entry #10) that have different pages. One
+simple approach to fix this is to just flush the TLB on context switches, (which is what we do), which empties it out before
+switching to a different process. There IS some inefficiency with this, which is the fact that we now have to incur a bunch of
+TLB misses for said process at the beginning of the process, but, honestly, that's fine. To reduce some overhead, some hardware
+systems provide an address space identifier (ASID) field in the TLB, which is sort of like a process identifier (PID)
+
