@@ -1614,3 +1614,215 @@ switching to a different process. There IS some inefficiency with this, which is
 TLB misses for said process at the beginning of the process, but, honestly, that's fine. To reduce some overhead, some hardware
 systems provide an address space identifier (ASID) field in the TLB, which is sort of like a process identifier (PID)
 
+
+
+----------------------------------
+DAY 34
+
+I was being lazy today, and only managed to finish the virtualization section. I'll study some more over the weekend to make up for it, and hopefully finish
+OSTEP by... Tuesday? Here are the notes:
+
+Today I want to finish up the virtualization section of OSTEP, and begin Concurrency. 
+
+PAGE TABLES (AGAIN)
+As was stated previously, there are some issues with page tables. If each page is 4KB, and we want to create
+an illusion for the ENTIRE memory, then, knowing that in a 32-bit address, we have access to at most 4GB of 
+memory, that would require our very simple linear page table (if we're using an array approach) to have a
+million entries, because 4GB/4KB = 1,000,000. This is a gigantic array, and we'd rather not have this. So, this
+section of the notes will discuss some ideas to fix this, (though, we already know of the solution. Page 
+directories).
+
+One solution is to just make the pages bigger. Instead of 4KB pages, make them, I dunno, 32KB. This is also an
+issue because it will lead to internal fragmentation, where we are wasting a gigantic section of pages, (remember
+if a page is in use, we mark it as in use. We don't care if it's only  using 1-2 bytes of the page). We would
+generally like to reduce internal fragmentation as best as we can. 
+
+The hybrid approach uses both segmentation and paging to try and solve this issue. Basically, we divide the
+32-bit address even further, and have the first few bits point to a segment (like how segmentation works, lol).
+This means that each process will now have three different page tables associated with it (because we have
+three different segments).
+However, this approach has issues. Namely, using segmentation means we can now have variable length pages, 
+(because the heap can be larger and whatnot). Therefore, we once again experience external fragmentation, which
+sucks, so we avoid this.
+
+Now we arrive to multi-level page tables. This one doesn't rely on segmentation, instead, we turn the linear
+page table into something similar to that of a tree, (and it is the solution I talk about, with the directories
+stuff). Basically, the way it works is that the page directory points to a page table, and a page directory entry
+is only set to be valid if there exists at least one page on the page table that is valid, or present. The page
+directory points to the physical address of a page table, and then the same 32-bit address that is used to access
+the specific page table can be used again in said page table to access the specific page, and the physical address
+associated with the page. I talked about paging a while ago, so I will just put this again here:
+
+AAAAAAAAAA         BBBBBBBBBB        CCCCCCCCCCCC
+directory index    page table index  offset into page
+
+This is for each 32-bit virtual address, or memory reference. We are able to split it like this, because each
+directory and table only holds 1024 values, so we don't really need the full 32 bits to know where in the memory
+we want to access. Just enough to go through the full 1024 entries, and enough to offset anywhere in a 4KB range,
+(2^12 is 4KB, 2^10 is 1024). In total, the page directory index, (first 10 bits) and the page table index (next
+10 bits) are both the VPN, or Virtual Page Number. There are other things like inverted page tables, but I don't
+care about those just yet, so I didn't really bother with studying them. 
+
+SWAPPING
+Now we get into swapping. Or, the "invisible bridge technique" as I like to call it. As I've mentioned in 
+previous days, there exists a memory hierarchy, with volatile and non-volatile memory. The CPU reallllyy likes 
+the volatile memory, because they're the easiest, fastest, and most resource-efficient for the CPU to access,
+(think registers, caches, and of course, the RAM). There also exists non-volatile memory, and that non-volatile
+memory is MUUUCHHH larger than volatile memory (just.. Huge), but are also much less resource-efficient and slower
+for the CPU to access. So, when we run programs, we'd like to have the programs/processes exist in volatile memory
+(or RAM), and when we AREN'T dealing with a process, we'd like it to be in the disk, (non-volatile memory), where
+we don't have to deal with it. 
+
+I talked about the invisible bridge technique as more of an explanation, but I didn't really explain how it'd 
+work. Thankfully, this chapter on OSTEP (https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf), and the one
+right after it (swapping: policies), do quite a nice job of explaining swapping and how we might be able to 
+conceptualize and, later, implement them.
+As stated on a previous day, the reason we'd like swapping is mostly for multiprogramming purposes, and memory
+management, (Duh). If we have multiple large processes running at once, we'd like them to, obviously, run 
+at the same time, but we don't want them to be clashing and overriding each other's memory. This is, again, where
+the invisible bridge technique, or swapping, come into play (I am the only person that calls it the invisible
+bridge technique. Nobody else probably does this, I don't think). 
+First off, we need to define a "swap space" on the disk. Basically, we need to reserve some space in the disk 
+for moving pages back and forth. Furthermore, the OS will need to remember the disk address of a given page, so
+that it knows where to swap a page to in the disk. When a page is in the disk and not in the memory, it is 
+obviously not present, so its present bit is set to 0, and therefore, it also doesn't exist in the TLB. In
+x86, this will generate a page fault by the CPU, which we can then handle. But, how does the OS know where
+to find the desired page?
+Well, this is done by the handler, obviously. When the handler is called, it has access to the CR2 register, which
+holds the faulting virtual address. The OS can then translate this faulting virtual address, see what page is
+causing the exception in the PT, (find the corresponding PTE), and then issues a request to the disk to fetch
+the page from memory, before returning control over to the process once more. The OS will also update the page
+table and mark the page as present, update the PFN field of the page-table entry, along with other things. When
+it gives control back to the process, another TLB miss is raised, but, as we know, the TLB will be serviced 
+and  it will update its array to now hold the virtual-physical translation for that newly added page, (or,
+we could just manually flush the TLB and whatnot in the page fault handler). Remember, I/O is expensive, and
+accessing the disk is reaalllyy inefficient. So generally, while this current process will exist in the blocked
+state, other processes will not, so the OS is free to run other processes while it waits for the I/O of accessing
+the disk. 
+What happens when the page is full? Well now the OS needs to handle replacing useless pages. If a page has been
+processed 100%, the OS should either throw it away (if its dirty bit is 0), or store it into the disk (if the
+dirty bit is 1). To know when to start evicting pages from memory, OS's have a "high watermark" and a "low
+watermark". When the OS notices there are fewer pages available than what the "low watermark" states, a thread
+that is responsible for freeing pages runs, (how it does and what pages it decides to free is quite complex, 
+and it doesn't really talk about it for some reason), until there are enough pages available, (what the
+high watermark specifies). This thread, called the "swap daemon" or "page daemon" then goes to sleep and waits
+for the OS to call it again. 
+
+Now, how do we decide which pages to remove? Well, there are a few methods. To analyze each method, the book
+uses a variable called the Average Memory Access Time (AMAT), which is computed as:
+AMAT = (Time to access memory) + (Probability of not finding the page in TLB * Cost of accessing the disk).
+(THIS ENTIRE EXAMPLE WAS RIPPED STRAIGHT OFF OF OSTEP. I AM JUST "RETYPING" IN MY OWN WORDS, BECAUSE THIS
+EXAMPLE WAS HONESTLY REALLY GOOD)
+The AMAT is quite important. Take for example a tiny address space of 4KB with 256-byte pages. The first 4 bits
+of our 12-bit address space (it's 12 bit because, remember, 2^12 = 4KB) will be for the page table entry index, 
+(2^4 = 16, 256 * 16 = 4KB). Now assume that the process accesses only 10 of the pages, and virtual page 3 is
+NOT in memory just yet, however, all 9 other pages are. This gives us:
+hit hit miss hit hit hit hit hit hit hit
+So, our probability of not finding a page in TLB is 1/10, or 10%. If we assume the time to access memory is 
+100 nanoseconds, and the cost of accessing the disk is 10 milliseconds, just our example alone gives us:
+100ns + (0.1 * 10ms), or about 1 millisecond. Now, assume our hit rate is 99.9%, (or a miss rate of 0.001, or
+0.1%), then our AMAT suddenly becomes 10.1 MICROseconds, or 100x faster. Clearly, by having even a few more misses
+occur will cause our AMAT to be exponentially higher, causing the overall OS to slow down with a bunch of programs
+running.  So, how can we avoid as many misses as possible?
+
+OPTIMAL REPLACEMENT POLICY
+Apparently this policy is quite difficult to implement, so I will 100% not be doing this one lol.
+This policy is quite simple. If you need more pages, just throw out the ones that are going to be needed the
+furthest time from now. There is a really good example on the OSSTEP chapter that I cannot really show, because
+they use a diagram, but it's a good one that I recommend checking out: (PAGE 3-4)
+(https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf)
+The hit rate of this policy is 85.7%, (if we ignore the initial misses that would occur by the TLB, since the OS
+has just initialized). 
+
+FIFO
+But the optimal replacement policy is hard to implement. Instead, we can use it as a comparison standard. The 
+closer a method is to the optimal replacement policy, the better we can say that the method is, because that
+replacement policy is the peak optimal one. This is a relatively simple policy. Each page is placed into a 
+queue, (obviously. A queue is FIFO), and if a page fault occurs, and we need more pages, then we remove the 
+first added page. So, for example, say we go like this:
+0 -> 1 -> 2 -> 0 -> 1 -> 3 -> 0
+Ignoring the first 3 misses, we only ever replace the TLB cache (if we assume it can only hold the info of 3
+pages) when we want to access page 3. But then, there's an issue. The first page we added was page 0, and 
+accessing page 3 would remove page 0. But, the next page call IS page 0, meaning we have another miss, and we 
+now have to remove page 1.
+This is quite inefficient, and apparently, with the example OSSTEP gives us, it has a hit rate of 57.1%, which 
+is quite bad.
+
+RANDOM
+(Honestly I might implement either this or random, because they seem to be the easiest to implement lol)
+Instead of picking the first page, or a specific page, we just randomly swap a page into the disk when we 
+are running out of pages, and we need more pages. There really isn't much more to be said about random, it is
+entirely dependent on how lucky your OS is going to be. There is an issue with random and fifo, where that it 
+might accidentally unmap a page that housed some important information, like underlying data structures that the
+rest of the program uses, or global variables, or whatever, (remember, the process believes it is operating
+under contiguous memory, even when it might not. A process, and its first 4KB might house all the data structures,
+global variables, and objects, as one might do in an actual program). So we would rather NOT free those pages. 
+
+LRU & LFU
+LRU, which is known as "Least Recently Used", basically checks to see what pages have been recently used when it
+needs access to more pages. It looks for the least recently used page, and then kicks it out. There is also the
+LFU algorithm, which is "Least Frequently Used". This one checks to see what pages are used MOST INFREQUENTLY,
+as in we do the least number of accesses/calls to that page. Then, if we need more pages, we just kick out the
+pages used least frequently, as we can assume it doesn't house any underlying data structures, or anything
+important, (because if it DID house data structures, it would likely be called very frequently, or very recently
+very often, no?). Again, for LRU in action, I'd recommend checking out page 7 of the same chapter. 
+
+The book goes into explaining the differences in each example in various real-world environments. For example,
+if we compare these methods, RANDOM, FIFO, LRU, in a "no-locality workload", which means we are effectively 
+calling random pages over a set number of times, then it doesn't matter what method you use, as they will
+all perform relatively the exact same.
+
+The next example is with an 80-20 workload, which means that 80% of the references go to 20% of the pages, 
+(the "hot" pages, or pages we access relatively frequently). The remaining 20% of the references are for the 
+remaining 80% of the pages (the "cold" pages, or pages we access infrequently). In this example, we actually
+start seeing differences, and we can clearly see LRU performing better than RANDOM and FIFO, (again, look
+at the chapter for this one. It's a really good chapter.).
+
+The final workload is the "looping sequence" workload, where we call 50 pages from 0-50, then we loop again.
+In this case, we see the worst-case scenario for both the LRU and FIFO. Since FIFO kicks out the first page that
+was put into the TLB cache, it sees a 0% hit rate. LRU is similar, and also experiences a 0% hit rate. Of course,
+this scenario is veerrryy unlikely, so we don't reaalllyy have to worry about it all too much.
+
+Implementing each of these is also its own beast, (well, particularly LRU). LRU requires us keeping track of a 
+list and dynamically updating said list for each page access that the process may perform. FIFO is much more
+simple, as we just create a queue, and for each page fault that occurs, the page fault handler will add the
+newly-added page to the end of the queue, and, if it needs pages, it will remove the first added page, (duh),
+from the queue. Random is even easier, it'll just add the page, and, if it needs more pages, it'll just, again,
+randomly remove a page from the TLB cache.
+
+Also, as I've said, we need to update the list dynamically for EACH MEMORY CALL in an LRU model, which is quite
+inefficient. We can speed this up with hardware support (the clock, or the PIT!). For each page access, instead
+of dynamically updating the list, which is quite inefficient, we can just update a time field somewhere in memory
+that corresponds to each page, (so a separate array that corresponds to a page in the page table. Another table
+for pages, OR, we can just make the page tables also store time). Then, when replacing a page, the OS could
+scan all the time fields in the system to find the least-recently-used page. 
+Again, as was the issue with the previous paging thing, having a big ol' array is also an issue, as we will
+have to scan and sift through a lot of entries, (perhaps we create another table and entry type structure, but 
+just for the time? Might also be inefficient, though). 
+We CAN approximate this, though, by instead utilizing a "use bit". Whenever a page is referenced, the hardware
+sets the "use bit" to 1. It will never clear the bit, though, as that is the responsibility of the OS. The OS
+can use the "use bit" via a "clock hand algorithm". Basically, imagine all currently existing pages exist
+in a circular list. A clock hand points to some arbitrary page, and the OS then reads the use bit for that page.
+If the use bit for that page is 1, then the OS goes "Oh, this is NOT a good page to replace just yet", so it
+sets the pages use bit to 0, and goes onto the next page. It does this until it finds a page with use bit 0,
+meaning it likely has not been used recently, and thus, the OS is free to replace it. Personally, I feel like
+you can make use of the PIT for this one. The hardware sets the use bit of the page, and then, somehow, (this
+is likely going to be complicated, maybe?), the OS starts a timer tick for the page. Once the timer runs out, 
+and the page has NOT been called before then, then the pages use bit is set to 0. Then, when the OS wants to clear
+a page, it just looks through and, again, tries to find one that's 0. This is the same as the "clock hand" 
+algorithm, but it's more dynamic, I guess. 
+Also, the dirty bit is quite important. The dirty bit just tells the OS that the page has been modified, and if
+it has been modified, it might be useful in the future, so we should store this page. If not, then we can throw
+that page away forever, and not have to access I/O (and waste precious resources). So, if the clock hand
+finds a page that has its use bit set to 0 AND is not dirty, then the OS has free reign to just throw that
+page away. 
+Finally, there is also the issue of thrashing. What happens when the memory is over-subscribed, and the memory
+demands of the set of running processes is too much? Well, I am not going to deal with this, (sorry! I am not
+that good of a coder!), but there are a few solutions
+1.	Admission control. Basically, we can decide NOT to run a subset of processes for a process, and only run the
+"working sets", (the pages that seem to be used most actively), and keep those in the memory to make at least
+SOME progress in completing this process.
+2.	The other case, which, if I DO decide to implement, or am forced to, I will be using this one. This case is
+to basically go to an out-of-memory exception handler that will look for the most memory-intensive task, and
+kill it. While this does fix the problem, it might accidentally kill something very important, so we'd rather
+NOT do this.
