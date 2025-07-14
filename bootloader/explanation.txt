@@ -1826,3 +1826,431 @@ SOME progress in completing this process.
 to basically go to an out-of-memory exception handler that will look for the most memory-intensive task, and
 kill it. While this does fix the problem, it might accidentally kill something very important, so we'd rather
 NOT do this.
+
+
+
+
+----------------------------------
+DAY 35
+
+I finished the virtualization and concurrency pillars. Only one pillar left (theres security too but lol)
+
+CONCURRENCY
+
+I did a little bit of the notes for this on Saturday, (not really notes, I just did a slight bit of the reading).
+Today I hope to finish up concurrency at the very least, and get into persistence for next week. 
+
+LOCKS
+A lock is conceptually quite simple. Why we want locks is due to the Producer-Consumer problem created by Dijkstra
+(if you've taken ANY CS data structures class, that name should sound either scary, or familiar. Remember 
+Dijkstra's algorithm on a graph?). The problem is quite simple. Basically, you have a producer that adds data
+to a finite sized buffer, and a consumer that removes data from said finite sized buffer. These two, the producer
+and consumer, must not interact with the buffer at the same time, the producer should not place anything into
+the buffer if it is full, and the consumer should not remove anything from the buffer if it is empty. If we
+have MULTIPLE producers and/or consumers running without coordination or proper management, we can either
+overfill the buffer, underrun the buffer, or corrupt shared data. (The dialogue chapter gives an example. Imagine
+5 producers produce 5 peaches at the same time. Now, there are consumers that must each randomly pick a peach
+and then go for it at the same time. This can create issues, as a consumer might go for a peach that has already
+been taken. OR, the producer could produce a peach on top of another peach, or whatever. I kind of changed
+their example, but it's close enough). Locks help manage this by making it to the scheduler is BASICALLY forced
+to only allow only one thread to run, (if you use one lock, that is). This basically achieves atomicity, as from
+the perspective of the entire computer as a whole, it is running that thread all at once without being interrupted
+(though, it still CAN be interrupted by interrupts. Just, if the scheduler decides to preempt and try to run a 
+different thread, if that thread tries to access that lock, it will wait until that lock is freed). 
+So, one thread can hold a lock at a time, and any code between lock() and unlock() are effectively running 
+atomically. 
+Lock() checks to see if a lock is available on a lock variable (like mutex). If it is unavailable, it just
+pauses the current thread. If it IS available, it gives this specific thread the lock.
+Unlock() is similar, but only the owner of the lock can call it. Once the owner calls it, the lock is free 
+again, and now seeks any other threads waiting for this lock.
+We are not locked to having one lock. For example, the POSIX library allows for lock() to actually accept a
+variable, implying that it can have MULTIPLE locks, and therefore, increase concurrency, (fine-grained approach).
+
+There are a bunch of different implementation for locks. And so, we have three different criteria:
+Does it effectively prevent multiple threads from entering a "critical section"? 
+Does each thread that wants a lock get a fair shot of acquiring a lock once it's free?
+How good/bad are the time overheads for using this specific lock implementation?
+You'll notice that these are quite similar to the requirements we had for when we were talking about scheduler
+implementations. That's because they are quite literally the same, lol.
+
+I believe this is also where I should explain race conditions. Race conditions are just simply a bug that occurs when there
+is no locking, or any form  of guarding multiple threads from effectively running at the same time and modifying the
+same data. For example, take a simple counter. We can encounter a race condition bug by having two threads
+modify the counter variable. They can modify it by taking the value from the counter, incrementing it, then
+storing it into the counter. Now, how a race condition could occur could be by having
+thread A grab the value from counter, increment it, and before it can store the value into counter,
+thread B interrupts thread A, grabs the value from counter, (still 0), increments it, and stores it into counter (1)
+then thread A finishes, and stores the value into counter (still 1). 
+Therefore, both these threads ran, yet counter has only incremented once. This is a race condition bug, and it is a
+runtime bug.
+
+CONTROLLING INTERRUPTS
+This is a super simple one, and it might be honestly what I do. This solution is quite simple. If we want the
+next few pieces of code to run effectively atomically, we should just... Disable the interrupts, no? After all,
+schedulers do work based off of interrupts, and so does everything else. Then, once we're done with executing
+the critical section of a thread, we can just enable interrupts again. There are quite a few downsides to this,
+though. First, the book states that this requires that any calling thread must be able to perform a privileged
+operation, and thus trust that this facility is not abused. (Which.. Ok, but, why not just make it a syscall
+then?). Second, this approach does not work on multiple processors. It doesn't matter if interrupts are enabled
+or disabled, as each other processor can have different threads running, and each thread can therefore enter
+the critical section, as our lock mechanisms don't really stop any other thread from executing, it just disables
+interrupts. 
+Furthermore, disabling interrupts for a long period of time is risky, as it can lead to interrupts becoming lost.
+
+Well, ok, we can then go about solving one of the problems (the multi processor one) by simply having a flag.
+typedef struct lock {
+	int flag;
+} lock_t;
+
+void init(lock_t* mutex) {
+	mutex->flag = 0;
+}
+
+So when we begin accepting processes, we initialize the lock for a variable, mutex. Then, when a thread is
+entering its critical section, and it asks for the lock in mutex, then we can simply do
+
+while(mutex->flag == 1) { 
+	// wait here
+}
+
+//  free, so we set the flag to 1 to specify it is being used
+mutex->flag = 1; 
+
+and for unlock, it is simple as:
+mutex->flag = 0;
+
+
+BUUUTTT, there is a BIG issue with this approach. Imagine process 1 calls lock() with flag = 0. It gets to the 
+while loop, sees the condition fails, and goes past the while loop. But right before it can set the flag to be
+1, it gets interrupted by the scheduler and the scheduler goes to a separate thread. Now, here, that thread
+calls lock() as well, fails the condition, and sets the flag to 1. Then, that thread finishes, and the scheduler
+goes back to the other thread that was in lock(). Now, since it had already finished processing the while loop,
+it goes and it sets its flag to 1 too. Now, we have an issue. We have one variable, mutex, with flag = 1 in
+multiple threads, implying multiple threads have the same lock. This is an issue.
+
+Thankfully, modern CPUs now provide a bit of hardware support, known as an "atomic exchange" instruction. Or,
+sometimes also called the test-and-set instruction.
+
+So, instead of having a while loop in the lock() function that does while(mutex->flag == 1), we can just do
+while(TestAndSet(&lock->flag, 1) == 1) {
+	// do nothing
+}
+
+and that's it. The test and set instruction returns the old value pointed by "old_ptr" and simultaneously updates
+said value to "new". This sequence is performed atomically, and thus, we can perform a TEST (test the old value
+returned by old_ptr), and a SET (set the new value to be whatever "new" is) in 1 line. So, for example, say
+the flag is set to 0. When a thread calls lock(), it will acquire the old flag (value of 0), test it, see that
+it isn't 1, and then atomically set the flag to be 1, indicating that this process now holds the lock. If
+another thread already has the lock, it will acquire the old value (1), see it is 1, then spin and wait for the
+thread to free the lock. So, now we have an actually working lock implementation that provides mutual exclusion.
+
+There is also compare-and-swap, which just tests whether the value at the address specified by the ptr is equal to
+expected. If so, update memory location pointed to by the ptr with the new value. If not, do nothing. In either case,
+return the original value at the memory location, thus allowing the code to compare and swap to know whether it succeeded
+or not. 
+
+There is also also LL and SC, or Load Linked and Store Conditional. The x86 architecture does NOT have this, so I will not
+be going over it, (at least, I don't think it has this, because OSTEP never claims it has this. It says that MIPS, Alpha,
+PowerPC, and ARM have it
+
+And finally, there is Fetch-And-Add. It atomically takes a value at an address, increments it, and returns it. Again, atomically. (x86 has this).
+With fetch-and-add, we can now implement the ticket lock implementation for locks. When a thread wishes to acquire a lock, it first does the
+atomic fetch-and-add on the ticket value. That value is now that thread's "ticket number", or "turn number". 
+lock->turn, which is a global value, is used to determine which thread's number is chosen right now. If the threads turn value is equal to 
+lock->turn, it is that threads turn to enter its critical section. This implementation is incredibly fair, and, based on what the book states, it
+ensures progress for all threads. Once a thread is assigned a ticket, it will be scheduled at some point in the future. Again, the OSTEP book gives
+a nice implementation idea of it:
+
+ typedef struct __lock_t {
+2 int ticket;
+3 int turn;
+4 } lock_t;
+5
+6 void lock_init(lock_t *lock) {
+7 lock->ticket = 0;
+8 lock->turn = 0;
+9 }
+10
+11 void lock(lock_t *lock) {
+12 int myturn = FetchAndAdd(&lock->ticket);
+13 while (lock->turn != myturn)
+14 ; // spin
+15 }
+16
+17 void unlock(lock_t *lock) {
+18 lock->turn = lock->turn + 1;
+19 }
+
+(COPY AND PASTED FROM OSTEP)
+
+
+Now, hardware locks are simple and nice, and I'll probably be using them, but the biggest issue is performance with all of them. That performance
+comes from the spinning part. See, imagine two threads. Thread 1 gets the lock and gets interrupted by the scheduler, which goes to thread 2. Thread
+2 tries to acquire the lock, sees its not available, and then spins. And then it keeps spinning until the PIT, or the scheduler timer interrupts it
+and goes back to thread 1 where it continues this cycle until thread 1 releases the lock (and therefore is finished). This is quite inefficient, sure,
+but I will still be using these hardware locks lol
+But, how can we develop a lock that doesn't needlessly waste time spinning on the CPU?
+
+A simple way to do fix this issue is by implementing a yield() syscall that simply switches the currently running thread from the "running state" to the
+"ready state", (remember, we talked about these states when discussing schedulers). There are still issues with this, (of course there are!).
+The primary one being that the scheduler won't immediately go back to the thread that was just being processed (obviously, if we're using one of
+those efficient scheduler approaches that has a queue and whatnot). So, it'll go to another thread, and it'll repeat this run-and-yield thing 
+as many times as it can until it eventually reaches the thread with the lock. This is still inefficient, but, more efficient than the spinning.
+
+Another problem with the hardware locks we discussed, (except for the ticket lock), is that they leave things up to chance. See, not every thread
+is created equal (unfortunately). The scheduler will determine what thread to run next, and if the scheduler makes a bad choice, we'll have
+wasted resources/time. We can get around this issue by using a simple queue. If nobody wants the thread, then we can free the lock. But if someone
+else wants the thread (i.e., the queue is not empty), then we can just set the lock to be enabled for that specific thread, or the thread that is
+next in the queue. 
+
+This can be solved with this setup, again by OSTEP:
+void lock(lock_t *m) {
+14 while (TestAndSet(&m->guard, 1) == 1)
+15 ; //acquire guard lock by spinning
+16 if (m->flag == 0) {
+17 m->flag = 1; // lock is acquired
+18 m->guard = 0;
+19 } else {
+20 queue_add(m->q, gettid());
+21 m->guard = 0;
+22 park();
+23 }
+24 }
+
+(I only posted the lock implementation, nothing else. Check page 16 yourself: https://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf)
+
+Basically, we have a guard as a mutual exclusive thing for the lock itself. It ensures that no other threads can modify the queue where waiting
+threads sleep, or edit the lock structure itself, etc.. Only one thread is allowed to have access to the lock structure, and that thread is also
+the one executing the critical section. Once that thread is done, de-queue other threads from the queue, set guard to 0, thereby
+allowing them access to the critical section next. If, in that implementation, we do not set guard to be 0 BEFORE calling park(), then we can get
+quite a horrendous bug. Basically, imagine we have two threads. Thread A has access to the lock right now, and thread B tries get access to the lock,
+but the lock is in use, (m->flags == 1), so it enters the else statement. It goes there, adds itself to the queue, and goes to sleep by calling
+park(). But, it did not set the guard lock to be 0. Remember, thread A, when it called lock(), went into the first if statement, and set the guard
+to be 0, thereby freeing it. Thread B interrupted Thread A, and thus was able to acquire the guard lock. But thread B, again, went to sleep before it
+frees the guard lock. So, when thread A goes to unlock, which is the following:
+
+26 void unlock(lock_t *m) {
+27 while (TestAndSet(&m->guard, 1) == 1)
+28 ; //acquire guard lock by spinning
+29 if (queue_empty(m->q))
+30 m->flag = 0; // let go of lock; no one wants it
+31 else
+32 unpark(queue_remove(m->q)); // hold lock
+33 // (for next thread!)
+34 m->guard = 0;
+35 }
+(AGAIN, FROM OSTEP)
+
+It will get stuck in that while loop, because it is constantly checking to see if the guard lock is 0 yet. It isn't, because thread B is asleep and
+still holds onto the guard lock (it is 1), so thread A gets stuck, and nothing ever happens. 
+But, there is still an issue to this. See, this code is NOT atomic, so imagine this scenario:
+Thread A holds the lock
+Thread B wants the lock, sees it is not available, goes to the else statement, adds itself to the queue, releases the guard lock, and just before
+it parks itself
+An interrupt occurs and the scheduler goes to thread A, who finishes up, and goes to unlock(), sees the queue isn't empty (thread B), and calls
+unpark on thread B, (wake up), and also removes it from the queue. 
+We then go back to thread B after thread A is finished, which then calls park() and goes to sleep for (potentially) forever
+
+This is quite a big issue, and so we can fix this via another syscall known as setpark(). It indicates a thread is about to park. If another thread
+interrupts before it actually parks, and calls unpark before park is actually called, then the next park call returns immediately instead of putting the
+the park to sleep. 
+
+There are other types of locks too, like the futex lock, and the two-phase lock, which I am very interested in as of right now. I might go back to them
+maybe, because I've heard the Linux kernel, (well, haven't heard. The book literally says Linux uses these, lol), uses these.
+
+THREAD SAFE
+Adding locks to data structures to make it usable by threads make its thread safe. 
+We can very easily achieve precise data structures, (like counting) via jut adding locks in each thread, like so:
+11 void increment(counter_t *c) {
+12 Pthread_mutex_lock(&c->lock);
+13 c->value++;
+14 Pthread_mutex_unlock(&c->lock);
+15 }
+
+But, the time taken increases a lot with more threads using this data structure, so it's not great. (4 threads each updating the counter a million times
+takes over 5 seconds). SO, to fix this, we use an approach known as an approximate counter. The idea for approximate counting is easy enough, if a
+thread wishes to increment the counter, it increments its local counter. Then, local values are periodically transferred to the global value by
+acquiring the global lock and incrementing it by the local counter's value. Then, the local counter is reset to 0. Of course, this is only if you're
+worrying about multiple CPU cores. If you just have one core, you can just use one counter and then use the precise locker, it won't actually be that
+intensive at all, (like use the thing above), because threads will be working in parallel, (or pseudo-parallel). 
+
+The next chapter talks about various data structures and how to make them thread safe. I skipped this chapter for right now, as I'll probably just
+come back to it when I implement multithreading and whatnot. 
+
+I may just be getting tired of doing all this reading, but this is starting to become quite complicated as time goes by. Basically, in some of our
+programs we want to wait for other threads to finish executing before continuing on, as the execution of those threads, the changes they may make to
+the local variables/global variables used by other threads could be vital. Thus, we run into condition variables. They're just an explicit queue that
+threads can put themselves into when something like a condition has not been fulfilled. For this, there exist a couple of programs, explicitly, 
+the wait() and signal() functions. The wait() call just puts the thread to sleep, while the signal() call is basically executed when a thread is
+"done", or has made changes in a part of the program, and wants to wake a sleeping thread, (which OSTEP wraps around thr_join and thr_exit). To use
+both the wait() and signal() functions well, we employ the use of a done variable. When a thread finishes, it executes thr_exit(), which will, 
+atomically, set done = 1, and calls signal to wake up a sleeping thread, which will wake up the sleeping parent thread, and then it'll continue
+execution. You might ask what the point of the done variable is, then, if we can just use signal? Well, threads do not always execute in the way we
+want them to. Perhaps the child thread could execute first, which would therefore call signal(), but nothing is sleeping, so it just returns. 
+Eventually, the parent thread will be called, which will enter wait() and sleep forever, not knowing the child thread finished long before it started.
+We need that done variable to ensure that the parent thread can KNOW that the child thread finished for these types of scenarios. We also need
+these to be running atomically, because if the parent thread, for example, calls join(), then, when it is about to go to sleep, there is a chance
+it could be interrupted, causing the child thread to run and finish, go back to the parent thread, and then cause the parent thread to fall asleep
+forever.
+
+Surprisingly, the next chapter starts talking about the Producer-Consumer Problem. (I swear it talked it about earlier, but whatever I guess).
+So, I'm not wrong when I say the Producer-Consumer Problem is associated with locks. It is. But it is a little bit MORE than that too. You can't JUST
+have locks with it, as you also need condition variables. The reason why just locks fail is because, as I believe I specified, we need don't want the
+producers to produce anything when the buffer is full, and we don't want the consumers to consume anything when the buffer is empty. So, we can just
+use simple condition variables to do this. And, if you're only using one thread of producers and one thread of consumers, you can just get away with
+have one condition variable (cond) and an associated lock, (mutex). But, if you have more than one thread, things fall apart. As I've mentioned before,
+we have guard locks to help stop race condition bugs from occurring, but then other bugs can occur based off of it too. So, for example, imagine
+three different threads. Thread 1 is a producer thread, thread 2 is a consumer thread, and thread 3 is another consumer thread. Say thread 3 runs
+first, everything works just fine for now, as thread 2 checks the buffer, the condition variable BASICALLY tells it is empty (not really), so 
+thread 2 falls asleep. Then thread 1 starts running, the condition variable BASICALLY tells it is empty (not really), so it produces a value and
+puts it into the buffer, and then signals to thread 2 (for the sake of this example), that the buffer is ready. But, thread 3 was never asleep,
+and it was always in the ready state, waiting to strike, so it sneaks in and consumes the value. Thread 2 then comes back (remember, it was asleep
+waiting for the condition variable. That variable now passed), so it re-acquires the lock, and tries to run get(), but nothing is there, as thread 3 
+consumed the data. Therefore, signaling a thread only wakes them up, and it only hints that the state of whatever they wanted to process has changed,
+not that it may actually have changed (from their perspective). This interpretation of the signal() function is known as Mesa Semantics, while the 
+exact opposite is referred to as Hoare semantics. A simple fix to this issue that was just described is to use a while loop instead of a conditional.
+Instead of checking for if(done == 0) { wait(); }, just do while(done == 0) { wait(); }. BUT, there is still a bug with this approach.
+Again, imagine the three threads (thread 1 producer, thread 2 consumer, thread 3 consumer). Thread 2 and 3 go first and both go to sleep. Thread 1
+acquires the lock, produces a value, signals thread 2 to wake up, then goes to sleep. Thread 2 wakes up, acquires the lock, consumes the data, then,
+it must now signal one of the two threads to wake up. For the problem so far, we have been assuming that the queue for sleeping threads has been 
+set up so that it is FIFO. But, not all wait queues are based on that, primarily because having a FIFO wait queue could ruin fairness, and also allow
+for malicious threads to wreak havoc. So, based on some wait queue implementations, we have come across a problem, as thread 2 could feasibly,
+accidentally, wake up thread 3, which if it does, then then thread 3 will wake up, see that there's nothing, go to sleep, then all three threads
+will be asleep, leading to an error. 
+So, again, there is a simple solution to this, which is to use TWO conditional variables instead of just one. So, we will have two condition codes:
+empty and fill. (Remember, originally we just have the one condition variable, cond, that just checked for if the buffer was filled or empty. 
+Also remember, though, that this conditional variable wasn't explicitly a conditional variable. We weren't waiting for a signal for cond to be sent,
+we just had a general lock, mutex.). By splitting the one condition code into two, we can now avoid the second problem by design, as we can simply set
+the condition code for empty to be 1, or vice versa, thereby avoiding the issue of accidentally causing all 3 threads to fall asleep altogether.
+There is also one other, smaller issue that can be seen with a better example, (one with memory allocation). Assume there are 0 bytes free, and
+thread 1 asks for 100 bytes, sees there are none, goes to sleep. Thread 2 asks for 10 bytes, sees there are none, goes to sleep. Thread 3 now
+comes around frees 50 bytes. Now, how can thread 3 know to free thread 2? It should realistically only free thread 2, and keep thread 1 asleep.
+An easily solution is to replace the signal with a broadcast, so that it wakes up ALL sleeping signals that are waiting for the condition. This will
+have a negative performance issue, as the threads that can't be processed will wake up, see they don't have enough, and go back to sleep, but it 
+does fix the issue.
+
+SEMAPHORES
+Dijkstra, surprisingly, contributed a bunch to the concurrency scene of Computer Systems, or OS Development. So much so that he and his colleagues
+invented a primitive type called the semaphore. The semaphore is a SINGLE primitive for all things related to synchronization, that includes 
+using them as BOTH locks and conditional variables. 
+
+According to OSTEP, a semaphore is an object with an integer value that the programmer can manipulate with POSIX-standard routines sem_wait() and
+sem_post(). There is also sem_init, which of course, initializes a semaphore.
+For example:	
+sem_t s;
+sem_init(&s, 0, 1);
+The first argument is, of course, the semaphore structure that we just made, (a pointer to it), 0 means that this semaphore can be shared between all
+threads in the same process, and the 1 initializes the semaphore to have a value 1.
+The way the semaphore works is relatively simple, I think. 
+Here are the pseudo codes for the functions, defined by OSTEP:
+1 int sem_wait(sem_t *s) {
+2 decrement the value of semaphore s by one
+3 wait if value of semaphore s is negative
+4 }
+5
+6 int sem_post(sem_t *s) {
+7 increment the value of semaphore s by one
+8 if there are one or more threads waiting, wake one
+9 }
+(ASSUME SEMAPHORES RUN ATOMATICALLY SO AS TO AVOID ANY RACE CONDITIONS)
+
+In a binary lock setting, say we initialize the semaphore like the way we did above. Then, we call sem_wait, which decrements the value of the
+semaphore to 0. Then, it will wait only if the value is NOT greater than or equal to 0. Since the value is 0, sem_wait() will return and the calling 
+thread will continue. (You may ask: why do we pick 1? Well, we want only this one thread to be able to run exclusively, right? So we set it to 1,
+wait decrements it for this thread only, then any future calls to wait will decrement it into the negatives, causing those threads to wait. 
+
+In an ordering setting, (or just conditional variables, really), we can make it so that a parent thread executes first, reaches a point where it 
+needs a child thread, executes the child thread, then goes back and finishes up the parent thread. We can achieve this with semaphores, (duh),
+by just setting the initial value to be 0 instead of 1 this time. By having it be 0, we can call sem_wait() in the parent thread, (thereby
+making the parent thread fall asleep), switch to the child thread, which can call sem_post (on the specific semaphore that was for the parent thread),
+which will then allow the parent thread to continue execution. (The alternative method also works, where an interrupt immediately occurs after
+making the child thread)
+
+Next up is the producer-consumer problem that we discussed last time. 
+If we decide to make two semaphores, one for the empty conditional variable, and one for full, it'll work if we have a very simple buffer of size 1.
+But, if we have a buffer of size > 1, then we run into an issue, particularly with our put and get that lead to a race condition. Suppose there are 
+two producers, one producer is about to assign a value to the first buffer entry, but it gets interrupted, and the second producer assigns a value there
+instead. Then, we go back to the first producer which then overrides that first value and puts in a different value. Now, we've just lost the old data!
+That's quite bad. You may ask, "hey, isn't this the same code from the conditional variables chapter, though?" You're right. But, it worked there
+because we had mutual exclusion happening, which means only one thread really could run at a time in the producers and consumer section (mutex). Here,
+we don't have that, so we need ANOTHER semaphore for mutex, and it'll work all fine and dandy now.
+
+READER-WRITER LOCKS
+Some programs don't actually manipulate/insert into anything, and they'd only like to READ from a given section/thread/data structure, or whatever.
+Thus, we'd like programs to be able to read whenever they'd please, (concurrently), and not be stopped by mutex, or any other locks. Thus, we'd
+like reader-writer locks. We can achieve this via acquire_readlock and acquire_writelock. The way OSTEP does it is quite simple. The first reader ever
+will effectively initialize the readlock. It'll increase the readers variable, which keeps track of how many readers are in the data structure, and
+it'll acquire a writelock too, while also freeing the general lock. Now, anyone else is free to acquire a readlock, but only the first reader has the
+write lock too. We do this because, while there are readers in the data structure, we DON'T want to edit it, as that can cause some messy behavior to
+occur, especially if they're using the data in the data structures for their own use. Thus, we must wait. There are issues with this, like writelock
+threads COULD starve, but I don't care.
+
+OTHER STUFF
+Next up is the dining philosopher's problem, once again posed and solved by Dijkstra (my goodness, this guy was cracked). Basically, there are 5
+philosophers sitting in a round table. They each have 1 fork, so there are 5 forks in total. To eat, they need 2 forks (left and right), but they
+also think sometimes, and thus, need 0 forks.
+The solution is kind of simple. Basically, if a philosopher wishes to eat, we must see if they have a left fork. If they do, then grab it. Then, check
+if they have a right fork. If they do, then grab it. If neither exist, or if one exists and not the other, then wait for the philosopher using the fork
+to put it down and be done with it. There is an issue, though, with this simple solution. If philosopher 1 grabs the left, then philosopher 2 grabs
+the left, then philosopher 3 grabs the left, then philosopher 4 grabs the left, then philosopher 5 grabs the left, we'll have gone in a full circle,
+and thus, all philosophers are waiting for the right forks, but none are available. Thus, we must simply force one of the philosophers, at random,
+to grab the right fork FIRST, THEN the left fork.
+
+There is also thread throttling. This is simple enough. If you only want a maximum number of threads doing one thing at once, then you can just make
+a semaphore with the value being the maximum number of threads you want being able to do this one thing, implement it into your code, (put a sem_wait
+and sem_post around the region), and then that's it. 
+
+APPARENTLY, It is hard to make conditional variables out of semaphores, which... I guess I can see? (You're losing the signal and broadcast stuff), 
+dunno though, I need to do some testing
+
+The next chapter was on bugs. I don't think its super important to take notes on all the bugs that occur, but they are nice to know.
+Basically, almost all concurrency bugs fall into two categories (and also subcategories IN those categories). Deadlock and non-deadlock bugs.
+Deadlock bugs are basically when multiple threads need to interract with each other in some way, but are all waiting for the other threads to do 
+something else. Thus, they've entered a deadlock (good example is the philosopher problem. All of the philosophers were waiting for the right fork
+to be available, thus, they were in a deadlock). Non-deadlock are just bugs that aren't related to deadlocking, and most non-deadlock bugs are just
+atomicity or order violation bugs.
+
+The conditions for NO deadlocks, according to OSTEP are the following:
+1.	Mutual exclusion: Threads claim control over resources that they need, or the CPU in general
+2.	Hold-and-wait: Threads hold onto resources they need, while also waiting for other resources or conditional variables
+3.	No preemption: Resources cannot be forcibly removed from threads that are holding them
+4.	Circular wait: There exists a circular chain of threads such that each thread holds one or more resources that are being requested by the 
+next thread in the chain
+If ANY of these conditions are met, a deadlock CAN NOT occur.
+
+Circular wait:
+You can obtain this via ordering. We talked about this in semaphores, but basically, if there exist multiple threads, then you can enforce ordering
+by acquiring thread 1 before thread 2. But, most systems have more than 2 threads, so we go for partial ordering. But, ordering is just a convention,
+not a requirement, so a sloppy programmer can still cause a deadlock. (Though, again, my OS is going to be mostly for fun. The programming is going
+to be by me, and though I am a sloppy programmer, I should remember the conventions... I hope).
+
+Hold-and-wait:
+Basically, a thread will acquire all locks at once, atomically, at once. Each thread will first grab the prevention lock, which guarantees no untimely
+switches can occur in the midst of lock acquistion. But, this has some issues. First off, we lose some concurrency, as we are forcing each thread
+to grab all the locks immediately, which is not very good.
+
+No preemption:
+Locks are held until their respective unlock is called, so if we want MULTIPLE locks, we get into some trouble, as we are waiting for a lock while
+hogging another lock that another thread might want. So, some libraries give us more flexible options that either grab the lock, or return an error code
+indicating that the lock is held, and you can try again if you'd like. Thus, if we see that the lock is not available, we can just free the already held
+lock, thereby avoiding deadlock. But, we can run into another issue, known as livelock. In a very unlikely scenario, two threads could be repeatedly
+trying to acquire both locks, so they're stuck in a loop while staying alive. There ARE solutions to livelock too, like adding a completely random
+delay between each loop, which heavily decreases the odds of a livelock occuring like this.
+
+Mutual exclusion:
+One way to avoid deadlocking is to avoid using mutual exclusion altogether. This might seem odd, as we have stated that we need mutual exclusion
+to run critical sections in our data structures, or other stuff. So what can we do? Well, since we know that a bunch of ISA's, including x86,
+have built in atomic instructions, we can abuse them to create lock-free data structures. For example, we can make the counter data structure
+with compare-and-swap, and even a few list data structure algorithms, like insertion, with the compare-and-swap atomic instruction.
+
+Or, instead we can do deadlock avoidance via scheduling. If we have knowledge of which threads will grab which locks during execution, we can schedule
+the threads in a way no deadlocks can occur. 
+
+OR, we can just have a deadlock detector that runs in the background. If a deadlock DOES occur, then it just restarts the system, or it can take a more
+complex approach to recover from a deadlock. 
+
+IMPORTANT STUFF FOR FUTURE IMPLEMENTATION
+SINCE I am using GCC, I have access to the <stdatomic.h> library, which gives us atomic_flag_test_and_set(atomic_flag* mutex), __builtin_ia32_pause(),
+and atomic_flag_clear(atomic_flag* mutex);
+https://wiki.osdev.org/Synchronization_Primitives
+I definitely need to read up on concurrency again. This is not a pillar that I think I can read once and I'm done. This pillar was quite heavy.
