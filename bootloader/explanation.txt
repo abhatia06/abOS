@@ -2254,3 +2254,145 @@ SINCE I am using GCC, I have access to the <stdatomic.h> library, which gives us
 and atomic_flag_clear(atomic_flag* mutex);
 https://wiki.osdev.org/Synchronization_Primitives
 I definitely need to read up on concurrency again. This is not a pillar that I think I can read once and I'm done. This pillar was quite heavy.
+
+
+----------------------------------
+DAY 36
+
+I didn't do a whole lot of studying today, and ended up not getting as far as I wanted to. I think it happened because I ended up studying over the weekend, and hanged out with my friends, so I was quite tired
+today. But, whatever, I still got through 3 chapters, so it's fine. I can just re-read chapters in the future if I need to.
+
+PERSISTENCE
+We are now finally at the 3rd and final pillar of OSTEP, and the journey of reading OSTEP is drawing near. In total, I believe I will have spent an
+entire week reading this textbook. Now, onto the notes:
+
+I/O
+This pillar begins quite simple and just repeating stuff we already know. It begins by describing some of the computer architecture, and explaining
+polling and interrupts. Where it actually starts to explain new stuff is around page 7, where it explains a problem that we run into, even with
+interrupts, regarding wasting precious clock cycles:
+
+With programmable I/O, (PIOs), to transfer a large chunk of data to a device, the CPU is once again burdened with a rather trivial task, and is 
+being wasted doing it, when it could be doing another process or something. The example OSTEP gives is below:
+
+Suppose the CPU runs continuously, and now it wants to transfer something to the disk. It initiates the I/O, which must copy the data from memory to the
+disk explicitly, one word at a time. So, the CPU is being hogged by this I/O operation, until it is done copying data from the memory, and then proceeds
+to put it into the disk, where the CPU then regains control and is able to do whatever it wants. So, to get past this problem, we use a Direct Memory
+Access, or DMA. The OS basically programs the DMA engine by telling it where the data lives, how large it is, and what device to send it to. Then,
+the DMA is able to handle the copying of the data from memory with very little CPU intervention, allowing the CPU to also be doing whatever it wants
+even during programmable I/O, or PIO.
+
+Also, the way the OS actually communicates with external hardware, (at least in the x86), is via an in and out instruction (which we've programmed).
+Basically, if we want to talk to a certain external hardware, we simply read/write to a port that the external hardware is connected to that processes
+our operation (read/write). For example, port 0x60 is the read/write port for the keyboard, so when the user types a letter, the letter exists in port
+0x60, and we must just grab it from that port to do stuff with it.
+
+Next up are device drivers. A device driver allows the OS to know in detail about how a device works, and what other specific interactions it can 
+perform with a device. Having device drivers allow for abstraction in an OS, which allows us to basically hide the specifics and messy details of
+every device ever. For example, say we have a file system. We'd like it to just have a general read/write, and not really care about how to issue
+these reads/write requests to different types of disks/drives. Because if we did, then it'd get really messy (i.e., we would need a specific read/write
+for, say, the hard drive, or the USB, or SSD, or whatever, and that is not very nice). So, we use abstraction and device drivers. So, now, a file
+system issues a block read/write requests to the generic block interface, which routes them to the appropriate device driver, which handles the issues
+of each specific request. 
+
+To understand, we can look at the xv6 simple IDE disk driver, which, according again to OSTEP, is the following:
+Control Register:
+Address 0x3F6 = 0x08 (0000 1RE0): R=reset,
+E=0 means "enable interrupt"
+Command Block Registers:
+Address 0x1F0 = Data Port
+Address 0x1F1 = Error
+Address 0x1F2 = Sector Count
+Address 0x1F3 = LBA low byte
+Address 0x1F4 = LBA mid byte
+Address 0x1F5 = LBA hi byte
+Address 0x1F6 = 1B1D TOP4LBA: B=LBA, D=drive
+Address 0x1F7 = Command/status
+Status Register (Address 0x1F7):
+7 6 5 4 3 2 1 0
+BUSY READY FAULT SEEK DRQ CORR IDDEX ERROR
+Error Register (Address 0x1F1): (check when ERROR==1)
+7 6 5 4 3 2 1 0
+BBK UNC MC IDNF MCR ABRT T0NF AMNF
+BBK = Bad Block
+UNC = Uncorrectable data error
+MC = Media Changed
+IDNF = ID mark Not Found
+MCR = Media Change Requested
+ABRT = Command aborted
+T0NF = Track 0 Not Found
+AMNF = Address Mark Not Found
+
+Basically, the driver presents an interface to the OS consisting of the control, command block, status, and error registers. The OS can then read/write
+to/from these registers (either by in/out with x86, or something else). Since we're provided the basic and necessary registers, the OS is able to 
+poll this specific device now by reading the status register (0x1F7) until the driver is READY, write the sector count, or LBA addresses, of the sectors
+to be used, and also drive number. Then, write the READ/WRITE command to the command register (0x1F7 as well). Then we wait again until the driver
+is ready, then write data to data port. Handle any interrupts that occur (some approaches allow bashing, or just 1 final interrupt when the transfer
+is complete), and then afterwards, read the status register and the error register to see if the process was successful or if it failed. 
+
+Next up are hard drives. I believe I've talked about it a little bit through my CHS addressing thing, but they work relatively simply. Basically,
+hard drives are made up of n sectors, and the address space of a drive goes from 0 to n - 1, (so.. n sectors). Each sector is 512 bytes, and, this is
+something I didn't mention last time, but, when you read/write from the hard drive into memory, the hard drive can guarantee that a single 512-byte 
+write is atomic. So, if an interrupt DOES occur during a write, then that interrupt will not cause a line in the hard drive to be like:
+"mov eax, ", and just be incomplete. No, it will either write the full 512 bytes, or it won't write anything at all. An interrupt will cause a torn
+write, though, as only a portion of the write will be complete.
+
+OSTEP also gives a more specific geometry/layout of a hard drive. First up is the platter. It is a circular hard surface on which data is stored. 
+Modern disks have, obviously, more than one platter, and each platter is generally made up of aluminum, and coated with a thin magnetic layer that
+enables the drive to store bits even when the drive is powered off. Platters are connected via a spindle. The spindle spin the platter
+around at a fixed rate when the drive is on. Data is encoded on each surface in concentric circles, called tracks, with each arc being a sector (you
+should know that from geometry!). There are hundreds of tracks, each the width of a human hair or smaller. To read or write we have a disk head that
+is able to sense the magnetic patterns on the disk, (read) and also induce a charge onto the disk (write). Each disk head is attached to a disk arm,
+and I should specify, there is a disk head for each surface of the drive (the platters have two surfaces, duh). To find the right track that contains
+the correct sector the operations want to access, the disk arm must physically move the head to the correct track using an operation known as seek,
+which is quite costly, as it takes multiple milliseconds for the arm to become "settled" and thus start checking for the correct sector. 
+
+Next up is the disk scheduler. Since I/O is expensive, we would like to be able to manage which I/O requests go first and whatnot. Unlike process
+scheduling, where the OS had no ability to know how big a process was, we can figure out how big an I/O request is from a process/thread. By 
+estimating the seek time and possible rotational delay of a request, the disk scheduler can know how long each request will take, and be able to choose
+the one that will take the least amount of time (shortest job first, or SJF).
+
+There is also Shortest Seek Time First (SSTF). Basically, if an I/O request is requesting the I/O from the same track that the disk arm is already over,
+then the SSTF will prioritize those requests first before moving on to a request that wants to access a different track from the platter. However,
+the OS doesn't really see the disk geometry, and only sees an array of blocks that represent the disk. So, what the OS can do instead is just use
+a Nearest Block First algorithm (NBF) to achieve SSTF. But, like any algorithms similar to "SHOREST __ FIRST", we have the problem of starvation.
+If we have a steady stream of I/O requests, with a few from the same track the arm is over, and the others from different tracks, the other requests
+could starve, as those requests will be ignored, and the requests that keep the arm in the same track are prioritized. 
+To get around this, we can use the elevator approach. The elevator approach (SCAN, F-SCAN, C-SCAN, CIRCULAR-SCAN) have the disk arm move back and forth,
+almost in a sweeping motion, to cover all the tracks. So, if a request was handled on track A, and another request comes for track A immediately after,
+that request is not immediately handled, but rather queued until the next sweep occurs.
+
+However, SCAN and whatnot have an issue, and that is that they ignore rotation. So, to fix that, we use SPTF (or SATF), also known as Shortest 
+Positioning Time First, (or Shortest Access Time First). To really understand why rotation matters, the textbook has an excellent example that
+I recommend reading and looking at for yourself:
+https://pages.cs.wisc.edu/~remzi/OSTEP/file-disks.pdf (page 12-13). 
+Imagine the platter rotates counter-clockwise and starts at sector 30, which is in the inner-most track. Two requests have come in, one for sector 16,
+and one for sector 8, which are in the middle and outer-most track respectively. Which request should the I/O accept first? The answer is, it depends.
+If our seek time (the time it takes to move the arm to another track) is relative to the rotation speed, then we can use SSTF and SCAN and whatever.
+But, if our seek time is FASTER than the rotational speed, then it would make more sense to go further to the outer track, for sector 8, as by the
+time our arm would reach the outer track, sector 8 would be there, whereas sector 16 would have to do a full rotation (or almost a full rotation)
+to reach our disk head.
+
+There are other things to consider for a disk scheduler, and honestly, it behaves quite similarly to that of malloc and/or a job scheduler, (merging
+is also something we should consider: take requests for sector 8, 12, 33, 26, 34. We should merge requests for 33 and 34 and do them in one try)
+
+RAIDS
+One of the things that I've mentioned in these notes is that memory is easy for the CPU to access, are fast, but are super small. Meanwhile, the disk
+is expensive, holds nonvolatile data, and is super large. How can we make a large, fast, and reliable storage system? 
+This is where RAIDS come in, better known as Redundant Array of Inexpensive Disks, which is a technique to use MULTIPLE disks in concert to build a
+faster, bigger, and more reliable disk system. RAID is an incredibly complex beast that I will really only study, but likely I will never have
+to actually deal with it (unless I manage to get a systems job and they make me do stuff with it! That'd be cool). RAIDs improve performance, 
+capacity, AND reliability, (as when a disk gets corrupted, we lose precious data. So, we spread data across multiple disks so as to reduce the chance
+of losing it forever in case a disk gets corrupted). 
+RAID gives each disk two states: either it is working, or it has failed and all the stuff on that disk has been permanently lost. We assume that
+RAID has software that can immediately identify if a disk has failed, so we ignore the silent failure of disks for now. RAID is able to achieve
+better reliability through the use of redundancy, but, this is at the cost of some disk space. Assume we have N disks with B blocks in each disk.
+Thus, the available memory is N * B. But, if we have redundancy with each block having a copy, we get a useful capacity of (N*B)/2.
+There are three important RAID designs: RAID level 0 (striping), RAID level 1 (mirroring), and RAID levels 4/5 (parity-based redundancy).
+
+RAID level 0 has no redundancy, instead, it spreads the blocks out in a round-robin style. Assuming each disk can only hold 4 blocks, disk 1 might have
+0, 1, 8, and 9, while disk 2 might have 2, 3, 10, 11, etc. etc., you get the idea. We could also have it so disk 1 has 0, 4, 8, 12, and disk 2 has
+1, 5, 9, 13, etc. etc., it doesn't matter. We call blocks in the same row (as in disk 1 has 0, disk 2 has 1, disk 3 has 2, etc. etc.,) striping. Chunk
+sizes 
+
+Honnnessttlllyy... I think I'll come back to RAID. It's not something super important to understand right now. The next chapter, though, is quite
+important.
