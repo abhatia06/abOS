@@ -18,6 +18,7 @@ uint32_t malloc_virt_address;
 uint32_t malloc_phys_address;
 uint32_t total_malloc_pages;
 uint32_t malloc_start;
+uint32_t heap_end;
 
 void* malloc_init();
 void* malloc_more_pages(uint32_t size);
