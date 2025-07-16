@@ -82,6 +82,41 @@ void* calloc_more_pages(uint32_t size) {
 }
 
 void* split_blocks(uint32_t size) {
+
+        //  The last element in the dll will ALWAYS be the largest and available block of memory
+        malloc_node_t* temp = malloc_head;
+        while(temp->next != NULL) {
+                temp = temp->next;
+        }
+
+        uint32_t virt = temp->address;
+
+        // Assumed to be free, but just in case
+        if(temp->free) {
+                if(temp->size >= size + sizeof(malloc_node_t)) {
+
+                        //  We want the bigger chunk (the older node w/ free data) to be, again, the end-most element of the dll
+                        malloc_node_t* new_node = temp;
+                        malloc_node_t* old_node = (malloc_node_t*)((char*)new_node + size + sizeof(malloc_node_t));
+
+                        old_node->next = NULL;
+                        old_node->prev = new_node;
+                        old_node->size = temp->size - size - sizeof(malloc_node_t);
+                        old_node->free = true;
+                        old_node->address = (uint32_t)old_node + sizeof(malloc_node_t);
+
+                        new_node->next = old_node;
+                        new_node->prev = temp->prev;
+                        new_node->size = size;
+                        new_node->free = false;
+                        new_node->address = (uint32_t)new_node + sizeof(malloc_node_t);
+
+                        return (void*)(new_node->address);
+                }
+                else {
+                        return malloc_more_pages(size);
+                }
+        }
         return NULL;
 }
 
