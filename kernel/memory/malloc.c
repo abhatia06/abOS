@@ -129,7 +129,14 @@ void* split_blocks(uint32_t size) {
 }
 
 void merge_free_blocks() {
-
+        malloc_node_t* temp = malloc_head;
+        while(temp && temp->next) {
+                if(temp->free && temp->next->free) {
+                        temp->size += (temp->next->size) + sizeof(malloc_node_t);
+                        temp->next = temp->next->next;
+                }
+                temp = temp->next;
+        }
 }
 
 void malloc_free(void* ptr) {
