@@ -99,6 +99,12 @@ void* split_blocks(uint32_t size) {
                         malloc_node_t* new_node = temp;
                         malloc_node_t* old_node = (malloc_node_t*)((char*)new_node + size + sizeof(malloc_node_t));
 
+                        /*
+                         * There is likely to be a logical bug here. Basically, what I'm trying to achieve is that each node will 
+                         * be a certain size and include header information that can be used to identify each node. This splitting
+                         * removes the amount of bytes we want out of the bigger, free node, allocates it to be used, and returns
+                         * the address of the start of the available user data block (it skips the metadata header). 
+                         */
                         old_node->next = NULL;
                         old_node->prev = new_node;
                         old_node->size = temp->size - size - sizeof(malloc_node_t);
