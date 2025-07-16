@@ -85,13 +85,11 @@ void* calloc_more_pages(uint32_t size) {
         return ptr;
 }
 
-void* split_blocks(uint32_t size) {
+void* split_blocks(malloc_node_t* node, uint32_t size) {
 
-        //  The last element in the dll will ALWAYS be the largest and available block of memory
-        malloc_node_t* temp = malloc_head;
-        while(temp->next != NULL) {
-                temp = temp->next;
-        }
+        // Originally, I tried to use the approach that the last block will always be free, which is true, but I didn't take
+        // into account that fragmentation could occur, sooo...
+        malloc_node_t* temp = node;
 
         // Assumed to be free, but just in case
         if(temp->free) {
@@ -137,6 +135,28 @@ void merge_free_blocks() {
                 }
                 temp = temp->next;
         }
+}
+
+void* malloc_next(uint32_t size) {
+        if(size == 0) {
+                return NULL;
+        }
+
+        malloc_node_t* temp = malloc_head;
+        while(temp->next != NULL) {
+                if(temp->free && temp->size == size + sizeof(malloc_node_t)) {
+                        temp->free = false;
+                        return temp->address;
+                }
+                else if(temp->free && temp->size > size + sizeof(malloc_node_t)) {
+                        return split_blocks(temp, size);
+                }
+        }
+
+        // Otherwise, we assume that there is not enough memory
+        void* ptr = malloc_more_pages(size);
+
+        return NULL;    // incomplete, will go walk cooper and then I'll be back and finish this
 }
 
 void malloc_free(void* ptr) {
