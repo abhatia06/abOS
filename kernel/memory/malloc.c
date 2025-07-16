@@ -123,3 +123,7 @@ void* split_blocks(uint32_t size) {
 void merge_free_blocks() {
 
 }
+
+void free_blocks() {
+        
+}
