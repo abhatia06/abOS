@@ -133,5 +133,12 @@ void merge_free_blocks() {
 }
 
 void malloc_free(void* ptr) {
-
+        malloc_node_t* temp = malloc_head;
+        while(temp->next != NULL) {
+                if(temp->address == ptr) {
+                        temp->free = true;
+                        merge_free_blocks();
+                        break;
+                }
+        }
 }
