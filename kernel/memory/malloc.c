@@ -7,12 +7,12 @@
 
 #define NULL 0
 
-malloc_head = 0;
-malloc_virt_address = 0x400000;         // start of malloc virtual address space for all processes
-malloc_phys_address = 0;
-total_malloc_pages = 0;
-malloc_start = 0;
-heap_end = 0;
+malloc_node_t* malloc_head = 0;
+uint32_t malloc_virt_address = 0x400000;         // start of malloc virtual address space for all processes
+uint32_t malloc_phys_address = 0;
+uint32_t total_malloc_pages = 0;
+uint32_t malloc_start = 0;
+uint32_t heap_end = 0;
 
 void* malloc_init() {
         total_malloc_pages = 256;       // 1MB/4KB. We want to allocate 1MB worth of pages for the initialization
