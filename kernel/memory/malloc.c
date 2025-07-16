@@ -8,7 +8,7 @@
 #define NULL 0
 
 malloc_node_t* malloc_head = 0;
-uint32_t malloc_virt_address = 0x400000;         // start of malloc virtual address space for all processes
+uint32_t malloc_virt_address = 0x400000;                // start of malloc virtual address space for all processes
 uint32_t malloc_phys_address = 0;
 uint32_t total_malloc_pages = 0;
 uint32_t malloc_start = 0;
@@ -19,10 +19,11 @@ void* malloc_init() {
         malloc_phys_address = (uint32_t)allocate_blocks(total_malloc_pages);
 
         heap_end = malloc_virt_address + total_malloc_pages * PAGE_SIZE;        // keep track of the heap end
-        virt = malloc_virt_address;     // localize it to malloc_init, as we want EVERY process to begin with virtual address
+        uint32_t virt = malloc_virt_address;    // localize it to malloc_init, as we want EVERY process to begin with virt address
                                         // 4MB for their heap. Alternatively, we could just set virt_address = 4MB at the end of
                                         // each initialize, but whatever
 
+        // THIS MAY CAUSE ISSUES IN THE FUTURE... WILL HAVE TO SEE
         malloc_head = (malloc_node_t*)malloc_virt_address;
 
         for(uint32_t i = 0; i < total_malloc_pages; i++) {
@@ -31,16 +32,18 @@ void* malloc_init() {
         }
 
 
-        malloc_head->size = (total_malloc_pages * PAGE_SIZE) - sizeof(malloc_node_t);  // malloc_block_t is basically header info
+        malloc_head->size = (total_malloc_pages * PAGE_SIZE) - sizeof(malloc_node_t);   // malloc_block_t is basically header info
                                                                                         // each malloc'd piece of memory
         malloc_head->free = true;
         malloc_head->next = NULL;
-        malloc_head->address = malloc_phys_address;     // again, might remove later..
+        malloc_head->prev = NULL;
+        malloc_head->address = (void*)((uint32_t)malloc_head + sizeof(malloc_node_t));  // again, might remove later..
 
-        return (void*)malloc_phys_address;        // don't ask why I return the physical address instead of virtual, I'll probably change it eventually
+        return (void*)malloc_head->address;
 }
 
-// This function is effectively an sbrk(). It is only used when we absolutely NEED more memory
+// This function is effectively an sbrk(). It is only used when we absolutely NEED more memory. This function will likely be the
+// only function that exists here, in the kernel implementation (and not user space).
 void* malloc_more_pages(uint32_t size) {
         total_malloc_pages = size/PAGE_SIZE;
         if(size % PAGE_SIZE > 0) {
@@ -48,8 +51,8 @@ void* malloc_more_pages(uint32_t size) {
         }
 
         malloc_phys_address = (uint32_t)allocate_blocks(total_malloc_pages);
-        virt = heap_end;
-        heap_end = virt + total_malloc_pages * PAGE_SIZE;       // update heap end to reflect change in heap memory
+        uint32_t virt = heap_end;
+        heap_end = virt + total_malloc_pages * PAGE_SIZE;       // update heap end to reflect change in memory
 
         malloc_node_t* temp = malloc_head;
         while(temp->next != NULL) {
@@ -67,12 +70,13 @@ void* malloc_more_pages(uint32_t size) {
         new_node->size = (total_malloc_pages * PAGE_SIZE) - sizeof(malloc_node_t);
         new_node->free = true;
         new_node->next = NULL;
-        new_node->address = malloc_phys_address;
+        new_node->prev = temp;
+        new_node->address = (void*)((uint32_t)new_node + sizeof(malloc_node_t));
 
         // Previous element in list should point to new node
         temp->next = new_node;
 
-        return (void*)malloc_phys_address;
+        return (void*)new_node->address;
 }
 
 void* calloc_more_pages(uint32_t size) {
@@ -89,8 +93,6 @@ void* split_blocks(uint32_t size) {
                 temp = temp->next;
         }
 
-        uint32_t virt = temp->address;
-
         // Assumed to be free, but just in case
         if(temp->free) {
                 if(temp->size >= size + sizeof(malloc_node_t)) {
@@ -99,7 +101,7 @@ void* split_blocks(uint32_t size) {
                         malloc_node_t* new_node = temp;
                         malloc_node_t* old_node = (malloc_node_t*)((char*)new_node + size + sizeof(malloc_node_t));
 
-                        /*
+                         /*
                          * There is likely to be a logical bug here. Basically, what I'm trying to achieve is that each node will 
                          * be a certain size and include header information that can be used to identify each node. This splitting
                          * removes the amount of bytes we want out of the bigger, free node, allocates it to be used, and returns
@@ -109,13 +111,13 @@ void* split_blocks(uint32_t size) {
                         old_node->prev = new_node;
                         old_node->size = temp->size - size - sizeof(malloc_node_t);
                         old_node->free = true;
-                        old_node->address = (uint32_t)old_node + sizeof(malloc_node_t);
+                        old_node->address = (void*)((uint32_t)old_node + sizeof(malloc_node_t));
 
                         new_node->next = old_node;
                         new_node->prev = temp->prev;
                         new_node->size = size;
                         new_node->free = false;
-                        new_node->address = (uint32_t)new_node + sizeof(malloc_node_t);
+                        new_node->address = (void*)((uint32_t)new_node + sizeof(malloc_node_t));
 
                         return (void*)(new_node->address);
                 }
@@ -130,6 +132,6 @@ void merge_free_blocks() {
 
 }
 
-void free_blocks() {
-        
+void malloc_free(void* ptr) {
+
 }
