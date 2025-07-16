@@ -49,7 +49,7 @@ void* malloc_more_pages(uint32_t size) {
 
         malloc_phys_address = (uint32_t)allocate_blocks(total_malloc_pages);
         virt = heap_end;
-        heap_end = virt + total_malloc_pages * PAGE_SIZE;       // update heap end to reflect change in memory
+        heap_end = virt + total_malloc_pages * PAGE_SIZE;       // update heap end to reflect change in heap memory
 
         malloc_node_t* temp = malloc_head;
         while(temp->next != NULL) {
