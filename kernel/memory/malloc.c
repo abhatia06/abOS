@@ -77,10 +77,39 @@ void* malloc_more_pages(uint32_t size) {
         return (void*)new_node->address;
 }
 
+// this is technically WRONG.. Syntax for calloc is (int n, int size), so if we have calloc(5, sizeof(int)), it should really give us 5 blocks of 4-byte things, but... I don't care.
 void* calloc_more_pages(uint32_t size) {
         void* ptr = malloc_more_pages(size);
         memset(ptr, 0, total_malloc_pages*PAGE_SIZE);   // calloc is just malloc but we 0 out the region
         return ptr;
+}
+
+// realloc implementation, (might have to fix in the future)
+void realloc(void* ptr, uint32_t size) {
+        malloc_node_t* temp = malloc_head;
+        while(temp->next != NULL) {
+                if(temp->address == ptr) {
+                        // assume the caller will only want to make it BIGGER not SMALLER
+                        uint32_t diff = size - temp->size;
+                        total_malloc_pages = diff/PAGE_SIZE;
+                        if(diff % PAGE_SIZE > 0) {
+                                total_malloc_pages++;
+                        }
+                        malloc_phys_address = (uint32_t)allocate_blocks(total_malloc_pages);
+                        uint32_t virt = temp->address + temp->size;
+
+                        // now, here, a lock would be quite nice in the future once we have a scheduler
+                        for(uint32_t i = 0; i < total_malloc_pages; i++) {
+                                map_address(directory,  malloc_phys_address + i*PAGE_SIZE, virt, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+                                virt+=PAGE_SIZE; 
+                        }
+                        
+                        temp->size = size; 
+                        heap_end += diff; 
+                        return; 
+                }
+                temp = temp->next
+        }
 }
 
 void* split_blocks(malloc_node_t* node, uint32_t size) {
