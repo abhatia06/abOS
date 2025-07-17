@@ -2427,3 +2427,27 @@ And that's that! Quite long, no? I HEAAVVILLLYY simplified what the chapters dis
 to SEE what I want to do for my file system... Well, I'm not fully confident, but I will either implement VSFS (or FFS, actually..), or I'll just
 implement the FAT32 file system, which is much simpler than making a file system from scratch. BUT, none of this matters. Right now, I'm more focused
 on setting up my own malloc. 
+
+----------------------------------
+DAY 38
+
+Hello,
+I'm writing this on DAY 39 because I accidentally fell asleep on day 38 before I got to write this. Basically, day 38 was nice. I didn't read anything,
+and instead, I started implementing malloc. I had already started thinking of how to implement malloc from the day I read about it in OSTEP, so I had a
+pretty good idea for what I wanted to do. Basically, my malloc implementation is quite simple, (and I have talked about it in the OSTEP notes, but I
+will repeat it here). Each process will begin by calling malloc_init(), which will reserve 1MB of memory for the processes starting at virtual address 4MB. 
+Then, if the processes ever wanted some memory <1MB, they will perform a split operation, and simply split the necessary amount of memory they wanted from
+that 4MB block of memory. I should note, our malloc implementation is similar, if not exactly the same, as a free list malloc implementation. Basically, we 
+use a doubly linked list to build up our malloc, and each node corresponds to either a free or reserved piece of memory, which is marked by each nodes 
+"free" value. Each node also keeps track of the next node, the previous node, the size of the allocated memory, and the starting virtual address of the 
+allocated memory. Beyond split and init, we also have an sbrk. The sbrk method basically expands the heap_end, and allocates more memory from SPECIFICALLY
+the end of the heap. We also have free and merge_free. Free is simple, as all we do is ask for a ptr to the starting address of a block of memory, find which
+node that address corresponds to, and then set the free value of that node to be true. Free merge is also quite simple. We simply scan through the list of nodes,
+and see if a node is free. If a node is free AND the node AFTER it is free, (now that I'm writing this, I might also add a checker for the PREVIOUS node), then we
+can "merge" them together, by rewiring the next and previous pointers for the two nodes, and combine the size values, so it looks like we've merged them into one
+big block. That's basically all I did. I BELIEVE I have a working malloc implementation, but I haven't done enough testing to truly verify it. I just know that
+it isn't causing any freaky bugs from just existing, (which is a good sign). At first, I thought there WAS a freaky bug occuring, but then I realized it was just
+because I didn't copy enough sectors for loading in the kernel (I have to constantly update that everytime my code increases by like 512 bytes or more. It's
+annoying..). But yeah, that was day 38. Today will be testing to make sure my malloc implementation works, then perhaps editing kprintf so that I can use it
+in user space. Because right now, it's causing a page fault to occur, (obviously, because it's trying to access the VGA memory, or the 0xB8000 area, which
+I'm not sure if I want to give the user access to just right now). 
