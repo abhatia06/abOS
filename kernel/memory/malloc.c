@@ -156,7 +156,17 @@ void* malloc_next(uint32_t size) {
         // Otherwise, we assume that there is not enough memory
         void* ptr = malloc_more_pages(size);
 
-        return NULL;    // incomplete, will go walk cooper and then I'll be back and finish this
+        // this if statement doesn't avoid internal fragmentation, but I don't care for right now
+        if(size < PAGE_SIZE) {
+                malloc_node_t* cur = malloc_head;
+                while(cur->next != NULL) {
+                        if(cur->address == ptr) {
+                                return split_blocks(cur, size);
+                        }
+                }
+        }
+
+        return ptr;
 }
 
 void malloc_free(void* ptr) {
