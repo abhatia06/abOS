@@ -5,8 +5,6 @@
 #include "physical_memory_manager.h"
 #include "../util/string.h"
 
-#define NULL 0
-
 malloc_node_t* malloc_head = 0;
 uint32_t malloc_virt_address = 0x400000;                // start of malloc virtual address space for all processes
 uint32_t malloc_phys_address = 0;
@@ -117,6 +115,8 @@ void* split_blocks(malloc_node_t* node, uint32_t size) {
                         new_node->free = false;
                         new_node->address = (void*)((uint32_t)new_node + sizeof(malloc_node_t));
 
+                        node = new_node;         // We have to actually reflect the changes in the list too
+                        
                         return (void*)(new_node->address);
                 }
                 else {
@@ -151,6 +151,7 @@ void* malloc_next(uint32_t size) {
                 else if(temp->free && temp->size > size + sizeof(malloc_node_t)) {
                         return split_blocks(temp, size);
                 }
+                temp = temp->next;
         }
 
         // Otherwise, we assume that there is not enough memory
@@ -163,6 +164,7 @@ void* malloc_next(uint32_t size) {
                         if(cur->address == ptr) {
                                 return split_blocks(cur, size);
                         }
+                        cur = cur->next;
                 }
         }
 
