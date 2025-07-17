@@ -150,7 +150,14 @@ __attribute__((interrupt)) void page_fault_handler(int_frame_32_t *frame, uint32
         __asm__ volatile ("mov %%cr2, %0" : "=r"(bad_address));
 
         kprintf("PAGE FAULT AT 0x%x. Error code: 0x%x\n", bad_address, error_code);
-        __asm__ volatile("cli ; hlt");
 
         // handling page faults comes later
+
+        void* phys_address = allocate_blocks(1);
+        map_address(directory, (uint32_t)phys_address, bad_address, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+
+        kprintf("RESOLVED PAGE FAULT. NEW PHYS ADDRESS: 0x%x, NEW VIRT ADDRESS: 0x%x\n", (uint32_t)phys_address, bad_address);
+        
+        // flush tlb
+         __asm__ __volatile__ ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
 }
