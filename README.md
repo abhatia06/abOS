@@ -15,5 +15,13 @@ This 32-bit OS has, as of writing this:
 5. Partially implements various parts of the C standard library, like stdint and stdio, (printf).
 6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
 7. Sets up a Virtual Memory Manager & enables paging
-8. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
-9. Attemps to enter user mode 
+8. Implements a dynamic heap memory allocator for user processes (malloc)
+9. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
+10. Enters user mode
+
+TODO:
+1. Implement and mount a file system (likely vsfs, fss, or perhaps I'll chicken out and just add FAT32)
+2. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
+3. Implement various "programs" the user can run in user mode
+4. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
+5. 
