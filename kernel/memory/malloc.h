@@ -4,6 +4,7 @@
 #include "../global_addresses.h"
 
 #define PAGE_SIZE 4096
+#define NULL 0
 
 typedef struct malloc_node {
         uint32_t size;
