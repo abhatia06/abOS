@@ -24,4 +24,4 @@ TODO:
 2. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
 3. Implement various "programs" the user can run in user mode
 4. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
-5. 
+5. Add more pages for user mode, (i.e., allow them to actually print and stuff with kprintf at least)
