@@ -188,3 +188,29 @@ pt_entry *get_page(virtual_address address) {
         // Return page
         return page;
 }
+
+bool create_page_table(pdirectory* dir, uint32_t virt_address, uint32_t flags) {
+        pd_entry* pd = dir->m_entries;
+        if(pd[virt_address >> 22] == 0) {
+                void* block = allocate_blocks(1);
+                if(!block) {
+                        return false;
+                }
+
+                pd[virt_address >> 22] = (uint32_t)block | flags;
+                memset((uint32_t*)pd[virt_address >> 22], 0, PAGE_SIZE);
+
+                map_address(dir, (uint32_t)block, (uint32_t)block, flags);
+        }
+        return true;
+}
+
+bool map_address(pdirectory* dir, uint32_t phys_address, uint32_t virt_address, uint32_t flags) {
+        pd_entry* pd = dir->m_entries;
+        if(pd[virt_address >> 22] == 0 && !create_page_table(dir, virt_address, flags)) {
+                return false;
+        }
+
+        ((uint32_t*)(pd[virt_address >> 22] & ~0xFFF))[virt_address << 10 >> 10 >> 12] = phys_address | flags;
+        return true;
+}
