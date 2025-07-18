@@ -2451,3 +2451,19 @@ because I didn't copy enough sectors for loading in the kernel (I have to consta
 annoying..). But yeah, that was day 38. Today will be testing to make sure my malloc implementation works, then perhaps editing kprintf so that I can use it
 in user space. Because right now, it's causing a page fault to occur, (obviously, because it's trying to access the VGA memory, or the 0xB8000 area, which
 I'm not sure if I want to give the user access to just right now). 
+
+----------------------------------
+DAY 39
+
+Hello,
+I did some research on day 39 (I am writing this on day 40), and I realized what I need to do next. The next step (which I will begin next week. Today will just be studying
+more for the next step), HAS to be a filesystem. Not because I want to really be able to read/write from the disk, (though, that would be quite nice), but because the three
+main syscall functions (open(), read(), write()) for a filesystem are VEERRRYYY IMPORTANT for an OS. Yesterday I talked about how I need to edit kprintf so I can use it in
+user space. That's not true, I don't actually need to edit kprintf, (at least, I hope I don't). Instead, I need a read() and write() syscall, (and open() for fs stuff), 
+so that I can actually do kprintf. A very simple write() syscall, specifically for kprintf, would just switch the CPU to kernel mode, and then call the kprintf 
+implementation, but that's... Not right. I've already made malloc "incorrectly", (it's not REAALLLYY incorrect, I just need to move it to exist in user space, which
+shouldn't be too hard? I hope? I mean, everything will just the same, but whenever I need to call malloc_more_pages(), I'll need to call an sbrk syscall or something).
+Hence why I need to make an FS. Now, I could go the easy route and just implement FAT32, and then google read(), write(), open() for the FAT32 (I assume I need to still
+make those? Maybe FAT32 just gives them to me?? I dunno, I haven't googled a thing about FAT32 lol), but I STILLL don't really know.. I might do a little bit of studying
+over the weekend, because today (day 40) I didn't really do anything and yesterday, (day 39), I kind of just did some bug-fixing and messing around with more of my code,
+and making realloc, which isn't really necessary right now. 
