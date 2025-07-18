@@ -19,10 +19,24 @@ void sys_malloc() {
         uint32_t bytes;
 
         __asm__ volatile("mov %%EBX, %0" : "=b"(bytes));
+
+        if(!malloc_head) {
+                void* ptr1 = malloc_init();
+                __asm__ volatile ("mov %0, %%EAX" : : "r"(ptr1));
+                return;
+        }
+
+        void* ptr = malloc_next(bytes);
+        merge_free_blocks();
+        __asm__ volatile("mov %0, %%EAX" : : "r"(ptr));
 }
 
 void sys_free() {
+        void* ptr = 0;
 
+        __asm__ volatile("mov %%EBX, %0" : "=b"(ptr));
+
+        malloc_free(ptr);
 }
 
 void* syscalls[MAX_SYSCALLS] = {
