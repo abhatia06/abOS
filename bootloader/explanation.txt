@@ -2468,8 +2468,9 @@ make those? Maybe FAT32 just gives them to me?? I dunno, I haven't googled a thi
 over the weekend, because today (day 40) I didn't really do anything and yesterday, (day 39), I kind of just did some bug-fixing and messing around with more of my code,
 and making realloc, which isn't really necessary right now. I have a general idea for what I want to do and what I need to achieve in the coming weeks, (maybe months? 
 I don't know how big this task is...). 
-1. Understand ATA PIO and implement it 
+1. Understand ATA PIO and implement it (https://wiki.osdev.org/ATA_read/write_sectors). 
 2. Change from CHS addressing to LBA addressing (OPTIONAL. Not really necessary, it's just that CHS addressing is obsolete)
+3. Implement ATA PIO drivers for future FS (NOT in bootloader, we'll do this in C once we've loaded in the kernel and whatnot)
 Next up is file system implementation
 1. We will have a header file that will store structs for the superblock, inode block, data blocks, the inode bitmap, and the data bitmap. 
 2. Go back and have the bootloader load in the superblock for our FS, and mount it 
