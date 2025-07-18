@@ -10,6 +10,7 @@ typedef struct malloc_node {
         uint32_t size;
         bool free;
         struct malloc_node* next;
+        struct malloc_node* prev;
         void* address;          // maybe? I might remove this later
 } malloc_node_t;
 
