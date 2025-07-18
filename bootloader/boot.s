@@ -10,7 +10,7 @@ start:
 loadPrekernel:
     MOV DH, 0x0
     MOV DL, 0x80
-    MOV CL, 0x1A 
+    MOV CL, 0x1F
     MOV CH, 0x0
     MOV AX, 0x2000
     MOV ES, AX
@@ -39,7 +39,7 @@ loadKernelToMem:
     MOV ES, AX
     MOV BX, 0x0000
     MOV AH, 0x02
-    MOV AL, 22
+    MOV AL, 27
     MOV DI, 3
 
 .retry:
