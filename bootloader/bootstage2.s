@@ -182,4 +182,17 @@ PModeMain:
     MOV EAX, gdt_start
     MOV [0x1810], EAX   ; check global_addresses.h
 
-    JMP 0x08: 0x8000
+    MOV ESI, 0x10000
+    MOV EDI, 0x100000
+    MOV ECX, 25000
+    CLD
+    REP MOVSB
+
+    MOV ESI, 0x20000
+    MOV EDI, 0x50000
+    MOV ECX, 10000
+    CLD
+    REP MOVSB
+
+    JMP 0x08: 0x50000
+    HLT
