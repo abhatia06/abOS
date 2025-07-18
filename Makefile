@@ -29,9 +29,6 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
         #Loads actual 2nd stage bootloader (yeaah my bootloader is getting really messy now)
         dd if=$(BUILD_DIR)/bootstage2.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=1 conv=notrunc
         @echo "BOOT STAGE 2 SIZE: " && stat -c%s $(BUILD_DIR)/bootstage2.bin
-        #Loads the 2nd stage bootloader into sector 2
-        dd if=$(BUILD_DIR)/boot2.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=2 conv=notrunc
-        @echo "BOOT2 BIN size:" && stat -c%s $(BUILD_DIR)/boot2.bin
         #Loads the kernel into sector 3 (and prekernel sector 23)
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=3 count=$(KERNEL_SECTORS) conv=notrunc
         dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=30 count=$(PREKERNEL_SECTORS) conv=notrunc
@@ -49,7 +46,6 @@ bootloader: $(BUILD_DIR)/boot.bin
 
 $(BUILD_DIR)/boot.bin: always
         $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
-        $(ASM) $(SRC_DIR)/boot2.s -f bin -o $(BUILD_DIR)/boot2.bin
         $(ASM) $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bootstage2.bin
 
 
