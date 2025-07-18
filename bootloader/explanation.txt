@@ -2466,4 +2466,11 @@ shouldn't be too hard? I hope? I mean, everything will just the same, but whenev
 Hence why I need to make an FS. Now, I could go the easy route and just implement FAT32, and then google read(), write(), open() for the FAT32 (I assume I need to still
 make those? Maybe FAT32 just gives them to me?? I dunno, I haven't googled a thing about FAT32 lol), but I STILLL don't really know.. I might do a little bit of studying
 over the weekend, because today (day 40) I didn't really do anything and yesterday, (day 39), I kind of just did some bug-fixing and messing around with more of my code,
-and making realloc, which isn't really necessary right now. 
+and making realloc, which isn't really necessary right now. I have a general idea for what I want to do and what I need to achieve in the coming weeks, (maybe months? 
+I don't know how big this task is...). 
+1. Understand ATA PIO and implement it 
+2. Change from CHS addressing to LBA addressing (OPTIONAL. Not really necessary, it's just that CHS addressing is obsolete)
+Next up is file system implementation
+1. We will have a header file that will store structs for the superblock, inode block, data blocks, the inode bitmap, and the data bitmap. 
+2. Go back and have the bootloader load in the superblock for our FS, and mount it 
+3. ??? 
