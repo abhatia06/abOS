@@ -46,6 +46,8 @@ void* syscalls[MAX_SYSCALLS] = {
         sys_free,
 };
 
+//TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
+
 // This stuff below is defined by the OSDev wiki in their syscall page: https://wiki.osdev.org/System_Calls
 __attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
