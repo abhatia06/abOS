@@ -126,6 +126,14 @@ void main() {
                         : "eax"
                 );
 
+        uint32_t address = (uint32_t)malloc_init();
+        kprintf("malloc initialized at address: 0x%x\n", address);
+        address = (uint32_t)malloc_more_pages(4096);
+        kprintf("malloc 1 page: 0x%x\n", address);
+        address = (uint32_t)malloc_next(1000);
+        kprintf("malloc next: 0x%x\n", address);
+        address = (uint32_t)malloc_next(3);
+        kprintf("malloc next2:0x%x\n", address);
 
         while(true) {
                 char* command = readline();
