@@ -24,6 +24,7 @@ uint32_t heap_end;
 void* malloc_init();
 void* malloc_more_pages(uint32_t size);
 void* calloc(uint32_t size);
-void* split_blocks(uint32_t size);
+void* split_blocks(malloc_node_t* node, uint32_t size);
 void merge_free_blocks();
 void malloc_free(void* ptr)
+void* malloc_next(uint32_t size);
