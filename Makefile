@@ -17,11 +17,9 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #
 #Floppy Image
 #
-
 #NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
 # I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
-# able to ACTUALLY make a hard disk image, and read from it! (Though, I am 90% sure the process is the same in the Makefile.
-# It just changes in the code and we use ATA PIO instead of just CHS addressing.)
+# able to ACTUALLY make a hard disk image, and read from it!
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
         dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
         @echo "drive size:" && stat -c%s $(BUILD_DIR)/os-image.img
@@ -36,7 +34,7 @@ $(BUILD_DIR)/main_floppy.img: bootloader kernel
         @echo "BOOT2 BIN size:" && stat -c%s $(BUILD_DIR)/boot2.bin
         #Loads the kernel into sector 3 (and prekernel sector 23)
         dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=3 count=$(KERNEL_SECTORS) conv=notrunc
-        dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=25 count=$(PREKERNEL_SECTORS) conv=notrunc
+        dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=30 count=$(PREKERNEL_SECTORS) conv=notrunc
         @echo $(KERNEL_SECTORS)
         @echo $(PREKERNEL_SECTORS)
 
@@ -74,8 +72,9 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR4)/virtual_memory_manager.c -o $(BUILD_DIR)/virtual_memory_manager.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/prekernel.c -o $(BUILD_DIR)/prekernel.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/printlite.c -o $(BUILD_DIR)/printlite.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/memory/malloc.c -o $(BUILD_DIR)/malloc.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
         $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/printlite.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o
 
 #
