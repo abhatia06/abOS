@@ -75,3 +75,6 @@ ata_chs_read:
     POP AX
     POPF
     RET  
+
+times 510-($ - $$) db 0		; pad remaining bytes with 0 to make bootloader full 512 bytes
+dw 0xAA55			; boot signature
