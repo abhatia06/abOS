@@ -65,12 +65,13 @@ ata_chs_read:
     TEST AL, 8		; see if sector buffer is ready
     JE .loop		; poll until its ready 
 
-    XOR AX, AX
-    MOV ES, AX
-    MOV DI, 0x1000	; memory address to read sector into (
-    MOV CX, 256		; 256 words = 512 bytes. Which is = a sector
-    MOV DX, 0x1F0	; data port
-    REP INSW 		; read bytes from dx port # into memory address DI, CX # of times
+    MOV AX, 256		; 256 words = 1 sector
+    XOR BX, BX
+    MOV BL, CH
+    MUL BL		; DX:AX = AX * CH, or 256 * number of sectors we want to read 
+    MOV CX, AX
+    MOV DX, 0x1F0	; data port 
+    REP INSW
     
     POP DI
     POP DX
