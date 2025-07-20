@@ -72,7 +72,7 @@ ata_chs_read:
     MUL BL		; DX:AX = AX * CH, or 256 * number of sectors we want to read 
     MOV CX, AX
     MOV DX, 0x1F0	; data port 
-    REP INSW
+    REP INSW		; reads from ES:DI 
     
     POP DI
     POP DX
