@@ -25,6 +25,7 @@ main:
 ; studied it, so we stick to CHS for now.  
 ; CH = number of registers to read, 
 ; BL = sector index
+; SET ES:DI BEFOREHAND TO PICK LOCATION IN MEMORY TO PUT THE ATA READ
 ; 
 ata_chs_read:
     PUSHF
