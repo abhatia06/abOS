@@ -1,3 +1,8 @@
+; I have decided to abandon trying to switch over to using ATA PIO to load up the bootloader. It isn't strictly necessary, but it is nice to do
+; to understand ATA PIO. For some reason, this "new" bootloader doesn't work, as it only seems to copy 512 bytes (256 words, or 1 sector), instead
+; of doing the number of sectors you would expect..... I don't fully know WHY this is happening? I might come back and try to fix this later in the future,
+; who knows. But for now, we continue to use CHS addressing with INT 0x13 (very outdated, lol)
+
 BITS 16
 ORG 0x7C00
 
