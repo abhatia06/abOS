@@ -13,7 +13,7 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
         printS("Successfully entered Protected Mode!\n");
         printS("Successfully entered Lower-Memory Kernel!\n");
         printS("Initializing Physical Memory Manager...\n");
-        initialize_pmm();
+        initialize_pmm();        //TODO: initializing pmm takes like 10-15 seconds. Fix unoptimization in PMM
 
         typedef struct SMAP_entry {
                 uint64_t base_address;
