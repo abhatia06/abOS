@@ -52,7 +52,9 @@ typedef struct super_block {
  * Each entry for a directory is going be housing stuff, so we need each directory to
  */
 typedef struct dir_entry_t {
-        uint32_t i_number;
+        // each direcotires entry will simply appear as an inode number that points to the actual inode that points to the actual data block
+        // for the file in the directory
+        uint32_t i_number;      
         char name[20];
 } dir_entry_t;
 
