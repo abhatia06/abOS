@@ -33,6 +33,8 @@ typedef struct super_block {
         uint32_t size_of_data;
         uint32_t num_inodes;
         uint32_t num_inodes_bitmap;
+        uint32_t num_inodes_per_block;
+        uint32_t num_inodes_per_sector;
         uint32_t inode_size;            // likely going to be 128 bytes?
         uint32_t num_datablocks;
         uint32_t num_datablocks_bitmap;
