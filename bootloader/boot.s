@@ -1,3 +1,5 @@
+; this bootloader is insanely unorganized and messy. For an actually readable (though, not working, for some reason??) bootloader, look at 
+; exampleATAbootload.s, as that bootloader uses ATA PIO instead of INT 0x13 to load from disk to memory (again, though, it doesn't work fully)
 BITS 16
 ORG 0x7C00            ; this address is where the BIOS starts reading from during boot.
 
