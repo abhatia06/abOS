@@ -23,9 +23,8 @@ typedef struct inode {
         fs_time_t time_accessed;
         fs_time_t time_modified;
         fs_time_t time_created;
-        uint32_t direct_pointers[3];            // 3 direct pointers
+        uint32_t direct_pointers[3];            // 3 direct pointers, index 0 is going to be the beginning one
         uint32_t single_indirect_block;         // 1 single indirect pointer
-        uint32_t beginning_block_ptr;
         uint8_t padding;
 } inode_t;
 
