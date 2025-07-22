@@ -148,6 +148,37 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
         return (inode_t){0};
 }
 
+// get the inode of a file given a path to the file
+inode_t get_inode(char* path) {
+        //char* index = path;
+        inode_t current_inode;
+
+        // in linux, the path root dir starts with /. In windows, it is C:\.
+        if(*path == '/') {
+                path++;
+                current_inode = root_inode;
+        }
+
+        // if the path doesn't begin with '/', we assume we're in a directory
+        else {
+                current_inode = current_dir_inode;
+        }
+
+        int count_buffer = 0;
+        for(char* i = path; i < strlen(path); i++) {
+                if(*i == '/') {
+                        continue;
+                }
+
+                if(*i == '.') {
+                        i++;
+                        if(*i == '.') {
+                                current_inode = get_inode_in_dir(current_inode, "..");
+                        }
+                }
+        }
+}
+
 // ideas for other functions, perhaps
 
 bool create_file(char* name, uint32_t size, uint32_t address) {
