@@ -49,7 +49,9 @@ typedef struct super_block {
 // everything below is for the files & directories
 
 /*
- * Each entry for a directory is going be housing stuff, so we need each directory to
+ * According to the IBM website for directories (https://www.ibm.com/docs/bg/aix/7.2.0?topic=systems-directories), each directory entry contains a file or
+ * subdirectory name, and an i-node number. That is what I have down here, but I might stray away from the norm and also  include the i-node number of the 
+ * directory itself, (or the parent i-node), to make my life easier.
  */
 typedef struct dir_entry_t {
         // each direcotires entry will simply appear as an inode number that points to the actual inode that points to the actual data block
