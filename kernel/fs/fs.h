@@ -11,7 +11,7 @@
 
 // MACRO FUNCTIONS FOR CALCULATING STUFF
 #define inode_block(i_number) ((i-number * sizeof(struct inode) / FS_BLOCK);    // finds which i-block your inode is in
-#define inode_sector(i_number) (((inode_block(i_number) * sizeof(struct inode)) + inodeStartAddr) / FS_SECTOR)
+#define inode_sector(i_number) (((inode_block(i_number) * FS_BLOCK) + inodeStartAddr) / FS_SECTOR)
 
 extern inode_t current_dir_inode;
 extern superblock_t superblock;
