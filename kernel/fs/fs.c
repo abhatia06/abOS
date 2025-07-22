@@ -151,12 +151,14 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
 
 // get the inode of a file given a path to the file
 inode_t get_inode(char* path) {
-        //char* index = path;
+
+        char* index = path;
+        char str_buffer[60];
         inode_t current_inode;
 
         // in linux, the path root dir starts with /. In windows, it is C:\.
-        if(*path == '/') {
-                path++;
+        if(*index == '/') {
+                index++;
                 current_inode = root_inode;
         }
 
@@ -166,18 +168,41 @@ inode_t get_inode(char* path) {
         }
 
         int count_buffer = 0;
-        for(char* i = path; i < strlen(path); i++) {
-                if(*i == '/') {
-                        continue;
+        int str_index = 0;
+        while(*index != '\0') {
+                if(*index == '/') {
+                        str_buffer[str_index] = '\0';
+                        current_inode = get_inode_in_dir(current_inode, str_buffer);
+                        if(current_inode.i_number == 0) {
+                                return (inode_t){0};
+                        }
+                        memset(str_buffer, 0, sizeof(str_buffer));
+                        str_index = 0;
                 }
 
-                if(*i == '.') {
-                        i++;
-                        if(*i == '.') {
-                                current_inode = get_inode_in_dir(current_inode, "..");
+                else {
+                        if(str_index < sizeof(str_buffer) - 1) {
+                                str_buffer[str_index] = *index;
+                                str_index++;
+                        }
+                        else {
+                                // too long (WILL NOT HAPPEN, since names of files are at most 60 characters, and
+                                // our buffer is 60 characters)
+                                return (inode_t){0};
                         }
                 }
+                index++;
         }
+
+        // while loop doesn't process the last piece b/c it reaches null terminator (ex: /foo/bar/file.txt), so we
+        // have to do it manually here
+        str_buffer[str_index] = '\0';
+        current_inode = get_inode_in_dir(current_inode, str_buffer);
+        if(current_inode.i_number == 0) {
+                return (inode_t){0};
+        }
+
+        return current_inode;
 }
 
 // ideas for other functions, perhaps
