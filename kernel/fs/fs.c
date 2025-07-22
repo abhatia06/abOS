@@ -106,6 +106,48 @@ bool save_file(inode_t* node, uint32_t address) {
         return true;
 }
 
+/*
+ * Similar to linux, our files will all be directory entries into a directory that itself will have a root inode. Each directory will contain the following:
+ * '.' - which will be the file name in a directory entry that will allow us to access the i_number for the current directory
+ * '..' - which will be the file name in a directory entry that will allow us to access the i_number for the parent directory
+ * Afterwards, everything else will be whatever the user puts into the directory, like for example:
+ *  'foo.txt' - which will be the file name in a directory entry that exists inside the current directory (will also allow us to access the i_number for it)
+ */
+inode_t get_inode_in_dir(inode_t current_dir, char* file) {
+        dir_entry_t* dir_entry = 0;
+
+        //TODO: make converting from inode->size to sectors/blocks a function
+        uint32_t file_size_bytes = current_dir->size;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t direct_blocks_to_read = file_size_sectors/SECTORS_PER_BLOCK;
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
+                direct_blocks_to_read++;
+        }
+
+        for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
+                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+
+                dir_entry = (dir_entry_t*)block_buffer;
+                for(uint32_t j = 0; j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
+                        if(dir_entry->i_number == 0) {
+                                continue;       // empty entry, skip. i_number = 0 reserved for empty i_node
+                        }
+
+                        if(strcmp(dir_entry->name, file) == 0) {
+                                rw_sectors(1, inode_sector(dir_entry->i_number), (uint32_t)sector_buffer, READ);
+                                inode_t* inode_array_in_sector = (inode_t*)sector_buffer;
+                                return inode_array_in_sector[dir_entry->i_number % INODES_PER_SECTOR];
+                        }
+                }
+
+        }
+        return (inode_t){0};
+}
+
 // ideas for other functions, perhaps
 
 bool create_file(char* name, uint32_t size, uint32_t address) {
