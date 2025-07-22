@@ -84,6 +84,30 @@ bool load_file(inode_t* inode, uint32_t address) {
         return true;
 }
 
+bool save_file(inode_t* node, uint32_t address) {
+        uint32_t file_size_bytes = inode->size;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t direct_blocks_to_read = file_size_sectors/8;   // 4096/512 = 8 sectors per block
+        if(file_size_sectors%8 > 0) {
+                direct_blocks_to_read++;
+        }
+
+        uint32_t offset;
+        // we assume num of direct blocks to read is < 3, b/c I only have 3 direct blocks lol
+        for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
+                rw_sectors(inode->direct_pointers[i], inode->direct_pointers[0], address + offset, WRITE);
+                offset+=4096;   // add 4KiB to offset, b/c each block is 4KiB
+        }
+
+        return true;
+}
+
+// ideas for other functions, perhaps
+
 bool create_file(char* name, uint32_t size, uint32_t address) {
         return false;
 }
@@ -92,8 +116,3 @@ bool delete_file(inode_t* inode) {
         return false;
 }
 
-// ideas for other functions, perhaps
-
-bool move_file(inode_t* node) {
-        return false;
-}
