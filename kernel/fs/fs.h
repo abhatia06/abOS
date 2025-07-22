@@ -20,7 +20,7 @@ typedef struct boot_record {
 typedef struct inode {
         uint32_t i_number;                      // reserve inode 0, by the way
         uint32_t file_type;
-        uint32_t size_in_sectors; 
+        uint32_t size;                        // assume to be bytes
         fs_time_t time_accessed;
         fs_time_t time_modified;
         fs_time_t time_created;
