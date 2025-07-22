@@ -77,4 +77,10 @@ typedef struct time {
         uint32_t year;
 } fs_time_t;
 
+//TODO: make the inode struct take up a power of 2 space 
+
+#define INODES_PER_SECTOR (FS_SECTOR_SIZE/sizeof(inode_t))
+#define INODES_PER_BLOCK (FS_BLOCK_SIZE/sizeof(inode_t))
+#define DIR_ENTRIES_PER_BLOCK (FS_BLOCK_SIZE/sizeof(dir_entry_t))
+
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
