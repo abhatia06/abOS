@@ -32,8 +32,8 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
 				*address_ptr++ = inb(0x1F0);
 			}
 
-			// 400ns delay
-			for(int z = 0; z < 4; z++) {
+			// 400ns delay. (https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays), assume each I/O operation takes 30ns
+			for(int z = 0; z < 15; z++) {
 				inb(0x3F6);
 			}
 		}
@@ -49,7 +49,7 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
 				outb(0x1F0, *address_ptr++);
 			}
 
-			for(int z = 0; z < 4; z++) {
+			for(int z = 0; z < 15; z++) {
 				inb(0x3F6);
 			}
 		}
