@@ -6,7 +6,15 @@
 #define READ 0x20
 #define WRITE 0x30
 
+// uses ATA PIO LBA mode to read/write sectors to and from the disk
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite) {
+	// In LBA mode, the starting sector (known as the LBA, or Logical Block Address) contains
+        // the sector number, drive selector, and cylinder information, like so:
+        //
+        // SECTOR NUMBER        LBA[0:7]
+        // CYLINDER LOW         LBA[15:8]
+        // CYLINDER HIGH        LBA[23:16]
+        // DRIVE/HEAD           LBA[27:24]
 	outb(0x1F6, (0xE0 | ((starting_sector >> 24) & 0x0F)));
 	outb(0x1F2, sectors);
 	outb(0x1F3, ((starting_sector >> 8) & 0xFF));
