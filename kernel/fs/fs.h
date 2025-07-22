@@ -30,10 +30,11 @@ typedef struct inode {
         fs_time_t time_accessed;
         fs_time_t time_modified;
         fs_time_t time_created;
-        int direct_pointers[3];            // 3 direct pointers, index 0 is going to be the beginning one
+        uint32_t direct_pointers[3];            // 3 direct pointers, index 0 is going to be the beginning one
         uint32_t single_indirect_block;         // 1 single indirect pointer
-        uint8_t padding;
-} inode_t;
+        uint8_t padding[2];
+        int padding;
+} inode_t;        // 64 bytes, hopefully?
 
 typedef struct super_block {
         uint32_t size_of_data;
