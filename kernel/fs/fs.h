@@ -68,3 +68,5 @@ typedef struct time {
 
 extern uint32_t inode_bitmap;
 extern uint32_t data_bitmap;
+
+void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
