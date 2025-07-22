@@ -50,8 +50,10 @@ typedef struct super_block {
 
 /*
  * According to the IBM website for directories (https://www.ibm.com/docs/bg/aix/7.2.0?topic=systems-directories), each directory entry contains a file or
- * subdirectory name, and an i-node number. That is what I have down here, but I might stray away from the norm and also  include the i-node number of the 
- * directory itself, (or the parent i-node), to make my life easier.
+ * subdirectory name, and an i-node number.
+ * Each directory will house, at the very least, two things: one will be a directory entry called ".", this directory entry will simply be the entry
+ * that contains the i-node for the directory itself. The second will be an entry called "..", which will be an entry that contains the i-node for
+ * the parent directory, or the directory that houses the current ('.') directory.
  */
 typedef struct dir_entry_t {
         // each direcotires entry will simply appear as an inode number that points to the actual inode that points to the actual data block
