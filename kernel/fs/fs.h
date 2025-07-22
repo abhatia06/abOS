@@ -13,6 +13,12 @@
 #define inode_block(i_number) ((i-number * sizeof(struct inode) / FS_BLOCK);    // finds which i-block your inode is in
 #define inode_sector(i_number) (((inode_block(i_number) * sizeof(struct inode)) + inodeStartAddr) / FS_SECTOR)
 
+extern inode_t current_dir_inode;
+extern superblock_t superblock;
+extern int block_buffer[FS_BLOCK];
+extern int sector_buffer[FS_SECTOR];
+extern inode_t root_inode;
+
 typedef struct boot_record {
         uint8_t sector[8][FS_SECTOR];           // 8 sectors, each of 512 bytes, hence 2D array
 } boot_record_t;
@@ -70,8 +76,5 @@ typedef struct time {
         uint8_t month;
         uint32_t year;
 } fs_time_t;
-
-extern uint32_t inode_bitmap;
-extern uint32_t data_bitmap;
 
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
