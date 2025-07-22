@@ -137,7 +137,7 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
                                 continue;       // empty entry, skip. i_number = 0 reserved for empty i_node
                         }
 
-                        if(strcmp(dir_entry->name, file) == 0) {
+                        if(strcmp(dir_entry->name, file) == 0) {	// TODO: implement strncmp just in case 
                                 rw_sectors(1, inode_sector(dir_entry->i_number), (uint32_t)sector_buffer, READ);
 				// an inode is <512 bytes, meaning 1 sector has multiple inodes (hopefully) packed together
                                 inode_t* inode_array_in_sector = (inode_t*)sector_buffer; 
