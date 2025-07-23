@@ -2475,3 +2475,48 @@ Next up is file system implementation
 1. We will have a header file that will store structs for the superblock, inode block, data blocks, the inode bitmap, and the data bitmap. 
 2. Go back and have the bootloader load in the superblock for our FS, and mount it 
 3. ??? 
+
+
+----------------------------------
+DAY 40 & 41
+
+I am writing this on day 42. Originally, I was writing this on day 41, but I forgot to press "commit changes", and so it didn't commit, and I was too tired and lazy to
+rewrite everything, so here I am.
+
+Anyway, I have decided to combine day 40 and 41 to 1 devlog, because I didn't really do anything on day 40, and I did do stuff on day 41, so whatever. I want to spend
+some time explaining ATA PIO and my file system idea, and I will explain a bit more about my file system idea on day 42, and how I am going about implementing 
+the various functions.
+
+First off: ATA PIO. I had originally planned on switching up my bootloader from using CHS addressing to using ATA PIO CHS mode to load stuff from the disk into memory, 
+because I really didn't want to use my old (and still current) bootloader. It's super messy, terrible to actually read, and it somehow manages to work and defy all
+expectations. The new bootloader I made up is a lot more clean, easy to read, and easier to understand, but the issue with it is that it... Doesn't work as expected.
+For some reason, the reading of sectors from disk to memory only seems to read 256 words, or 512 bytes, or 1 sector, no matter how I change the values of what I put
+into the port 0x1F2. My guess is that I wasn't employing the 400ns delay, or I wasn't looping back and reading each sector, 1 at a time, but oh well. I'm too lazy to
+fix it, as it's not really necessary at all, and just using CHS addressing works fine, (though, it is incredibly outdated, and using LBA addressing is much better.) Actually, let me stick to that. If you're early on in your OS project, you will see people talk about
+floppy disks vs hard disks, and CHS addressing vs LBA addressing (or ATA PIO), and how outdated CHS is. I also got a little bit curious as to why people think this, and
+I decided to do a little bit of research and figure out, why use LBA over CHS, and why use ATA PIO over INT 0x13? 
+To answer the first question, let's really quickly look at what CHS addressing does. It exposes the the physical details of the storage device to the software of the
+operating systsem, which already isn't great. It uses a combination of three things: cylinder, head, and sector, which only appear in hard disks (which, as you may know
+are also being swapped out for the modern-day storage devices known as SSDs). Furthermore, CHS mode placed a cap on how large the disk could be before CHS addressing
+failed to reach that part of the disk. This was because the scheme used 16 bits for cylinder, 4 bits for head, and 8 bits for sector, meaning it could only count from
+sectors 1-255, heads from 1-15, and cylinders from 0-65535, which in total meant the maximum disk size could only be 128GiB, or 137.4 GB, (which is definitely large
+enough for a hobby OS like mine lol). Now, LBA addresses most of these issues. First, it heavily simplifies the stuff the software in the OS has to do to partake in an
+I/O operation, as it addresses the disk in a linear way, and instead of having to manage how many sectors are in a cylinder or head, and then adjusting based off of that,
+we can simply just use the sector. We no longer need to say sector 62, head 3, cylinder 100, and instead, we can just say sector 500 or whatever that CHS is equivalent to.
+Thus, accessing I/O becomes infinitely easier with LBA. But, what about the size issues? Well, that only really got solved with the introduction of LBA48. Instead of 
+having 32 bits for a sector address, we can use 48 bits for a sector address and, thus, obviously have larger disks. Also, LBA mode allowed us to use other forms of 
+storage devices too, as it simplified all storage to be linear, and thus, we can make use of anything. 
+Now, that's CHS vs LBA. What about ATA PIO over INT 0x13? Well, to put it simply, INT 0x13 does use ATA! The issue with it, though, is that it uses an incredibly outdated
+version of ATA, (or, more popularly called, an ATA-standards). I don't know exactly what ATA-standard INT 0x13 uses, but it uses an older one, and so it's a little
+bit more limiting, or just worse. Newer ATA-standards are well, newer, so we would like to make use of them. You might ask, "what is ATA PIO?". Well, all an OSDev
+really needs to know is that the ATA, or Advanced Technology Attachment is simply an interface available to the CPU, (and thus the OS developer), that allows us to
+communicate with mass storage devices, such as hard disks. PIO just allows us to execute I/O stuff and use the interface to our liking, (PIO stands for Programmed Input
+Output). Of course, it gets more complicated than that. There are currently two buses, known as the primary and secondary ATA bus, each with different ports, and these 
+buses are connected to the disks, thereby allowing us to play around with the disks. The main ports we will use are associated with the primary ATA bus, and those
+ports go from 0x1F0 - 0x1F7. Each port plays a unique purpose, but the purpose also changes based on what type of addressing you're using, either CHS or LBA mode.
+CHS makes ports 0x1F4 and 0x1F5 for cylinder low and high, and you also send different things to port 0x1F6 (0xA0 for master drive when using CHS ATA PIO, or 0x40
+for master when using CHS ATA PIO). There's a whole OSDev wiki page on ATA PIO, which I do recommend reading, (I too have to read it entirely, I've only really read
+tid-bits of it). https://wiki.osdev.org/ATA_PIO_Mode. If you want to look at an example of what my bootloader would've looked like had we used ATA PIO for the bootloader,
+I do have the example file still there in the bootloader folder, though, do be wary, it doesn't work. It only reads 1 sector to the appropriate address. 
+
+I've decided to save the explanation of the FS for a later day, (day 42). I'll just have day 40 & 41 be for ATA PIO.
