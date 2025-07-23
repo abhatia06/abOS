@@ -9,7 +9,7 @@
 
 #define inodeStartAddr 3072     // 3KiB. We're going to be assuming superblock, and the two bitmaps = 1KiB each
 
-// MACRO FUNCTIONS FOR CALCULATING STUFF
+// MACRO FUNCTIONS FOR CALCULATING SECTION & BLOCK OF INODE GIVEN ITS I_NUMBER
 #define inode_block(i_number) ((i-number * sizeof(struct inode) / FS_BLOCK);    // finds which i-block your inode is in
 #define inode_sector(i_number) (((inode_block(i_number) * FS_BLOCK) + inodeStartAddr) / FS_SECTOR)
 
@@ -85,3 +85,10 @@ typedef struct time {
 #define DIR_ENTRIES_PER_BLOCK (FS_BLOCK_SIZE/sizeof(dir_entry_t))
 
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
+bool load_file(inode_t* inode, uint32_t address);
+bool save_file(inode_t* node, uint32_t address);
+inode_t get_inode_in_dir(inode_t current_dir, char* file);
+inode_t get_inode(char* path);
+inode_t get_parent_inode(char* path);
+bool create_file(char* name, uint32_t size, uint32_t address);
+bool delete_file(inode_t* inode);
