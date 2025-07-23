@@ -2520,3 +2520,14 @@ tid-bits of it). https://wiki.osdev.org/ATA_PIO_Mode. If you want to look at an 
 I do have the example file still there in the bootloader folder, though, do be wary, it doesn't work. It only reads 1 sector to the appropriate address. 
 
 I've decided to save the explanation of the FS for a later day, (day 42). I'll just have day 40 & 41 be for ATA PIO.
+
+----------------------------------
+DAY 42
+
+Hello,
+Today I will discuss my filesystem, and a bit about how it works, because my notes on the persistence pillar on OSTEP was... Not very good. It was very small, and I
+don't think it really fully explained my OS and what I had planned.
+So, I will be implementing the VSFS, or very simple file system. Or, well, I think I am at least. In reality, I'm just implementing whatever, almost, and I'm using
+a combination of the ext2, unix, minix, and whatever other filesystem I can find as inspiration for this filesystem. I don't know if it's actually similar to the FAT, 
+but I imagine it is, because I am going to be having some of the same cheat-things as FAT. (For example, if a file is less than 4096 bytes, or 4KiB, it will still take
+up 4KiB of storage on the disk, because we are going to be partitioning up files to be stored into 4KB data blocks). 
