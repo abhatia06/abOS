@@ -218,7 +218,7 @@ inode_t get_parent_inode(char* path) {
         temp[index] = '\0';
 
 	// if length of path = 0 after removing the last /, then we're at root inode 
-	// (ex: /temp/, remove last /, then we get /temp, meaning parent is root. Remember, a dir is name/)
+	// (ex: /temp.txt, remove last /, then we get /0temp, meaning parent is root.)
         if(strlen(temp) == 0) {
                 return root_inode;
         }
