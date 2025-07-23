@@ -206,7 +206,25 @@ inode_t get_inode(char* path) {
 }
 
 inode_t get_parent_inode(char* path) {
-        return (inode_t){0};
+
+        char* temp = path;
+        int index = strrchr(path, '/') - path;
+
+        if(!strrchr(path, '/')) {
+                return current_dir_inode;
+        }
+
+	// remove the last /, (set it has sentinel)
+        temp[index] = '\0';
+
+	// if length of path = 0 after removing the last /, then we're at root inode 
+	// (ex: /temp/, remove last /, then we get /temp, meaning parent is root. Remember, a dir is name/)
+        if(strlen(temp) == 0) {
+                return root_inode;
+        }
+
+	// use our get_inode function on our shortened path & return result
+        return get_inode(temp);
 }
 
 // ideas for other functions, perhaps
