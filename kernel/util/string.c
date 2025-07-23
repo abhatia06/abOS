@@ -31,6 +31,7 @@ char* strrchr(char* str, int c)  {
                         return (char*)p;
                 }
         }
+	return 0;
 }
 
 void* memset(void* ptr, uint8_t value, uint32_t length) {
