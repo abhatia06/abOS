@@ -229,8 +229,9 @@ inode_t get_parent_inode(char* path) {
 
 // ideas for other functions, perhaps
 
-bool create_file(char* name, uint32_t size, uint32_t address) {
-        return false;
+inode_t create_file(char* path) {
+	inode_t temp = get_parent_inode(path); 
+        return (inode_t){0};
 }
 
 bool delete_file(inode_t* inode) {
