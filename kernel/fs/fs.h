@@ -7,21 +7,22 @@
 #define file_type_file 0
 #define file_type_dir 1
 
-#define inodeStartAddr 3072     // 3KiB. We're going to be assuming superblock, and the two bitmaps = 1KiB each
-
 // MACRO FUNCTIONS FOR CALCULATING SECTION & BLOCK OF INODE GIVEN ITS I_NUMBER
-#define inode_block(i_number) ((i-number * sizeof(struct inode) / FS_BLOCK);    // finds which i-block your inode is in
+#define inode_block(i_number) ((i_number * sizeof(struct inode)) / FS_BLOCK)    // finds which i-block your inode is in
 #define inode_sector(i_number, superblock) (((inode_block(i_number) * FS_BLOCK) + (superblock.first_inode_block*FS_BLOCK)) / FS_SECTOR)
-
-extern inode_t current_dir_inode;
-extern superblock_t superblock;
-extern int block_buffer[FS_BLOCK];
-extern int sector_buffer[FS_SECTOR];
-extern inode_t root_inode;
 
 typedef struct boot_record {
         uint8_t sector[8][FS_SECTOR];           // 8 sectors, each of 512 bytes, hence 2D array
 } boot_record_t;
+
+typedef struct time {
+        uint8_t second;
+        uint8_t minute;
+        uint8_t hour;
+        uint8_t day;
+        uint8_t month;
+        uint32_t year;
+} fs_time_t;
 
 typedef struct inode {
         uint32_t i_number;                      // reserve inode 0, by the way
@@ -70,20 +71,17 @@ typedef struct dir_entry_t {
         char name[20];
 } dir_entry_t;
 
-typedef struct time {
-        uint8_t second;
-        uint8_t minute;
-        uint8_t hour;
-        uint8_t day;
-        uint8_t month;
-        uint32_t year;
-} fs_time_t;
-
 //TODO: make the inode struct take up a power of 2 space 
 
-#define INODES_PER_SECTOR (FS_SECTOR_SIZE/sizeof(inode_t))
-#define INODES_PER_BLOCK (FS_BLOCK_SIZE/sizeof(inode_t))
-#define DIR_ENTRIES_PER_BLOCK (FS_BLOCK_SIZE/sizeof(dir_entry_t))
+#define INODES_PER_SECTOR (FS_SECTOR/sizeof(inode_t))
+#define INODES_PER_BLOCK (FS_BLOCK/sizeof(inode_t))
+#define DIR_ENTRIES_PER_BLOCK (FS_BLOCK/sizeof(dir_entry_t))
+
+extern inode_t current_dir_inode;
+extern superblock_t superblock;
+extern int block_buffer[FS_BLOCK];
+extern int sector_buffer[FS_SECTOR];
+extern inode_t root_inode;
 
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
 bool load_file(inode_t* inode, uint32_t address);
@@ -91,5 +89,5 @@ bool save_file(inode_t* node, uint32_t address);
 inode_t get_inode_in_dir(inode_t current_dir, char* file);
 inode_t get_inode(char* path);
 inode_t get_parent_inode(char* path);
-bool create_file(char* name, uint32_t size, uint32_t address);
+inode_t create_file(char* path);
 bool delete_file(inode_t* inode);
