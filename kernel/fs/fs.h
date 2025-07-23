@@ -3,6 +3,7 @@
 #include "stdint.h"
 #define FS_BLOCK        4096
 #define FS_SECTOR       512
+#define SECTORS_PER_BLOCK 8
 
 #define file_type_file 0
 #define file_type_dir 1
@@ -31,7 +32,7 @@ typedef struct inode {
         fs_time_t time_accessed;
         fs_time_t time_modified;
         fs_time_t time_created;
-        uint32_t direct_pointers[3];            // 3 direct pointers, index 0 is going to be the beginning one
+        uint32_t direct_pointers[3];            // 3 direct pointers that store the BLOCK #, (NOT BYTE ADDRESS OR SECTOR #)
         uint32_t single_indirect_block;         // 1 single indirect pointer
         uint8_t padding[2];
         int padding;
@@ -43,8 +44,8 @@ typedef struct super_block {
         uint32_t num_inodes_bitmap;
         uint32_t num_inodes_per_block;
         uint32_t num_inodes_per_sector;
-        uint32_t first_inode_block;
-        uint32_t first_data_block;
+        uint32_t first_inode_block;        // stores the first block #, (NOT byte address OR sector #)
+        uint32_t first_data_block;        // stores the first block #, (NOT byte address OR sector #)
         uint32_t inode_size;            // likely going to be 128 bytes?
         uint32_t num_datablocks;
         uint32_t num_datablocks_bitmap;
