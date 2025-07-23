@@ -11,7 +11,7 @@
 
 // MACRO FUNCTIONS FOR CALCULATING SECTION & BLOCK OF INODE GIVEN ITS I_NUMBER
 #define inode_block(i_number) ((i-number * sizeof(struct inode) / FS_BLOCK);    // finds which i-block your inode is in
-#define inode_sector(i_number) (((inode_block(i_number) * FS_BLOCK) + inodeStartAddr) / FS_SECTOR)        // finds which sector your inode is in
+#define inode_sector(i_number, superblock) (((inode_block(i_number) * FS_BLOCK) + (superblock.first_inode_block*FS_BLOCK)) / FS_SECTOR)
 
 extern inode_t current_dir_inode;
 extern superblock_t superblock;
@@ -42,6 +42,7 @@ typedef struct super_block {
         uint32_t num_inodes_bitmap;
         uint32_t num_inodes_per_block;
         uint32_t num_inodes_per_sector;
+        uint32_T first_inode_block; 
         uint32_t inode_size;            // likely going to be 128 bytes?
         uint32_t num_datablocks;
         uint32_t num_datablocks_bitmap;
@@ -50,7 +51,7 @@ typedef struct super_block {
         uint32_t root_i_number;         // using inode_block() and inode_sector() functions can give us the root inode 
         uint32_t first_free_inode_bit;  // stole this off queso fuego (originally was gonna make a separate function)
         uint32_t first_free_data_bit;
-        uint8_t padding[38]  
+        uint8_t padding[36]  
 } super_block_t;                // CURRENT SIZE: 128 BYTES
 
 // everything below is for the files & directories
