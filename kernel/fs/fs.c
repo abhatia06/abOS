@@ -2,66 +2,76 @@
 #include "../stdint.h"
 #include "../stdio.h"
 #include "../x86.h"
+#include "../util/string.h"
 
 #define READ 0x20
 #define WRITE 0x30
 
+//  These will be initialized in the pre-kernel
+inode_t current_dir_inode = {0};        // inode of the current directory we're in
+superblock_t superblock = {0};          // the superblock (there's only 1)
+int block_buffer[FS_BLOCK] = {0};       // a buffer to hold 1 block (4096)
+int sector_buffer[FS_SECTOR] = {0};     // a buffer to hold 1 sector (512)
+inode_t root_inode = {0};               // inode of the root directory
+
 // uses ATA PIO LBA mode to read/write sectors to and from the disk
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite) {
-	// In LBA mode, the starting sector (known as the LBA, or Logical Block Address) contains
+        // In LBA mode, the starting sector (known as the LBA, or Logical Block Address) contains
         // the sector number, drive selector, and cylinder information, like so:
         //
         // SECTOR NUMBER        LBA[0:7]
         // CYLINDER LOW         LBA[15:8]
         // CYLINDER HIGH        LBA[23:16]
         // DRIVE/HEAD           LBA[27:24]
-	outb(0x1F6, (0xE0 | ((starting_sector >> 24) & 0x0F)));
-	outb(0x1F2, sectors);
-	outb(0x1F3, ((starting_sector >> 8) & 0xFF));
-	outb(0x1F4, ((starting_sector >> 16) & 0xFF));
-	outb(0x1F7, readwrite);
+        outb(0x1F6, (0xE0 | ((starting_sector >> 24) & 0x0F)));
+        outb(0x1F2, sectors);
+        outb(0x1F3, ((starting_sector >> 8) & 0xFF));
+        outb(0x1F4, ((starting_sector >> 16) & 0xFF));
+        outb(0x1F7, readwrite);
 
-	uint16_t* address_ptr = (uint16_t*)address;
-	if(readwrite == READ) {
-		for(uint32_t i = 0; i < sectors; i++) {
-			while(inb(0x1F7) & (1 << 7)) {
-				// poll
-			}
+        uint16_t* address_ptr = (uint16_t*)address;
+        if(readwrite == READ) {
+                for(uint32_t i = 0; i < sectors; i++) {
+                        while(inb(0x1F7) & (1 << 7)) {
+                                // poll
+                        }
 
-			for(uint32_t j = 0; j < 512; j++) {
-				*address_ptr++ = inb(0x1F0);
-			}
+                        for(uint32_t j = 0; j < 512; j++) {
+                                *address_ptr++ = inb(0x1F0);
+                        }
 
-			// 400ns delay. (https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays), assume each I/O operation takes 30ns
-			for(int z = 0; z < 15; z++) {
-				inb(0x3F6);
-			}
-		}
-	}
+                        // 400ns delay. (https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays)
+                        for(int z = 0; z < 15; z++) {
+                                inb(0x3F6);
+                        }
+                }
+        }
 
-	else if(readwrite == WRITE) {
-		for(uint32_t i = 0; i < sectors; i++) {
-			while(inb(0x1F7) & (1 << 7)) {
-				// poll
-			}
+        else if(readwrite == WRITE) {
+                for(uint32_t i = 0; i < sectors; i++) {
+                        while(inb(0x1F7) & (1 << 7)) {
+                                // poll
+                        }
 
-			for(uint32_t j = 0; j < 512; j++) {
-				outb(0x1F0, *address_ptr++);
-			}
+                        for(uint32_t j = 0; j < 512; j++) {
+                                outb(0x1F0, *address_ptr++);
+                        }
 
-			for(int z = 0; z < 15; z++) {
-				inb(0x3F6);
-			}
-		}
+                        // 400ns delay
+                        for(int z = 0; z < 15; z++) {
+                                inb(0x3F6);
+                        }
+                }
 
-		outb(0x1F7, 0xE7);
-		while(inb(0x1F7) & (1 << 7)) {
-			//poll
-		}
-	}
-}	
+                outb(0x1F7, 0xE7);
+                while(inb(0x1F7) & (1 << 7)) {
+                        //poll
+                }
+        }
+}
 
-// assume that inode is properly initialized, and its direct block pointers do in fact point to existing data blocks
+
+// assume that inode is initialized, and its direct block pointers do in fact point to existing data blocks
 bool load_file(inode_t* inode, uint32_t address) {
         uint32_t file_size_bytes = inode->size;
         uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
@@ -84,15 +94,16 @@ bool load_file(inode_t* inode, uint32_t address) {
         return true;
 }
 
-bool save_file(inode_t* node, uint32_t address) {
+// again assume inode is initialized properly. This time we write to the direct blocks
+bool save_file(inode_t* inode, uint32_t address) {
         uint32_t file_size_bytes = inode->size;
         uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
         if(file_size_bytes%FS_SECTOR > 0) {
                 file_size_sectors++;
         }
 
-        uint32_t direct_blocks_to_read = file_size_sectors/8;   // 4096/512 = 8 sectors per block
-        if(file_size_sectors%8 > 0) {
+        uint32_t direct_blocks_to_read = file_size_sectors/SECTORS_PER_BLOCK;   // 4096/512 = 8 sectors per block
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
                 direct_blocks_to_read++;
         }
 
@@ -106,6 +117,7 @@ bool save_file(inode_t* node, uint32_t address) {
         return true;
 }
 
+
 /*
  * Similar to linux, our files will all be directory entries into a directory that itself will have a root inode. Each directory will contain the following:
  * '.' - which will be the file name in a directory entry that will allow us to access the i_number for the current directory
@@ -117,7 +129,7 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
         dir_entry_t* dir_entry = 0;
 
         //TODO: make converting from inode->size to sectors/blocks a function
-        uint32_t file_size_bytes = current_dir->size;
+        uint32_t file_size_bytes = current_dir.size;
         uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
         if(file_size_bytes%FS_SECTOR > 0) {
                 file_size_sectors++;
@@ -137,10 +149,10 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
                                 continue;       // empty entry, skip. i_number = 0 reserved for empty i_node
                         }
 
-                        if(strcmp(dir_entry->name, file) == 0) {	// TODO: implement strncmp just in case 
-                                rw_sectors(1, inode_sector(dir_entry->i_number), (uint32_t)sector_buffer, READ);
-				// an inode is <512 bytes, meaning 1 sector has multiple inodes (hopefully) packed together
-                                inode_t* inode_array_in_sector = (inode_t*)sector_buffer; 
+                        if(strcmp(dir_entry->name, file) == 0) {
+                                rw_sectors(1, inode_sector(dir_entry->i_number, superblock),
+                                                (uint32_t)sector_buffer, READ);
+                                inode_t* inode_array_in_sector = (inode_t*)sector_buffer;
                                 return inode_array_in_sector[dir_entry->i_number % INODES_PER_SECTOR];
                         }
                 }
@@ -214,27 +226,20 @@ inode_t get_parent_inode(char* path) {
                 return current_dir_inode;
         }
 
-	// remove the last /, (set it has sentinel)
         temp[index] = '\0';
 
-	// if length of path = 0 after removing the last /, then we're at root inode 
-	// (ex: /temp.txt, remove last /, then we get /0temp, meaning parent is root.)
         if(strlen(temp) == 0) {
                 return root_inode;
         }
 
-	// use our get_inode function on our shortened path & return result
         return get_inode(temp);
 }
 
-// ideas for other functions, perhaps
-
-inode_t create_file(char* path) {
-	inode_t temp = get_parent_inode(path); 
+// FOR FUTURE STUFF
+inode_t create_file(char* filepath) {
         return (inode_t){0};
 }
 
 bool delete_file(inode_t* inode) {
         return false;
 }
-
