@@ -20,6 +20,19 @@ long int strlen(const char* str1) {
 	return length; 	// oops forgot
 }
 
+char* strrchr(char* str, int c)  {
+        char* p = 0;
+        char* temp = str;
+        while(*temp != '\0') {
+                if(*temp == (char)c) {
+                        p = temp;
+                }
+                if(*temp++ == '\0') {
+                        return (char*)p;
+                }
+        }
+}
+
 void* memset(void* ptr, uint8_t value, uint32_t length) {
 
         unsigned char* ptr_byte = (unsigned char*)ptr;
