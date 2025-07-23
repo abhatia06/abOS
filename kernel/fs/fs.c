@@ -205,6 +205,10 @@ inode_t get_inode(char* path) {
         return current_inode;
 }
 
+inode_t get_parent_inode(char* path) {
+        return (inode_t){0};
+}
+
 // ideas for other functions, perhaps
 
 bool create_file(char* name, uint32_t size, uint32_t address) {
