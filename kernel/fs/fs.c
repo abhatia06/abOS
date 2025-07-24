@@ -359,17 +359,34 @@ inode_t create_file(char* path) {
         new_entry.i_number = new_inode.i_number;
         strncpy(new_entry.name, get_name_path(path), sizeof(new_entry.name));
 
-        uint32_t file_size_bytes = parent_inode.size;
-        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
-        if(file_size_bytes%FS_SECTOR > 0) {
-                file_size_sectors++;
-        }
+        uint32_t direct_blocks_to_read = bytes_to_blocks(parent_inode.size);
+        uint32_t new_direct_blocks_to_read = bytes_to_blocks(parent_inode.size + sizeof(dir_entry_t));
+        if(new_direct_blocks_to_read > direct_blocks_to_read) {
+                // if it seems as though the directory will take up another block of data from adding
+                // new_entry, then we need to initialize the next direct pointer (assuming there is one)
 
-        uint32_t direct_blocks_to_read = file_size_sectors/SECTORS_PER_BLOCK;
-        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
-                direct_blocks_to_read++;
-        }
+                if(direct_blocks_to_read >= 2) {
+                        // use indirect pointers, as we have run out of direct blocks to use (oops!)
+                }
 
+                else {
+                        parent_inode.direct_pointers[new_direct_blocks_to_read] = superblock.first_data_block +
+                                superblock.first_free_data_bit;
+                        superblock.first_free_data_bit = find_free_bit(superblock.first_data_bitmap_block,
+                                        superblock.num_data_bitmap);
+
+                        rw_sectors(SECTORS_PER_BLOCK,
+                                        parent_inode.direct_pointers[new_direct_blocks_to_read]*SECTORS_PER_BLOCK,
+                                       (uint32_t)block_buffer, READ);
+                        memset(block_buffer, 0, sizeof(block_buffer));
+
+                        rw_sectors(SECTORS_PER_bLOCK,
+                                        parent_inode.direct_pointers[new_direct_blocks_to_read]*SECTORS_PER_BLOCK,
+                                        (uint32_t)block_buffer, WRITE);
+                }
+
+        }
+        
         bool done = false;
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
                 rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
