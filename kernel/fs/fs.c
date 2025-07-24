@@ -252,6 +252,25 @@ void update_inode(inode_t inode) {
                         (inode.i_number / INODES_PER_SECTOR), (uint32_t)sector_buffer, WRITE);
 }
 
+// basically stolen from queso fuego, because my original idea was very inefficient (I was going 1 bit at a time from the get-go, similar to my PMM..)
+uint32_t find_free_bit(uint32_t start_block, uint32_t length_blocks) {
+        for(uint32_t i = 0; i < length_blocks; i++) {
+                rw_sectors(SECTORS_PER_BLOCK, (start_block + i) * SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+
+                uint32_t* temp = (uint32_t*)block_buffer;
+                for(uint32_t j = 0; j < FS_BLOCK / sizeof(uint32_t); j++) {
+                        if(temp[j] != 0xFFFFFFFF) {
+                                for(uint32_t k = 0; k < 32; k++) {
+                                        if(!(chunk[j] & (1 << k))) {
+                                                return (j * 32) + k;
+                                        }
+                                }
+                        }
+                }
+        }
+        return 0;
+}
+
 // FOR FUTURE STUFF
 // DISCLAIMER: This create_file is far from complete, and is in no way a good create_file function. For one, I have
 // hardly any error checking, two, I assume that our new entry will fit into the direct pointers, and I do not make
