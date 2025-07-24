@@ -87,7 +87,7 @@ bool load_file(inode_t* inode, uint32_t address) {
         uint32_t offset;
         // we assume num of direct blocks to read is < 3, b/c I only have 3 direct blocks lol
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
-                rw_sectors(SECTORS_PER_BLOCK, inode->direct_pointers[0]*SECTORS_PER_BLOCK, address + offset, READ);
+                rw_sectors(SECTORS_PER_BLOCK, inode->direct_pointers[i]*SECTORS_PER_BLOCK, address + offset, READ);
                 offset+=4096;   // add 4KiB to offset, b/c each block is 4KiB
         }
 
@@ -110,7 +110,7 @@ bool save_file(inode_t* inode, uint32_t address) {
         uint32_t offset;
         // we assume num of direct blocks to read is < 3, b/c I only have 3 direct blocks lol
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
-                rw_sectors(SECTORS_PER_BLOCK, inode->direct_pointers[0]*SECTORS_PER_BLOCK, address + offset, WRITE);
+                rw_sectors(SECTORS_PER_BLOCK, inode->direct_pointers[i]*SECTORS_PER_BLOCK, address + offset, WRITE);
                 offset+=4096;   // add 4KiB to offset, b/c each block is 4KiB
         }
 
