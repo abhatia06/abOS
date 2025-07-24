@@ -34,6 +34,15 @@ char* strrchr(char* str, int c)  {
 	return 0;
 }
 
+char* strncpy(char* dst, const char* src, uint32_t n) {
+        char* temp;
+        temp = dst;
+        for(uint32_t i = 0; i < n; i++) {
+                *dst++ = *src++;
+        }
+        return temp;
+}
+
 void* memset(void* ptr, uint8_t value, uint32_t length) {
 
         unsigned char* ptr_byte = (unsigned char*)ptr;
