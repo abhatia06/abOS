@@ -287,13 +287,15 @@ inode_t create_file(char* path) {
         new_inode.i_number = superblock.first_free_inode_bit;
         set_inode_bitmap(new_inode.i_number, true);
 
-        // TODO: IMPORTANT change the first_free_inode_bit in superblock to be updated to a new first_free_inode_bit
-
+        superblock.first_free_inode_bit = find_free_bit(superblock.first_inode_bitmap_block,
+                superblock.num_inodes_bitmap);
+        
         new_inode.direct_pointers[0] = superblock.first_data_block + superblock.first_free_data_bit;
         set_data_bitmap(new_inode.direct_pointers[0], true);
-
-        //TODO: IMPORTANT change the first_free_data_bit in superblock to be updated to a new first_free_data_bit
-
+        
+        superblock.first_free_data_bit = find_free_bit(superblock.first_data_bitmap_block,
+                superblock.num_data_bitmap);
+        
         new_inode.file_type = FILE_TYPE_FILE;
         //TODO: also set the time created for the new inode
         new_inode.size = FS_BLOCK;
