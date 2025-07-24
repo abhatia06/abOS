@@ -420,6 +420,22 @@ inode_t create_file(char* path) {
         return new_inode;
 }
 
-bool delete_file(inode_t* inode) {
+// might be the next one I make, as I NEED proper testing once I mount my fs 
+bool print_dir(char* path) {
         return false;
 }
+
+inode_t create_dir(char* path) {
+        return (inode_t){0};
+}
+
+bool delete_file(char* path) {
+        return false;
+}
+
+bool delete_dir(char* path) {
+        return false;
+}
+
+// FOR FUTURE FUNCTIONS, POSSIBLY:
+// rename directory, rename file, move_to_directory (like a cd command), 
