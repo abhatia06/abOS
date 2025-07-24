@@ -235,6 +235,58 @@ inode_t get_parent_inode(char* path) {
         return get_inode(temp);
 }
 
+// for editing bitmap stuff
+void set_inode_bitmap(uint32_t bit, bool set) {
+        rw_sectors(SECTORS_PER_BLOCK, (superblock.first_inode_bitmap + (bit / 32768))*SECTORS_PER_BLOCK,
+                        (uint32_t)block_buffer, READ);
+        uint32_t index = bit % 32768;   // 32768 = 8 * 4096. 8 bits = 1 byte, a block is 4096 bytes, or 32768 bits
+
+        uint64_t* chunk = (uint64_t*)block_buffer;      // take a big chunk and sift through it
+        if(set) {
+                chunk[index/64] |= (1 << (index % 64));
+        }
+        else {
+                chunk[index/64] &= ~(1 << (index % 64));
+        }
+
+        // save back to disk
+        rw_sectors(SECTORS_PER_BLOCK, (superblock.first_inode_bitmap + (bit/32768))*SECTORS_PER_BLOCK,
+                        (uint32_t)block_buffer, WRITE);
+
+}
+
+void set_data_bitmap(uint32_t bit, bool set) {
+
+        // probably would've been better to make this code apart of a helper function, but its whatever
+        rw_sectors(SECTORS_PER_BLOCK, (superblock.first_data_bitmap + (bit / 32768))*SECTORS_PER_BLOCK,
+                        (uint32_t)block_buffer, READ);
+        uint32_t index = bit % 32768;
+
+        uint64_t* chunk = (uint64_t*)block_buffer;
+        if(set) {
+                chunk[index/64] |= (1 << (index % 64));
+        }
+        else {
+                chunk[index/64] &= ~(1 << (index % 64));
+        }
+
+        rw_sectors(SECTORS_PER_BLOCK, (superblock.first_data_bitmap + (bit/32768))*SECTORS_PER_BLOCK,
+                        (uint32_t)block_buffer, WRITE);
+
+}
+
+char* get_name_path(char* path) {
+        char* temp = path;
+        char* temp2 = path;
+        while(*temp != '\0') {
+                if(*temp == '/') {
+                        temp2 = temp + 1;
+                }
+                temp++;
+        }
+        return temp2;
+}
+
 void update_superblock() {
         *(superblock_t*)SUPERBLOCK_ADDRESS = superblock;
 
@@ -261,7 +313,7 @@ uint32_t find_free_bit(uint32_t start_block, uint32_t length_blocks) {
                 for(uint32_t j = 0; j < FS_BLOCK / sizeof(uint32_t); j++) {
                         if(temp[j] != 0xFFFFFFFF) {
                                 for(uint32_t k = 0; k < 32; k++) {
-                                        if(!(chunk[j] & (1 << k))) {
+                                        if(!(temp[j] & (1 << k))) {
                                                 return (j * 32) + k;
                                         }
                                 }
@@ -305,7 +357,7 @@ inode_t create_file(char* path) {
         // next up is linking up the file
         dir_entry_t new_entry = {0};
         new_entry.i_number = new_inode.i_number;
-        new_entry.name = get_name_path(path);
+        //TODO: use memcpy, strncpy, or just strcpy to copy name gotten from get_name_path into new_entry.name
 
         uint32_t file_size_bytes = parent_inode.size;
         uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
