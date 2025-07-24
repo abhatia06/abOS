@@ -357,7 +357,7 @@ inode_t create_file(char* path) {
         // next up is linking up the file
         dir_entry_t new_entry = {0};
         new_entry.i_number = new_inode.i_number;
-        //TODO: use memcpy, strncpy, or just strcpy to copy name gotten from get_name_path into new_entry.name
+        strncpy(new_entry.name, get_name_path(path), sizeof(new_entry.name));
 
         uint32_t file_size_bytes = parent_inode.size;
         uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
@@ -389,7 +389,6 @@ inode_t create_file(char* path) {
         }
 
         parent_inode.size += sizeof(dir_entry_t);
-        strncpy(new_entry.name, get_name_path(path), sizeof(new_entry.name));
         update_inode(parent_inode);
 
         if(current_dir_inode.i_number == parent_inode.i_number) {
