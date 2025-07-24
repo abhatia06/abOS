@@ -389,8 +389,7 @@ inode_t create_file(char* path) {
         }
 
         parent_inode.size += sizeof(dir_entry_t);
-        //TODO: update time for parent_inode, and also update inode for parent inode
-
+        strncpy(new_entry.name, get_name_path(path), sizeof(new_entry.name));
         update_inode(parent_inode);
 
         if(current_dir_inode.i_number == parent_inode.i_number) {
