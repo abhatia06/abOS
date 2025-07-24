@@ -235,9 +235,101 @@ inode_t get_parent_inode(char* path) {
         return get_inode(temp);
 }
 
+void update_superblock() {
+        *(superblock_t*)SUPERBLOCK_ADDRESS = superblock;
+
+        rw_sectors(1, SUPERBLOCK_DISK_SECTOR, SUPERBLOCK_ADDRESS, WRITE);
+}
+
+void update_inode(inode_t inode) {
+        rw_sectors(1, (superblock.first_inode_block * SECTORS_PER_BLOCK) +
+                        (inode.i_number / INODES_PER_SECTOR), (uint32_t)sector_buffer, READ);
+
+        inode_t* temp = (inode_t*)sector_buffer + (inode.i_number % INODES_PER_SECTOR);
+        *temp = inode;
+
+        rw_sectors(1, (superblock.first_inode_block * SECTORS_PER_BLOCK) +
+                        (inode.i_number / INODES_PER_SECTOR), (uint32_t)sector_buffer, WRITE);
+}
+
 // FOR FUTURE STUFF
-inode_t create_file(char* filepath) {
-        return (inode_t){0};
+// DISCLAIMER: This create_file is far from complete, and is in no way a good create_file function. For one, I have
+// hardly any error checking, two, I assume that our new entry will fit into the direct pointers, and I do not make
+// use of single pointers, and three I do not update the superblocks first_free_data_bit and first_free_inode_bit right now
+inode_t create_file(char* path) {
+
+        // for the USER in particular, we will assume that they (as in me) are smart and don't create files with
+        // the names ".", "..", and "/", as those are reserved, (UNLESS I am making a new directory).
+
+        inode_t parent_inode = get_parent_inode(path);
+
+        // make new inode
+        inode_t new_inode = {0};
+        new_inode.i_number = superblock.first_free_inode_bit;
+        set_inode_bitmap(new_inode.i_number, true);
+
+        // TODO: IMPORTANT change the first_free_inode_bit in superblock to be updated to a new first_free_inode_bit
+
+        new_inode.direct_pointers[0] = superblock.first_data_block + superblock.first_free_data_bit;
+        set_data_bitmap(new_inode.direct_pointers[0], true);
+
+        //TODO: IMPORTANT change the first_free_data_bit in superblock to be updated to a new first_free_data_bit
+
+        new_inode.file_type = FILE_TYPE_FILE;
+        //TODO: also set the time created for the new inode
+        new_inode.size = FS_BLOCK;
+
+        update_inode(new_inode);
+
+        // next up is linking up the file
+        dir_entry_t new_entry = {0};
+        new_entry.i_number = new_inode.i_number;
+        new_entry.name = get_name_path(path);
+
+        uint32_t file_size_bytes = parent_inode.size;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t direct_blocks_to_read = file_size_sectors/SECTORS_PER_BLOCK;
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
+                direct_blocks_to_read++;
+        }
+
+        bool done = false;
+        for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
+                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+
+                dir_entry = (dir_entry_t*)block_buffer;
+                for(uint32_t j = 0; j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
+                        if(dir_entry->i_number == 0) {
+                                *dir_entry = new_entry;
+                                done = true;
+                                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, WRITE);
+                                break;
+                        }
+                }
+                if(done) {
+                        break;
+                }
+        }
+
+        parent_inode.size += sizeof(dir_entry_t);
+        //TODO: update time for parent_inode, and also update inode for parent inode
+
+        update_inode(parent_inode);
+
+        if(current_dir_inode.i_number == parent_inode.i_number) {
+                current_dir_inode = parent_inode;
+        }
+
+        if(root_inode.i_number == parent_inode.i_number) {
+                root_inode = parent_inode;
+        }
+
+        update_superblock();
+        return new_inode;
 }
 
 bool delete_file(inode_t* inode) {
