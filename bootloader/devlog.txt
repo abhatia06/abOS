@@ -2519,10 +2519,10 @@ for master when using CHS ATA PIO). There's a whole OSDev wiki page on ATA PIO, 
 tid-bits of it). https://wiki.osdev.org/ATA_PIO_Mode. If you want to look at an example of what my bootloader would've looked like had we used ATA PIO for the bootloader,
 I do have the example file still there in the bootloader folder, though, do be wary, it doesn't work. It only reads 1 sector to the appropriate address. 
 
-I've decided to save the explanation of the FS for a later day, (day 42). I'll just have day 40 & 41 be for ATA PIO.
+I've decided to save the explanation of the FS for a later day, (day 42, 43, 44). I'll just have day 40 & 41 be for ATA PIO.
 
 ----------------------------------
-DAY 42
+DAY 42, 43, 44 (I've decided to combine these 3 days because I just worked on the same thing on all of them. That being my fs)
 
 Hello,
 Today I will discuss my filesystem, and a bit about how it works, because my notes on the persistence pillar on OSTEP was... Not very good. It was very small, and I
@@ -2531,3 +2531,103 @@ So, I will be implementing the VSFS, or very simple file system. Or, well, I thi
 a combination of the ext2, unix, minix, and whatever other filesystem I can find as inspiration for this filesystem. I don't know if it's actually similar to the FAT, 
 but I imagine it is, because I am going to be having some of the same cheat-things as FAT. (For example, if a file is less than 4096 bytes, or 4KiB, it will still take
 up 4KiB of storage on the disk, because we are going to be partitioning up files to be stored into 4KB data blocks). 
+Anyway, now would be a good as time as any to start explaining my fs. As stated literally in the previous paragraph, it is similar to very early forms of file systems, 
+like ext2, where it is super simple and relatively easy to understand, but implementing it becomes a different beast (you have to pay attention to a LOT of things).
+For help in implementing my FS, I sought out the assistance of OSTEP, particularly the File System Implementation chapter, and the Fast File System chapter that they have,
+and I used Queso Fuego's OS, along with the OSDev wiki whenever I needed more inspiration on how I could implement things differently. The part where my FS may differ
+from OSDev's EXT2 page, and Queso Fuego's OS is that: Queso Fuego's OS uses extents as a form of managing data blocks, whereas I use a more simple, streamlined, and easier
+approach, (at least I think so), of just using direct pointers. Earlier OS's like ext2 had around 12 direct pointers, each pointing to a block (not the address, or sector
+#, they just contained the block #). Each block is 4KB, so 4KB * 12 means that ext2 had quite the amount of space for each of their files. Of course, these blocks were
+not all initialized immediately. If the blocks were not in use, they pointed to nothing (or held 0 to signify not-in-use). Whenever we needed that new block, we could
+just assign it a data block from the bitmap, set the region of the datablock to be 0's (cleareed out), and be on our mary way. Compare this to extents, and I believe
+extents seem much more difficult. I don't really know how extents work, but I don't really care, as direct pointers work just fine for me. Again, I'm making a toy, hobby
+OS for learning, really. I don't particularly care about having the most efficient, or a FS that is able to take care of literally every edge case in existence. I just
+need to be able to tackle the big and major issues that a FS solves, and I am happy with that. I should point out, I mentioned that ext2 has direct pointers. The more 
+astute of you might say "wait.. How come I can store like gigabytes worth of data into a file if some FS use direct pointers". Good question, one, I don't think modern
+OS's use this outdated approach (I think?). Two, we can still store more data even if we exceed the 4KB * 12 data limit. To do that, we use indirect pointers, which are
+a looott more complicated, and I'll deal with them laatteerr, but to explain how they work, it's pretty simple. Direct pointers are, well, direct. They directly point
+to the data block that house the data corresponding to the inode. Indirect pointers are not as direct, and instead, they point to a group of pointers that then point
+to the corresponding data blocks. Which this approach, we can achieve a lot more data being "housed" in an inode, as an indirect pointer could point to numerous pointers.
+Or, we could keep going. We could have indirect pointers point to indirect pointers that point directly to data blocks (double indirect pointers). Or, we could go one
+degree further and get a triple indirect pointer. With each degree we go further, we get exponentially more data blocks (duh), and thus, the total capacity an inode file/
+dir can hold becomes gigantic. Of course, the issue then becomes traversing these indirect pointers and trying to get a data block, as 1. it is not easy to implement, and
+2. it can be quite time inefficient/resource inefficient, hence why we like to use our direct pointers first, then our indirect pointers if we can. 
+Anyway, I've been talking too much about direct pointers and indirect pointers, and I haven't really explained my fs, so let me get to that now for real.
+The structure is simple, but to first understand the structure, we first have to abandon the way we view the disk. If we use CHS addressing, we view the disk as a group
+of cylinders/platters, with various sectors, a spindle, an arm, heads, etc.. This is quite complicated, and it is a pain to remember it all. Furthermore, as I discussed
+in one of the previous days, we would like to be able to have our fs kind of be able to be used.. Y'know.. Anywhere? In like, any disk or storage device. So, that is why
+for the sake of demonstration, we will be using the LBA addressing mode, or the way that the LBA addressing views the disk: as one big continuous space, separated by
+sectors instead of bytes, like so:
+
+--------------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	SECTOR 	|	SECTOR	|	SECTOR	|	SECTOR	|	SECTOR	|	SECTOR	| ...
+|	1	|	2	|	3	|	4	|	5	|	6	|
+--------------------------------------------------------------------------------------------------------------
+
+You might recognize this as looking almost identical to how I showed off memory, and you'd be right. We would like to view the disk similarly to memory, BUT, with a 
+key distinction. We should not really be allowed to use byte-addressing to access parts of the disk. Instead, we would like to rather use sector-addressing to access
+parts of the disk, and that is in fact what we do. Anyway, the first step of our FS is to get rid of this sector addressing, and instead, group up these sectors into
+block-addressing:
+
+---------------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	BLOCK 	|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	| ...
+|	1	|	2	|	3	|	4	|	5	|	6	|
+---------------------------------------------------------------------------------------------------------------
+
+Of course, we don't ACTUALLY change the disk, the disk still percieves itself using sector addressing, we would just like to use blocks of 4KB, (4096 bytes), or about
+8 sectors, as that is a nice sweet spot, which I will explain later. Now that we are using blocks of 8 sectors, we can move onto the next part of out FS. Superblocks,
+inodes, data blocks, and bitmaps.
+I'm sure you remember from when I talked about VMM's and PMM's, but a file system works eerily similar to them (not really, not at all, but I'll get to that). What we'd
+like to have is a bunch of free blocks in our disk that are going to be specifically used by the user/kernel to house various necessary files, and then call on those
+various necessary files. But.. How can we know in which block we've placed each file? Well, one possible solution is to simply give each block an ID, or special number,
+as sort of some metadata. Then, if we know what file is associated with what ID, we can iterate over the disk, look for the specific ID, and once we've found it,
+hooray! We have the file we want. But there is a HUGE caveat to this method, and that is that it sucks. It works, but it sucks. The disk is not like memory where it's
+relatively small, as I've said before. The disk is gigantic, and it can be terabytes large. So, lets take a modern disk, 1TB large, for example. Assume the worst case
+scenario, and that the file we want is at the VERY END of the disk, meaning we have to iterate through it entirely. A terabyte is about 1e+12 bytes, each block is 4096
+bytes (or 8 sectors), meaning we have to do 244140625 iterations in total, (this calculation is probably wrong because I'm stupid, but the point still stands). That's a 
+lot of iterations! Sure, you could remedy this slightly by using a different search algorithm, like perhaps binary search or whatever, (which would also require you to
+sort your disk, soo), but surely there is a better way, right? This is where that "sweet spot" talk comes in. What if, instead, we keep a big array for the IDs of each
+data block SEPARATE from the data blocks, sort of like this:
+
+---------------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	BLOCK 	|	INODE	|	INODE	|	DATA	|	DATA	|	DATA	| ...
+|	1	|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	|
+---------------------------------------------------------------------------------------------------------------
+
+This is called the INODE block. An inode contains the metadata for a file, such as its unique ID, the size of the file, the data block that the file is located in, among
+other things. So, cool! If we want to find a specific file, given its inode, we can search through this array for the specific inode, right?! Well, yes, but that is
+still quite inefficient, because inodes are quite large, and to find a specific data block, all we really need is the inumber, or ID, of a specific file/inode, right? 
+That is where the bitmap comes in. I talked about bitmaps when I was implementing a physical memory manager, so I won't go into it, but basically, we keep a bitmap, and
+each bit in the bitmap basically corresponds to a specific inode. We can then jump to that inode, read where the data block is located, then jump to that data block and
+voila! We can read a file now much more quickly and efficiently. This is also where the "sweet spot" I was talking about comes in. Make the block sizes too small, (1KB),
+and then your bitmap and inode array is gonna be much larger and take up a lot more of the disk. Make your block sizes too large (1MB), and now you'll have to deal with
+a lot of fragmentation, as each file is assigned its own unique block. Hence why we use the sweet spot of 4KB. 
+But, you may notice, the first block is seemingly empty for whatever reason. That's where our superblock goes in. You see, we would like to be able to kind of initialize
+everything, right? How do we know that the block we're reading right now is the inode block, and not just some random data block? Well, the superblock comes in and helps
+with that, as it contains the size of the inode table, along with the first block in the data block section, inode block section, and the first block that contains
+the bitmaps, among other things. Basically, the superblock is a universal beacon that we can use as a reference point to guide us to where we need to be. We also use
+the superblock for basically everything. One of the things I stole from Queso Fuego's implementation was the "first_free_bit" attribute, which points to the first
+free bit in the inode bitmap. Thus, if we want to make a new file, we can very easily give it a unique ID and then just update the superblocks attribute to point to the
+next free bit. What about data? How do we assign data blocks to inodes? Also quite simple. We have a bitmap for the inode array block, right? Why not another bitmap for
+the data block too, so that we can know when a data block is in usage, or when a data block is free, and also so we can find a data block as easily and quickly as 
+possible. With all of that, we have this:
+---------------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	SUPER 	|	BITMAP	|	INODE	|	DATA	|	DATA	|	DATA	| ...
+|	BLOCK	|		|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	|
+---------------------------------------------------------------------------------------------------------------
+
+This is heavily simplified, but it gets the point across. The very first sector of the disk is going to be occupied by the boot record, or the boot file. But then after
+that, the "first" thing our file is going to house is our FS. The first thing the bootloader will read is the superblock, and it'll mount it... I think.
+This is where the issues arise and I kind of don't really understand the "mounting of a filesystem" thing, and I will have to read about it a little bit. From what I saw
+of watching Queso Fuego's videos, he seems to have made an entirely separate C script that generates an image (similar to what I do, but with a makefile), but the image
+already has the the filesystem loaded into it.. Which.. Ok, yeah, that makes sense, but why use a C script? Why not just use the available "dd" command? The next issue
+comes with the actual reading of the superblock in the bootloader. My plan is to, instead of relying on exact CHS addressing for reading from disk to memory for like
+the 2nd stage bootloader, pre_kernel, and kernel, I could rely on the superblock because, well, everything is in fact there. But, how do I load everything INTO the
+filesystem before boot? I can't really do it in a Makefile, (unless I can, and I just am not good at coding Makefiles at all). Hmm, I'll have to see, but for today, I
+might just make delete_file, make_dir, delete_dir, and that should be enough. I also spent today going over my code, making sure I didn't have any issues/bugs that could
+arise. I think, for today (Day 45), I will probably just continue making some fs functions, because the OSDev wiki seems to be down, and I don't really wanna start 
+figuring out how to mount my fs with all of the stuff inside of it without any guidance/help/tutorial, (I guess I could use Queso Fuego's video as guidance? I'll see).
