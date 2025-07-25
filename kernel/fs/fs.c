@@ -422,7 +422,41 @@ inode_t create_file(char* path) {
 
 // might be the next one I make, as I NEED proper testing once I mount my fs 
 bool print_dir(char* path) {
-        return false;
+        uint32_t index = strrchr(path, '/') - path;
+        char* temp = path;
+        temp[index] = '\0';
+
+        inode_t dir_inode = get_inode(temp);
+        if(dir_inode.type != FILETYPE_DIR) {
+                return false;
+        }
+
+        uint32_t total_entries = dir_inode.size / sizeof(dir_entry_t);
+        uint32_t num_entries = 0;
+        dir_entry_t* dir_entry = 0;
+
+        uint32_t total_blocks_to_read = bytes_to_blocks(dir_inode.size);
+        for(uint32_t i = 0; i < total_blocks_to_read; i++) {
+                rw_sectors(SECTORS_PER_BLOCK, dir_inode.direct_pointers[i]*SECTORS_PER_BLOCK, (uint32_t)block_buffer,
+                                READ);
+
+                dir_entry = (dir_entry_t*)block_buffer
+                for(uint32_t j = 0; num_entries < total_entries && j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
+
+                        if(dir_entry->i_number != 0) {
+                                num_entries++;
+
+                                rw_sector(1, (superblock.first_inode_block * SECTORS_PER_BLOCK) +
+                                                (dir_entry->i_number / INODES_PER_SECTOR),
+                                                (uint32_t)sector_buffer, READ);
+
+                                inode_t* inode = (inode_t*)sector_buffer + (dir_entry->id % INODES_PER_SECTOR);
+
+                                //TODO: use kprintf to print the stuff out 
+                        }
+                }
+        }
+        return true;
 }
 
 inode_t create_dir(char* path) {
