@@ -89,6 +89,7 @@ extern int sector_buffer[FS_SECTOR];
 extern inode_t root_inode;
 
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
+uint32_t bytes_to_blocks(uint32_t bytes);
 bool load_file(inode_t* inode, uint32_t address);
 bool save_file(inode_t* node, uint32_t address);
 inode_t get_inode_in_dir(inode_t current_dir, char* file);
