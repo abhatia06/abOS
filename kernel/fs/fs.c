@@ -141,7 +141,7 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
         }
 
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
-                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+                rw_sectors(SECTORS_PER_BLOCK, current_dir.direct_pointers[i]*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
 
                 dir_entry = (dir_entry_t*)block_buffer;
                 for(uint32_t j = 0; j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
