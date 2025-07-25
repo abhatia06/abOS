@@ -2668,3 +2668,26 @@ Anyway, I ended off day 42, 43, 44's entry with talking about how I can mount th
 other Linux file systems, (and I think FAT too, even), have a special "command" called "mkfs", which basically mounts and puts the filesystem into the disk. Great! Cool,
 I just need to understand how mkfs works, and then implement an mkfs for MY FS too. Or, perhaps I can just use their mkfs? I have no idea, I just found out about this
 from a stackexchange page: (https://unix.stackexchange.com/questions/727222/how-do-i-make-a-new-filesystem-image)
+
+Alright, I've done some more research with mkfs and I've uncovered what I believe I have to do. Of course, I need to make something similar to mkfs. The way mkfs works
+is that it has a couple of different flags and whatnot, but I will be particularly focussing on this line:
+mkfs -t ext2 $(BUILD_DIR)/os-image.img
+What the line above does is it overlays the ext2 file system over the disk image, os-image.img. But, that's not all. See, as I stated before in the previous devlog entry,
+the file system has a couple of things it needs to initialize almost immediately in order for it to work properly. I gave you this showcase of a disk:
+
+----------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	SUPER 	|	DATA	|	INODE	|	INODE	|	DATA	| 	DATA	| ...
+|	BLOCK	|	BITMAP	|	BITMAP	|	BLOCK	|	BLOCK	|	BLOCK	|
+----------------------------------------------------------------------------------------------------------
+
+But that's not fully accurate. See, there is actually ONE MORE THING that is within the disk before all of this, (which I also briefly mentioned), and that is the boot
+sector. The bootsector is sector 0 of the disk, always, and it is where the BIOS will read to check and see if there is a functioning bootloader at that sector, (hence
+why we are able to even boot in the first place despite nothing being in memory when we type "make run"). So, really, on sector 0, (and thus, really block 0), we have 
+the bootloader existing there that will be loaded in first. Afterwards, that bootloader will then load the superblock to memory, read it, and then also load everything
+else it needs to load from the disk into memory (i.e., it will load the second stage bootloader, the pre-kernel, and perhaps also the kernel). That is exactly what
+mkfs does, (sort of). See, on top  of  making sure the bootsector is zero'd out and putting down a very basic bootloader into the bootsector, (or sector 0), that will
+try to jump to a bootable "device", it also initializes the superblock with all of the necessary information that we need to be able to actually jump to our other pieces
+of code. Also, ext2 has a bunch of other stuff it does to format the disk too, but, yeah. We need to do the same thing with our fs, and that is also why it seems that
+Queso Fuego makes a make_disk.c script, which I will too. I will TRY to do this on my own, but I have never actually used the file reader writer library in C, so it will
+be quite a bit of a struggle. (I might cave in and look at Queso Fuego's implementation if it really is not working out at all, though. But, I want to avoid that).
