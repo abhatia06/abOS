@@ -35,8 +35,7 @@ typedef struct inode {
         fs_time_t time_created;
         uint32_t direct_pointers[3];            // 3 direct pointers that store the BLOCK #, (NOT BYTE ADDRESS OR SECTOR #)
         uint32_t single_indirect_block;         // 1 single indirect pointer
-        uint8_t padding[2];
-        int padding;
+        uint8_t padding[17];
 } inode_t;        // 64 bytes, hopefully?
 
 typedef struct super_block {
@@ -73,8 +72,8 @@ typedef struct dir_entry_t {
         // each direcotires entry will simply appear as an inode number that points to the actual inode that points to the actual data block
         // for the file in the directory
         uint32_t i_number;      
-        char name[20];
-} dir_entry_t;
+        char name[60];
+} dir_entry_t;        // 64 bytes
 
 //TODO: make the inode struct take up a power of 2 space 
 
