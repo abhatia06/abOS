@@ -2631,3 +2631,14 @@ filesystem before boot? I can't really do it in a Makefile, (unless I can, and I
 might just make delete_file, make_dir, delete_dir, and that should be enough. I also spent today going over my code, making sure I didn't have any issues/bugs that could
 arise. I think, for today (Day 45), I will probably just continue making some fs functions, because the OSDev wiki seems to be down, and I don't really wanna start 
 figuring out how to mount my fs with all of the stuff inside of it without any guidance/help/tutorial, (I guess I could use Queso Fuego's video as guidance? I'll see).
+
+----------------------------------
+DAY 45
+
+I wrote DAY 42, 43, 44's entry today, (day 45), so I will make the day 45 devlog a little bit weirder. I am going to write as I go, because I have come to despise writing
+as much as I do for the devlogs. 
+
+Anyway, I ended off day 42, 43, 44's entry with talking about how I can mount the file system. I believe I've found something that can help me with that. Ext2 and the 
+other Linux file systems, (and I think FAT too, even), have a special "command" called "mkfs", which basically mounts and puts the filesystem into the disk. Great! Cool,
+I just need to understand how mkfs works, and then implement an mkfs for MY FS too. Or, perhaps I can just use their mkfs? I have no idea, I just found out about this
+from a stackexchange page: (https://unix.stackexchange.com/questions/727222/how-do-i-make-a-new-filesystem-image)
