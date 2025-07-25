@@ -70,6 +70,22 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
         }
 }
 
+// this general helper function was only added later, hence why you might see the code in this function seemingly
+// copy and pasted in other functions. I was just too lazy to edit those functions.
+uint32_t bytes_to_blocks(uint32_t bytes) {
+        uint32_t file_size_bytes = bytes;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t file_size_blocks = file_size_sectors/SECTORS_PER_BLOCK;
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
+                file_size_blocks++;
+        }
+
+        return file_size_blocks;
+}
 
 // assume that inode is initialized, and its direct block pointers do in fact point to existing data blocks
 bool load_file(inode_t* inode, uint32_t address) {
