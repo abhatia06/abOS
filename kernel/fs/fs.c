@@ -467,6 +467,11 @@ bool print_dir(char* path) {
         return true;
 }
 
+
+// 
+// The above functions are all the functions I will have available for RIGHT NOW. I've coded in, I think, all the necessary functions. So now, I have to first 
+// mount the file system, and ensure that the functions I made above work, before I can move onto making the other functions, like the ones below.
+//
 inode_t create_dir(char* path) {
         return (inode_t){0};
 }
