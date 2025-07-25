@@ -2619,6 +2619,7 @@ possible. With all of that, we have this:
 |	SUPER 	|	BITMAP	|	INODE	|	DATA	|	DATA	|	DATA	| ...
 |	BLOCK	|		|	BLOCK	|	BLOCK	|	BLOCK	|	BLOCK	|
 ---------------------------------------------------------------------------------------------------------------
+NOTE: the bitmaps are 1 block each. I was too lazy to separate them.
 
 This is heavily simplified, but it gets the point across. The very first sector of the disk is going to be occupied by the boot record, or the boot file. But then after
 that, the "first" thing our file is going to house is our FS. The first thing the bootloader will read is the superblock, and it'll mount it... I think.
@@ -2631,6 +2632,31 @@ filesystem before boot? I can't really do it in a Makefile, (unless I can, and I
 might just make delete_file, make_dir, delete_dir, and that should be enough. I also spent today going over my code, making sure I didn't have any issues/bugs that could
 arise. I think, for today (Day 45), I will probably just continue making some fs functions, because the OSDev wiki seems to be down, and I don't really wanna start 
 figuring out how to mount my fs with all of the stuff inside of it without any guidance/help/tutorial, (I guess I could use Queso Fuego's video as guidance? I'll see).
+
+Oh, yes, I should state this. The partition I showed you above is... Not accurate for more complex file systems, like ext2/3/4, (and maybe even FAT?). If you look at the
+OSDev wiki page for EXT2, you will see some extra things that I do not include in the diagram above. In reality, if you're deciding to just make a driver for an already
+exisiting fs, like ext2/3/4, you will instead have this diagram:
+
+--------------------------------------------------------------------------------------------------------------------------
+|		|	BLOCK	|		|		|		|		|		|
+|	SUPER 	|	GROUP	|	DATA	|	INODE	|	INODE	|	DATA	| 	DATA	| ...
+|	BLOCK	|DESCRIPTOR	|	BITMAP	|	BITMAP	|	BLOCK	|	BLOCK	|	BLOCK	|
+---------------------------------------------------------------------------------------------------------------------------
+
+That's right, many file systems have an extra block for the BLOCK GROUP DESCRIPTOR. Basically, each block is 4KB, right? Well, if if multiple 4KB blocks are being used
+for the same general purpose, then we should realistically group them up so that we KNOW that this group. I think. I don't fully get the point of the block group
+descriptor, and my few minutes of researching it didn't really bear any fruit, but just know that file systems like ext2/3/4 (and maybe FAT?) have block group 
+descriptors, that are basically just larger, bigger blocks grouped together and are generally used in larger file systems. Like, for example, in ext2 
+block group 0 is where the file systems superblock, block group descriptor, data bitmap, inode bitmap, inode block, and a few data blocks live. The descriptor
+keeps track of a bunch of stuff regarding these block groups, and I suggest looking at the OSDev wiki for what they are. BUT, for the sake of my fs, I don't care about
+block group descriptors, because, again, this OS is mostly for LEARNING about low-level stuff right now. In the future, I may decide to sophisticate my OS and make it
+much better in the future, but for now, we are just going to have our fs looking like so: 
+
+----------------------------------------------------------------------------------------------------------
+|		|		|		|		|		|		|
+|	SUPER 	|	DATA	|	INODE	|	INODE	|	DATA	| 	DATA	| ...
+|	BLOCK	|	BITMAP	|	BITMAP	|	BLOCK	|	BLOCK	|	BLOCK	|
+----------------------------------------------------------------------------------------------------------
 
 ----------------------------------
 DAY 45
