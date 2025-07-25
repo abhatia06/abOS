@@ -19,11 +19,11 @@ This 32-bit OS has, as of writing this:
 10. Enters user mode
 
 TODO & AMBITIONS:
-1. Implement and mount a file system (likely vsfs, fss, or perhaps I'll chicken out and just add FAT32)
+1. Implement and mount a file system 
 2. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
 3. Implement various "programs" the user can run in user mode
 4. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
 5. Create a "user mode printf", which is just a syscall that calls kprintf with the values given by user
 6. Change OS to allow multi-threading and various concurrency things, like implementing semaphores, locks, etc.. (WILL NOT BE ANYTIME SOON)
 7. Reorganize current Github to be easier to understand
-8. Redo Makefile to be easier to understand & make it generate an actual HDD image (currently makes a 1MB floppy or whatever)
+8. Redo Makefile to be easier to understand & make it generate an actual HDD image (currently makes a 1MB disk or whatever)
