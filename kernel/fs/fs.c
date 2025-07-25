@@ -427,7 +427,7 @@ bool print_dir(char* path) {
         temp[index] = '\0';
 
         inode_t dir_inode = get_inode(temp);
-        if(dir_inode.type != FILETYPE_DIR) {
+        if(dir_inode.file_type != FILE_TYPE_DIR) {
                 return false;
         }
 
@@ -440,19 +440,27 @@ bool print_dir(char* path) {
                 rw_sectors(SECTORS_PER_BLOCK, dir_inode.direct_pointers[i]*SECTORS_PER_BLOCK, (uint32_t)block_buffer,
                                 READ);
 
-                dir_entry = (dir_entry_t*)block_buffer
+                dir_entry = (dir_entry_t*)block_buffer;
                 for(uint32_t j = 0; num_entries < total_entries && j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
 
                         if(dir_entry->i_number != 0) {
                                 num_entries++;
 
-                                rw_sector(1, (superblock.first_inode_block * SECTORS_PER_BLOCK) +
+                                rw_sectors(1, (superblock.first_inode_block * SECTORS_PER_BLOCK) +
                                                 (dir_entry->i_number / INODES_PER_SECTOR),
                                                 (uint32_t)sector_buffer, READ);
 
-                                inode_t* inode = (inode_t*)sector_buffer + (dir_entry->id % INODES_PER_SECTOR);
+                                inode_t* inode = (inode_t*)sector_buffer + (dir_entry->i_number % INODES_PER_SECTOR);
 
-                                //TODO: use kprintf to print the stuff out 
+                                //kprintf the stuff out
+
+                                if(inode->file_type == FILE_TYPE_FILE) {
+                                        kprintf("\r\n%s        %s     ", dir_entry->name, "[FILE]");
+                                }
+                                else {
+                                        kprintf("\r\n%s        %s     ", dir_entry->name, "[DIR]");
+                                }
+
                         }
                 }
         }
