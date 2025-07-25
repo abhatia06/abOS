@@ -25,3 +25,5 @@ typdef struct {		// According to OSDev wiki and the Intel Manual, this is only f
 	uint32_t cs;
 	uint32_t eip;
 } __attribute__((packed)) int_frame_32_t;	// I will define another one for switching from user -> kernel mode once I switch to user mode.
+
+//TODO: make a separate struct for when an interrupt occurs that triggers a privilege level change. Check page 171 of Intel developers manual, or Vol 1. 6-15
