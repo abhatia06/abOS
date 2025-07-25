@@ -382,7 +382,8 @@ inode_t create_file(char* path) {
                 // new_entry, then we need to initialize the next direct pointer (assuming there is one)
 
                 if(direct_blocks_to_read >= 2) {
-                        // use indirect pointers, as we have run out of direct blocks to use (oops!)
+                        // use indirect pointers, as we have run out of direct blocks to use (oops!) ((I won't do this for a while, though, as my programs will likely
+                        // never be exceeding 12KB)
                 }
 
                 else {
@@ -396,9 +397,11 @@ inode_t create_file(char* path) {
                                        (uint32_t)block_buffer, READ);
                         memset(block_buffer, 0, sizeof(block_buffer));
 
-                        rw_sectors(SECTORS_PER_bLOCK,
+                        rw_sectors(SECTORS_PER_BLOCK,
                                         parent_inode.direct_pointers[new_direct_blocks_to_read]*SECTORS_PER_BLOCK,
                                         (uint32_t)block_buffer, WRITE);
+                        
+                        update_inode(parent_inode);
                 }
 
         }
