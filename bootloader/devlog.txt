@@ -2691,3 +2691,9 @@ try to jump to a bootable "device", it also initializes the superblock with all 
 of code. Also, ext2 has a bunch of other stuff it does to format the disk too, but, yeah. We need to do the same thing with our fs, and that is also why it seems that
 Queso Fuego makes a make_disk.c script, which I will too. I will TRY to do this on my own, but I have never actually used the file reader writer library in C, so it will
 be quite a bit of a struggle. (I might cave in and look at Queso Fuego's implementation if it really is not working out at all, though. But, I want to avoid that).
+
+Alright, so I tried to do it and.. It didn't really work. I couldn't think of anything, and had to look at Queso Fuego's code to really get an idea of what to do. I think,
+tomorrow, instead of trying to brute force my way through format_disk, I'll take a step back and try to understand the library functions and whatnot and how they work.
+I did learn, today, about a trick you can use to read files, which is via fopen(), fseek(), and ftell(), as you can open a file (set a pointer) into a file, use fseek
+to set the pointer to be at the end of the file, and use ftell to read where the pointer is, which will basically give you the size of the file. Tomorrow will be mostly
+experimenting with the file stuff, and Sunday might be trying to write it. That's all for today, adios.
