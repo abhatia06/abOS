@@ -87,8 +87,26 @@ extern int block_buffer[FS_BLOCK];
 extern int sector_buffer[FS_SECTOR];
 extern inode_t root_inode;
 
+// this general helper function was only added later, hence why you might see the code in this function seemingly
+// copy and pasted in other functions. I was just too lazy to edit those functions.
+// Furthermore, this is the only function that is defined in the header file and not its C file. This is because format_disk.c uses this file, and 
+// I don't want to have to link togetheer fs.c and format_disk.c, so I just decided to put this function here.
+uint32_t bytes_to_blocks(uint32_t bytes) {
+        uint32_t file_size_bytes = bytes;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t file_size_blocks = file_size_sectors/SECTORS_PER_BLOCK;
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
+                file_size_blocks++;
+        }
+
+        return file_size_blocks;
+}
+
 void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, int readwrite);
-uint32_t bytes_to_blocks(uint32_t bytes);
 bool load_file(inode_t* inode, uint32_t address);
 bool save_file(inode_t* node, uint32_t address);
 inode_t get_inode_in_dir(inode_t current_dir, char* file);
