@@ -43,6 +43,9 @@ typedef struct super_block {
         uint32_t num_inodes;
         uint32_t num_inodes_bitmap;
         uint32_t num_data_bitmap;
+        uint32_t num_inodes_per_block;
+        uint32_t num_inodes_per_sector;
+        uint32_t num_inode_blocks;
         uint32_t first_inode_bitmap;
         uint32_t first_inode_bitmap_block;
         uint32_t first_data_bitmap_block;
@@ -56,8 +59,8 @@ typedef struct super_block {
         uint32_t first_free_inode_bit;  // stole this off queso fuego (originally was gonna make a separate function)
         uint32_t first_free_data_bit;
         uint32_t device_number;        // for a future device manager (https://wiki.osdev.org/Device_Management)
-        uint8_t padding[60];
-} superblock_t;         // 128 bytes
+        uint8_t padding[52];
+} superblock_t;         // 128 bytes. Hopefully. I hope I don't suck at my 4's multiplication table.
 
 // everything below is for the files & directories
 
