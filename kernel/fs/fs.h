@@ -39,25 +39,25 @@ typedef struct inode {
 } inode_t;        // 64 bytes, hopefully?
 
 typedef struct super_block {
+        //uint32_t size_of_data;
         uint32_t num_inodes;
         uint32_t num_inodes_bitmap;
-        uint32_t num_inodes_per_block;
-        uint32_t num_inodes_per_sector;
-        uint32_t first_inode_block;        // stores the first block #, (NOT byte address OR sector #)
-        uint32_t first_data_block;        // stores the first block #, (NOT byte address OR sector #)
+        uint32_t num_data_bitmap;
+        uint32_t first_inode_bitmap;
         uint32_t first_inode_bitmap_block;
         uint32_t first_data_bitmap_block;
+        uint32_t first_data_bitmap;
+        uint32_t first_inode_block;
+        uint32_t first_data_block;
         uint32_t inode_size;            // likely going to be 128 bytes?
-        uint32_t num_inode_blocks; 
         uint32_t num_datablocks;
         uint32_t num_datablocks_bitmap;
-        uint32_t starting_inode_addr;
         uint32_t max_file_size;
-        uint32_t root_i_number;         // using inode_block() and inode_sector() functions can give us the root inode 
+        uint32_t root_i_number;         // using inode_block() and inode_sector() functions can give us the root inode
         uint32_t first_free_inode_bit;  // stole this off queso fuego (originally was gonna make a separate function)
         uint32_t first_free_data_bit;
-        uint8_t padding[60]  
-} super_block_t;                // CURRENT SIZE: 128 BYTES
+        uint8_t padding[60];
+} superblock_t;         // 128 bytes
 
 // everything below is for the files & directories
 
