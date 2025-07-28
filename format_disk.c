@@ -118,10 +118,6 @@ bool get_file_info(char* dir_path) {
         return true;
 }
 
-bool write_boot_block() {
-        return false;
-}
-
 bool write_superblock() {
         return false;
 }
