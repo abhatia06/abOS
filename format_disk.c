@@ -59,7 +59,7 @@ bool write_boot_block() {
         }
 
         fclose(file_ptr);
-        check = fwrite(&boot_block, FS_BLOCK, 1, IMAGE_PTR);
+        check = fwrite(&boot_block, FS_BLOCK, 1, disk_ptr);
         if(check == 1) {
                 return true;
         }
