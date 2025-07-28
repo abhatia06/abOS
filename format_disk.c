@@ -217,6 +217,115 @@ bool write_data_bitmap() {
 
 }
 
+bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode) {
+        uint32_t count;
+        DIR* dir_ptr = opendir(dir_path);
+        if(!dir_ptr) {
+                fprintf(stderr, "couldn't open directory %s\n", dir_path);
+                return EXIT_FAILURE;
+        }
+
+        // remember, we haven't set up anything yet for the root inode, so we can't assume "." and ".." exist
+        uint32_t dir_entries = 0;
+        struct dirent* dir_ent = readdir(dir_ptr);
+        while(dir_ent) {
+                dir_entries++;
+                dir_ent = readdir(dir_ptr);
+        }
+
+        // rewind the pointer for later use, (to read through each file and add it to the dir)
+        //rewinddir(dir_ptr);
+
+        uint32_t dir_size = dir_entries * sizeof(dir_entry_t);
+
+        inode_t dir_inode = (inode_t){0};
+        dir_inode.i_number = curr_inode;
+        dir_inode.file_type = FILE_TYPE_DIR;
+        dir_inode.size = dir_size;
+        dir_inode.time_created = (fs_time_t) {
+                .second = 0,
+                .minute = 40,
+                .hour = 15,
+                .day = 28,
+                .month = 7,
+                .year = 2025,
+        };
+
+        for(int i = 0; i < bytes_to_blocks(dir_size); i++) {
+                dir_inode.direct_pointers[i] = first_block;
+                first_block++;
+        }
+
+        // go to the specific part of the disk img that corresponds to the i_number
+        // go to the block (byte address) that houses the inode we want to edit
+        fseek(disk_ptr, (superblock.first_inode_block + (dir_inode.i_number / INODES_PER_BLOCK)) * FS_BLOCK, SEEK_SET);
+        // go to the actual address (use modulo as basically indexing into the block and seek_cur to add onto the current pointer)
+        fseek(disk_ptr, (dir_inode.i_number%INODES_PER_BLOCK) * sizeof(inode_t), SEEK_CUR);
+
+        // write our new inode into that specific part of the disk
+        count = fwrite(&dir_inode.i_number, sizeof(dir_inode), 1, disk_ptr);
+        if(count != 1) {
+                return false;
+        }
+
+        // for "." and ".." dir entries (current and parent)
+        fseek(disk_ptr, dir_inode.direct_pointers[0] * FS_BLOCK, SEEK_SET);
+
+        dir_entry_t dir_entry = (dir_entry_t){0};
+        dir_entry.i_number = dir_inode.i_number;
+        strcpy(dir_entry.name, ".");
+        count = fwrite(&dir_entry, sizeof(dir_entry), 1, disk_ptr);
+        if(count != 1) {
+                return false;
+        }
+
+        dir_entry.i_number = parent_inode;
+        strcpy(dir_entry.name, "..");
+        count = fwrite(&dir_entry, sizeof(dir_entry), 1, disk_ptr);
+        if(count != 1) {
+                return false;
+        }
+
+        // now we need to add the file data for all the files
+        // some of this next code is gonna be just copy and pasted from get_file_info
+        rewinddir(dir_ptr);
+        dir_ent = readdir(dir_ptr);
+        while(dir_ent) {
+                // skip past "." and "..". Also, remember there is an invisible "\0" char at the end of each string
+                if(strncmp(dir_ent->d_name, ".", 2) == 0 || strncmp(dir_ent->d_name, "..", 3) == 0) {
+                        continue;
+                }
+
+                char* buffer = malloc(strlen(dir_path) + strlen(dir_ent->d_name) + 2);
+                sprintf(buffer, "%s/%s", dir_path, dir_ent->d_name);
+
+                if(strncmp(dir_ent->d_name, "prekernel.bin", 13) == 0) {
+                        dir_entry.i_number = 2; // look at write_inode_bitmap, we reserve inode 2 for prekernel
+                } else {
+                        dir_entry.i_number = next_inode_id;
+                        next_inode_id++;
+                }
+
+                strcpy(dir_entry.name, dir_ent->d_name);
+
+                // add in the directory entries
+                // we dont have to do seek for the correct area this time, because we already did fseek beforehand for
+                // making "." and "..", and so the files should come right after "." and ".."
+                count = fwrite(&dir_entry, sizeof(dir_entry), 1, disk_ptr);
+                if(count != 1) {
+                        return false;
+                }
+
+                // Now that we have the directory entries in the directory, all we have to do is add in the files
+                // themselves. Because right now, if we have, for example, inode 20 inside this dir, that inode 20
+                // may be claimed in the bitmap, but on the inode block, it doesn't have anything to point to. We need
+                // to do that now.
+
+                dir_ent = readdir(dir_ptr);
+        }
+        return false;
+}
+
 // we need to set up the root inode and add all the files to exist under the root inode
 bool init_inode_data_blocks() {
         return false;
