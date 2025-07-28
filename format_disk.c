@@ -119,7 +119,50 @@ bool get_file_info(char* dir_path) {
 }
 
 bool write_superblock() {
-        return false;
+        superblock.num_inodes = num_files + 2;  // exclude inode 0 (invalid) and inode 1 (root dir)
+        superblock.num_inodes_bitmap = superblock.num_inodes / (FS_BLOCK * 8); // 1 byte = 8 bits
+        if(superblock.num_inodes % (FS_BLOCK * 8)) {
+                superblock.num_inodes_bitmap++;         // partial block takes up entire block
+        }
+        superblock.num_inodes_per_block = FS_BLOCK/sizeof(inode_t);
+        superblock.num_inodes_per_sector = FS_SECTOR/sizeof(inode_t);
+        superblock.first_inode_bitmap_block = 2;
+        superblock.first_data_bitmap_block = superblock.first_inode_bitmap_block + superblock.num_inodes_bitmap;
+        superblock.inode_size = sizeof(inode_t);                // 64 bytes, (hopefully)
+        superblock.num_inode_blocks = superblock.num_inodes/superblock.num_inodes_per_block;
+
+        uint32_t disk_blocks = bytes_to_blocks(disk_size);
+
+        // stole this from queso fuego, don't fully understand why it works, as it doesn't seem to actually take into
+        // account the number of blocks the data bitmap takes up, but whatever
+        uint32_t data_blocks = (disk_blocks - superblock.first_data_bitmap_block - superblock.num_inode_blocks - 1);
+        superblock.num_data_bitmap = data_blocks/(FS_BLOCK * 8);
+        if(superblock.num_datablocks % (FS_BLOCK * 8)) {
+                superblock.num_datablocks++;
+        }
+        superblock.first_inode_block = superblock.first_data_bitmap_block + superblock.num_datablocks_bitmap;
+        superblock.first_data_block = superblock.first_inode_block +
+                (superblock.num_inodes/superblock.num_inodes_per_block);
+        superblock.num_datablocks = superblock.first_data_block + file_blocks;
+        superblock.max_file_size = 0xFFFFFFFF;          // 32 bit max size
+        superblock.root_i_number = 0;                   //pre-kernel or kernel will fill this out
+        superblock.first_free_inode_bit = superblock.num_inodes;
+        superblock.first_free_data_bit = superblock.first_data_block + file_blocks;
+        superblock.device_number = 0x1;
+
+        int count = fwrite(&superblock, sizeof(superblock_t), 1, disk_ptr);
+        if(count != 1) {
+                return false;
+        }
+        if(sizeof(superblock_t) < FS_BLOCK) {   // which it should be, superblock_t is 128 bytes
+                uint8_t temp_buffer[FS_BLOCK] = {0};
+                count = fwrite(&temp_buffer, FS_BLOCK - sizeof(superblock_t), 1, disk_ptr);
+                if(count == 1) {
+                        return true;
+                }
+                return false;
+        }
+        return true;
 }
 
 
