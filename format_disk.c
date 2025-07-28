@@ -217,6 +217,10 @@ bool write_data_bitmap() {
 
 }
 
+// we need to set up the root inode and add all the files to exist under the root inode
+bool init_inode_data_blocks() {
+        return false;
+}
 
 int main() {
         disk_ptr = fopen("build/os-imagetest.img", "wb");
