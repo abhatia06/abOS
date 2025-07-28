@@ -165,6 +165,34 @@ bool write_superblock() {
         return true;
 }
 
+// 1 = free inode bit, 0 = not free inode bit, so for initialization we set everything to 1. Easiest way to do that is
+// by setting 32-bit chunks of memory as 0xFFFFFFFF
+bool write_inode_bitmap() {
+        // arguably not the best, as I set the entirety of the inode bitmap to be 1, when I shouldn't really be doing that, but it's whatever (hopefully)
+        uint32_t chunk;
+        uint32_t count;
+        uint32_t size = superblock.num_inode_bitmap * FS_BLOCK;
+        size = size/4;          // right now it's in bytes, we divide by 4 to make it in 32-bit chunks
+
+        chunk = 0xFFFFFFFC;     // set first two bits to be reserved (inode 0 and inode 1)
+        count = fwrite(&chunk, 4, 1, disk_ptr);
+        if(count != 1) {
+                printf("error setting first chunk to be 1");
+                return false;
+        }
+
+        for(int i = size + 1; i > 0; i--) {
+                chunk = 0xFFFFFFFF;
+                count = fwrite(&chunk, 4, 1, disk_ptr);         // write 4 bytes at a time
+                if(count != 1) {
+                        printf("error setting chunk to 1 at chunk %d", i);
+                        return false;
+                }
+        }
+
+        return true;
+}
+
 
 int main() {
         disk_ptr = fopen("build/os-imagetest.img", "wb");
