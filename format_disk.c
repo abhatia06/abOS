@@ -234,4 +234,15 @@ int main() {
                 fprintf(stderr, "boot block error");
                 return EXIT_FAILURE;
         }
+
+        if(!write_inode_bitmap()) {
+                fprintf(stderr, "inode bitmap error");
+                return EXIT_FAILURE;
+        }
+
+        if(!write_data_bitmap()) {
+                fprintf(stderr, "data bitmap error");
+                return EXIT_FAILURE;
+        }
+        
 }
