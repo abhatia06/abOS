@@ -14,12 +14,9 @@ PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel
 
 floppy_image: $(BUILD_DIR)/main_floppy.img
 
-#
-#Floppy Image
-#
-#NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
-# I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
-# able to ACTUALLY make a hard disk image, and read from it!
+# Disk Image 
+# format_disk creates a 1.44MB disk image called os-image.img that is formatted like so:
+# BOOTBLOCK | SUPERBLOCK | INODE BITMAP | DATA BITMAP | INODE TABLE . . . | DATA BLOCKS . . . |
 $(BUILD_DIR)/main_floppy.img: bootloader kernel disk
         $(BUILD_DIR)/format_disk
 
