@@ -352,7 +352,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                         };
 
                         for(int i = 0; i < bytes_to_blocks(file_stat.st_size); i++) {
-                                dir_inode.direct_pointers[i] = first_block;
+                                new_file.direct_pointers[i] = first_block;
                                 first_block++;
                         }
 
