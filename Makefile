@@ -20,8 +20,11 @@ floppy_image: $(BUILD_DIR)/main_floppy.img
 #NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
 # I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
 # able to ACTUALLY make a hard disk image, and read from it!
-$(BUILD_DIR)/main_floppy.img: bootloader kernel
+$(BUILD_DIR)/main_floppy.img: bootloader kernel disk
         $(BUILD_DIR)/format_disk
+
+
+disk: $(BUILD_DIR)/format_disk
 
 $(BUILD_DIR)/format_disk: format_disk.c
         gcc -std=c17 -Wall -Wextra -Wpedantic -o $(BUILD_DIR)/format_disk format_disk.c
