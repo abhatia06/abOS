@@ -321,14 +321,130 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                 // may be claimed in the bitmap, but on the inode block, it doesn't have anything to point to. We need
                 // to do that now.
 
+                // save current position in dir for the next dir_entry in the path
+                uint32_t cur_dir_pos = ftell(disk_ptr);
+
+                // now switch gears into reading files/directories
+                struct stat file_stat;
+                if(stat(buffer, &file_stat) < 0) {
+                        fprintf(stderr, "couldn't get stat for %s\n", buffer);
+                        return false;
+                }
+
+                // https://www.gnu.org/software/libc/manual/html_node/Directory-Entries.html
+                if(dir_ent->d_type == DT_REG) {
+
+                        // this code is basically copy and pasted from what we did earlier in the function
+                        inode_t new_file = (inode_t){0};
+                        new_file.i_number = dir_entry.i_number;
+                        new_file.file_type = FILE_TYPE_FILE;
+                        new_file.size = file_stat.st_size;
+                        new_file.time_created = (fs_time_t) {
+                                .second = 6,
+                                .minute = 13,
+                                .hour = 18,
+                                .day = 28,
+                                .month = 7,
+                                .year = 2025,
+                        };
+
+                        for(int i = 0; i < bytes_to_blocks(file_stat.st_size); i++) {
+                                dir_inode.direct_pointers[i] = first_block;
+                                first_block++;
+                        }
+
+                        fseek(disk_ptr, (superblock.first_inode_block + (new_file.i_number / INODES_PER_BLOCK)) * FS_BLOCK, SEEK_SET);
+                        fseek(disk_ptr, (new_file.i_number%INODES_PER_BLOCK) * sizeof(inode_t), SEEK_CUR);
+                        count = fwrite(&new_file.i_number, sizeof(new_file), 1, disk_ptr);
+                        if(count != 1) {
+                                return false;
+                        }
+
+                        // this is the part where this code differs. We were already editing the data blocks before,
+                        // but now we need to go and add in the file data to the data blocks.
+
+                        // go to the first data block
+                        fseek(disk_ptr, new_file.direct_pointers[0] * FS_BLOCK, SEEK_SET);
+
+                        FILE* file_ptr = fopen(buffer, "rb");
+                        if(!file_ptr) {
+                                fprintf(stderr, "couldn't open %s\n", buffer);
+                                return false;
+                        }
+
+                        uint32_t size_sectors = new_file.size/FS_SECTOR;
+                        if(size_sectors%FS_SECTOR > 0) {
+                                size_sectors++;
+                        }
+
+                        uint8_t sector_buffer[FS_SECTOR] = {0};
+                        uint32_t total_bytes = 0;
+                        for(int i = 0; i < size_sectors; i++) {
+                                uint32_t bytes = fread(sector_buffer, 1, FS_SECTOR, file_ptr);
+                                count = fwrite(sector_buffer, 1, bytes, disk_ptr);
+                                if(count != bytes) {
+                                        printf("failed to read LINE 384 (OR AROUND THERE IDK)");
+                                        return false;
+                                }
+                                total_bytes += bytes;
+                        }
+                        fclose(file_ptr);
+                        uint8_t null_block[FS_BLOCK] = {0};
+                        count = fwrite(null_block, 1, (FS_BLOCK - (total_bytes % FS_BLOCK)) % FS_BLOCK, disk_ptr);
+                        if(count != (FS_BLOCK - (total_bytes % FS_BLOCK)) % FS_BLOCK) {
+                                return false;
+                        }
+
+                        printf("Wrote file %s, %llu (%u blocks)\n", buffer, (unsigned long long)file_stat.st_size,
+                                        bytes_to_blocks(file_stat.st_size));
+                }
+                else if(dir_ent->d_type == DT_DIR) {
+                        if(!write_file_data(buffer, dir_entry.i_number, dir_inode.i_number)) {
+                                return false;
+                        }
+                }
+                else {
+                        // idk lol
+                }
+
+                // restore current position so we can add next dir_entry
+                fseek(disk_ptr, cur_dir_pos, SEEK_SET);
                 dir_ent = readdir(dir_ptr);
         }
-        return false;
+
+        uint8_t second_null_block[FS_BLOCK] = {0};
+        closedir(dir_ptr);
+        count = fwrite(second_null_block, 1, (FS_BLOCK - (dir_size % FS_BLOCK)) % FS_BLOCK, disk_ptr);
+        if(count != (FS_BLOCK - (dir_size % FS_BLOCK)) % FS_BLOCK) {
+                return false;
+        }
+
+        printf("Wrote directory %s, %u\n", dir_path, dir_size);
+        return true;
 }
 
 // we need to set up the root inode and add all the files to exist under the root inode
 bool init_inode_data_blocks() {
-        return false;
+        uint32_t count = 0;
+        first_block = superblock.first_data_block;
+
+        if(!write_file_data("build/bin", 1, 1))  {
+                return false;
+        }
+
+        uint32_t disk_blocks = bytes_to_blocks(disk_size);
+
+        fseek(disk_ptr, 0, SEEK_END);
+        uint32_t diff = disk_blocks = bytes_to_blocks(ftell(disk_ptr));
+
+        uint8_t null_block[FS_BLOCK] = {0};
+        for(int i = 0; i < diff; i++) {
+                count = fwrite(null_block, FS_BLOCK, 1, disk_ptr);
+                if(count != 1) {
+                        return false;
+                }
+        }
+        return true;
 }
 
 int main() {
@@ -343,8 +459,13 @@ int main() {
                 return EXIT_FAILURE;
         }
 
-        if(!write_boot_block) {
+        if(!write_boot_block()) {
                 fprintf(stderr, "boot block error");
+                return EXIT_FAILURE;
+        }
+
+        if(!write_superblock()) {
+                fprintf(stderr, "superblock error");
                 return EXIT_FAILURE;
         }
 
@@ -352,10 +473,17 @@ int main() {
                 fprintf(stderr, "inode bitmap error");
                 return EXIT_FAILURE;
         }
-
+        
         if(!write_data_bitmap()) {
                 fprintf(stderr, "data bitmap error");
                 return EXIT_FAILURE;
         }
+
+        if(!init_inode_data_blocks()) {
+                fprintf(stderr, "initialization inode/data blocks error");
+                return EXIT_FAILURE;
+        }
+
+        fclose(disk_ptr);
         
 }
