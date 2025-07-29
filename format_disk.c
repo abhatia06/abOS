@@ -78,6 +78,7 @@ bool get_file_info(char* dir_path) {
         struct dirent* dir_ent = readdir(dir_ptr);
         while(dir_ent) {
                 if(strncmp(dir_ent->d_name, ".", 2) == 0 || strncmp(dir_ent->d_name, "..", 3) == 0) {
+                        dir_ent = readdir(dir_ptr);
                         continue;
                 }
 
@@ -177,7 +178,7 @@ bool write_inode_bitmap() {
         chunk = 0xFFFFFFF8;     // reserve inode 0 for invalid inode, inode 1 for root dir, inode 2 for prekernel
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
-                printf("error setting first chunk to be 1");
+                printf("error setting first chunk to be 1\n");
                 return false;
         }
 
@@ -185,7 +186,7 @@ bool write_inode_bitmap() {
                 chunk = 0xFFFFFFFF;
                 count = fwrite(&chunk, 4, 1, disk_ptr);         // write 4 bytes at a time
                 if(count != 1) {
-                        printf("error setting chunk to 1 at chunk %d", i);
+                        printf("error setting chunk to 1 at chunk %d\n", i);
                         return false;
                 }
         }
@@ -293,6 +294,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
         while(dir_ent) {
                 // skip past "." and "..". Also, remember there is an invisible "\0" char at the end of each string
                 if(strncmp(dir_ent->d_name, ".", 2) == 0 || strncmp(dir_ent->d_name, "..", 3) == 0) {
+                        dir_ent = readdir(dir_ptr);
                         continue;
                 }
 
@@ -383,7 +385,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                                 uint32_t bytes = fread(sector_buffer, 1, FS_SECTOR, file_ptr);
                                 count = fwrite(sector_buffer, 1, bytes, disk_ptr);
                                 if(count != bytes) {
-                                        printf("failed to read LINE 384 (OR AROUND THERE IDK)");
+                                        printf("failed to read LINE 384 (OR AROUND THERE IDK)\n");
                                         return false;
                                 }
                                 total_bytes += bytes;
