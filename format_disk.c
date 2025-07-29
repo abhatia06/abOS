@@ -456,37 +456,45 @@ int main() {
                 fprintf(stderr, "Couldn't get the disk image %s\n", "build/os-imagetest.img");
                 return EXIT_FAILURE;
         }
+        printf("OPENED DISK IMAGE %s\n", "build/os-image.img");
 
         if(!get_file_info("build/bin")) {
                 fprintf(stderr, "no files in build/bin");
                 return EXIT_FAILURE;
         }
+        printf("GOT FILE INFO FROM build/bin\n");
 
         if(!write_boot_block()) {
                 fprintf(stderr, "boot block error");
                 return EXIT_FAILURE;
         }
+        printf("BOOT BLOCK LOADED\n");
 
         if(!write_superblock()) {
                 fprintf(stderr, "superblock error");
                 return EXIT_FAILURE;
         }
+        printf("SUPERBLOCK LOADED\n");
 
         if(!write_inode_bitmap()) {
                 fprintf(stderr, "inode bitmap error");
                 return EXIT_FAILURE;
         }
+        printf("INODE BITMAP LOADED\n");
         
         if(!write_data_bitmap()) {
                 fprintf(stderr, "data bitmap error");
                 return EXIT_FAILURE;
         }
+        printf("DATA BITMAP LOADED\n");
 
         if(!init_inode_data_blocks()) {
                 fprintf(stderr, "initialization inode/data blocks error");
                 return EXIT_FAILURE;
         }
+        printf("INODE BLOCKS & DATA BLOCKS INITIALIZED\n");
 
+        fprintf("DISK FORMATTED (hopefully)\n");
         fclose(disk_ptr);
         
 }
