@@ -376,7 +376,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                         }
 
                         uint32_t size_sectors = new_file.size/FS_SECTOR;
-                        if(size_sectors%FS_SECTOR > 0) {
+                        if(new_file.size%FS_SECTOR > 0) {
                                 size_sectors++;
                         }
 
