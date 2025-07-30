@@ -25,7 +25,7 @@ typedef struct time {
         uint8_t month;
         uint16_t year;
         uint8_t padding;
-} fs_time_t;        // 8 bytes
+} __attribute__((packed)) fs_time_t;        // 8 bytes
 
 typedef struct inode {
         uint32_t i_number;                      // reserve inode 0, by the way
