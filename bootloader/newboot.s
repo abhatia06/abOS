@@ -34,6 +34,12 @@ main:
     MOV AH, 0x42        ; DL already contains the drive number, so we're good to go
     INT 0x13
     JC SHORT .error
+
+    ; this wipes the screen clean
+    MOV AH, 0x0
+    MOV AL, 0x3
+    INT 0x10
+    
     CALL enable_a20_fast
     CALL inode_table
     CALL load_prekernel
