@@ -23,20 +23,20 @@ typedef struct time {
         uint8_t hour;
         uint8_t day;
         uint8_t month;
-        uint32_t year;
-} fs_time_t;
+        uint16_t year;
+        uint8_t padding;
+} fs_time_t;        // 8 bytes
 
 typedef struct inode {
         uint32_t i_number;                      // reserve inode 0, by the way
-        uint32_t file_type;
+        uint8_t file_type;
         uint32_t size;                        // assume to be bytes
         fs_time_t time_accessed;
         fs_time_t time_modified;
         fs_time_t time_created;
-        uint32_t direct_pointers[3];            // 3 direct pointers that store the BLOCK #, (NOT BYTE ADDRESS OR SECTOR #)
+        uint32_t direct_pointers[4];            // 4 direct pointers, mostly because the kernel needs 4 blocks (will likely change to 5 soon)
         uint32_t single_indirect_block;         // 1 single indirect pointer
-        uint8_t padding[17];
-} inode_t;        // 64 bytes, hopefully?
+} inode_t;        // 64 bytes
 
 typedef struct super_block {
         //uint32_t size_of_data;
