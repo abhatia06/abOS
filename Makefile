@@ -10,14 +10,14 @@ CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -no
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel.bin ) + 511 ) / 512 )))
-.PHONY: all floppy_image kernel bootloader clean always run
+.PHONY: all disk_image kernel bootloader disk clean always run
 
-floppy_image: $(BUILD_DIR)/main_floppy.img
+disk_image: $(BUILD_DIR)/os-image.img
 
 # Disk Image 
 # format_disk creates a 1.44MB disk image called os-image.img that is formatted like so:
 # BOOTBLOCK | SUPERBLOCK | INODE BITMAP | DATA BITMAP | INODE TABLE . . . | DATA BLOCKS . . . |
-$(BUILD_DIR)/main_floppy.img: bootloader kernel disk
+$(BUILD_DIR)/os-image.img: bootloader kernel disk
         $(BUILD_DIR)/format_disk
 
 
