@@ -331,8 +331,8 @@ typedef struct SMAP_entry {
 
 // Eventually, once we enter user mode, I might make this a program, because why not?
 void print_physical_memory() {
-    uint32_t num_entries = *(uint32_t *)0x9000;
-    SMAP_entry_t *entry = (SMAP_entry_t *)0x9004;
+    uint32_t num_entries = *(uint32_t *)0xA000;
+    SMAP_entry_t *entry = (SMAP_entry_t *)0xA004;
 
     for (uint32_t i = 0; i < num_entries; i++, entry++) {
         kprintf("Entry %u: base=0x%llx length=0x%llx type=%u",
