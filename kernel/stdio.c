@@ -366,3 +366,35 @@ void print_physical_memory() {
     kprintf("Maximum number of blocks: %d\r\n", max_blocks);
     kprintf("Used blocks: %d\r\n", used_blocks);
 }
+
+void print_memmap_command() {
+    uint32_t num_entries = *(uint32_t *)0xA000;
+    SMAP_entry_t *entry = (SMAP_entry_t *)0xA004;
+
+    for (uint32_t i = 0; i < num_entries; i++, entry++) {
+        kprintf("Entry %u: base=0x%llx length=0x%llx type=%u",
+            i,
+            (unsigned long long)entry->base_address,
+            (unsigned long long)entry->length,
+            entry->type);
+
+        switch (entry->type) {
+            case 1: kprintf(" (Available)\r\n"); break;
+            case 2: kprintf(" (Reserved)\r\n"); break;
+            case 3: kprintf(" (ACPI Reclaim)\r\n"); break;
+            case 4: kprintf(" (ACPI NVS Memory)\r\n"); break;
+            default: kprintf(" (Reserved)\r\n"); break;
+        }
+    }
+    kprintf("\r\n");
+    kprintf("Total memory in bytes: ");
+    entry--;
+    // This basically does 0xfffc0000 + 0x40000 (from entry 5). This is equal to 0x100000000. But the limit for 32-bit
+    // is 4 gigabytes is 0xffffffff, not 0x100000000, so we do length-1.
+    uint64_t total_mem = entry->base_address+entry->length-1;
+    kprintf("0x%llx\r\n", total_mem);
+
+    kprintf("Maximum number of blocks: %d\r\n", max_blocks);
+    kprintf("Used blocks: %d\r\n", used_blocks);
+    kprintf("Available blocks: %d\r\n", max_blocks - used_blocks);
+}
