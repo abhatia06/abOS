@@ -3,18 +3,18 @@ BITS 16
 
 KERNEL_LOAD_SEG equ 0x1000
 KERNEL_START_ADDR equ 0x100000
-MEMORY_MAP_ADDR equ 0x9000
+MEMORY_MAP_ADDR equ 0xA000
 MEMORY_MAP_ENTRY_SIZE equ 24
 
 main:
    CALL do_e820
    CALL enterProtectedMode
 
-mmap_ent equ 0x9000
+mmap_ent equ 0xA000
 do_e820:
     XOR AX, AX
     MOV ES, AX
-    MOV DI, 0x9004
+    MOV DI, 0xA004
     XOR EBX, EBX
     XOR BP, BP
     MOV EDX, 0x0534D4150
