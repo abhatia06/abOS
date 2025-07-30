@@ -37,7 +37,7 @@ typedef struct inode {
         uint32_t direct_pointers[4];            // 4 direct pointers, mostly because the kernel needs 4 blocks (will likely change to 5 soon)
         uint32_t single_indirect_block;         // 1 single indirect pointer
         uint8_t padding[11];
-} inode_t;        // 64 bytes
+} __attribute__((packed)) inode_t;        // 64 bytes
 
 typedef struct super_block {
         //uint32_t size_of_data;
