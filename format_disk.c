@@ -139,10 +139,10 @@ bool write_superblock() {
         // account the number of blocks the data bitmap takes up, but whatever
         uint32_t data_blocks = (disk_blocks - superblock.first_data_bitmap_block - superblock.num_inode_blocks - 1);
         superblock.num_data_bitmap = data_blocks/(FS_BLOCK * 8);
-        if(superblock.num_datablocks % (FS_BLOCK * 8)) {
-                superblock.num_datablocks++;
+        if(data_blocks % (FS_BLOCK * 8)) {
+                superblock.num_data_bitmap++;
         }
-        superblock.first_inode_block = superblock.first_data_bitmap_block + superblock.num_datablocks_bitmap;
+        superblock.first_inode_block = superblock.first_data_bitmap_block + superblock.num_data_bitmap;
         superblock.first_data_block = superblock.first_inode_block +
                 (superblock.num_inodes/superblock.num_inodes_per_block);
         superblock.num_datablocks = superblock.first_data_block + file_blocks;
@@ -265,7 +265,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
         fseek(disk_ptr, (dir_inode.i_number%INODES_PER_BLOCK) * sizeof(inode_t), SEEK_CUR);
 
         // write our new inode into that specific part of the disk
-        count = fwrite(&dir_inode.i_number, sizeof(dir_inode), 1, disk_ptr);
+        count = fwrite(&dir_inode, sizeof(dir_inode), 1, disk_ptr);
         if(count != 1) {
                 return false;
         }
@@ -358,7 +358,7 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
 
                         fseek(disk_ptr, (superblock.first_inode_block + (new_file.i_number / INODES_PER_BLOCK)) * FS_BLOCK, SEEK_SET);
                         fseek(disk_ptr, (new_file.i_number%INODES_PER_BLOCK) * sizeof(inode_t), SEEK_CUR);
-                        count = fwrite(&new_file.i_number, sizeof(new_file), 1, disk_ptr);
+                        count = fwrite(&new_file, sizeof(new_file), 1, disk_ptr);
                         if(count != 1) {
                                 return false;
                         }
