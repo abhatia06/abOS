@@ -22,8 +22,8 @@ __attribute__ ((section ("prekernel_entry"))) void prekernel_main() {
                 uint32_t acpi;
         }__attribute__((packed)) SMAP_entry_t;
 
-        uint32_t num_entries = *(uint32_t*)0x9000;
-        SMAP_entry_t* entry = (SMAP_entry_t*)0x9004;
+        uint32_t num_entries = *(uint32_t*)0xA000;
+        SMAP_entry_t* entry = (SMAP_entry_t*)0xA004;
         SMAP_entry_t* last_entry = &entry[num_entries - 1];
 
         for(uint32_t i = 0; i < num_entries; i++, entry++) {
