@@ -2697,3 +2697,39 @@ tomorrow, instead of trying to brute force my way through format_disk, I'll take
 I did learn, today, about a trick you can use to read files, which is via fopen(), fseek(), and ftell(), as you can open a file (set a pointer) into a file, use fseek
 to set the pointer to be at the end of the file, and use ftell to read where the pointer is, which will basically give you the size of the file. Tomorrow will be mostly
 experimenting with the file stuff, and Sunday might be trying to write it. That's all for today, adios.
+
+----------------------------------
+DAY 46 & 47
+
+Combining Monday and Tuesday because I'm lazy.
+I finished up the file system implementation on day 45, as I stated before, so these two days were mostly just working on figuring out how to mount the filesystem. I 
+used Queso Fuego's make_disk.c as a guide, for now. Right now, I just want to make sure that my file system implementation is CORRECT and that it WORKS, because the 
+details and implementation of my filesystem are still fresh on my mind. Had I moved to explicitly study how I/O stuff works with C (i.e, stdlib, stdio, and dirent), I
+would've probably lost some of the focus I had for my fs. In the end, it was fine, though. On monday I was actually still able to learn a LOT about dirent and stdlib
+because, although I was using his make_disk.c as a guide, I was still trying to do things on my own and figure things out. I don't really like copy and pasting code, 
+because that just feels awful. Monday I "finished" the format_disk.c, and Tuesday, today, I actually spent the whole day debugging my format_disk.c, because it turns out,
+I am actually quite stupid and made a lot of mistakes, (over university I took a grand total of 0 C classes, so it seems I just forgot all about C, and the fact that 
+printf holds onto the strings in a buffer until either we put in an escape key, like \n, or we do like fflush(stdout) that will flush out the stdout buffer). I also just
+seemingly forgot about the infinite loops occuring in my code, AND I had such an atrocious typo in the middle of my code that it took me 4 hours to debug, (I read through
+the code like 8 times before I found the issue. I was updating dir_inode instead of new_file). That atriocous typo was quite bad, as it was basically causing the entire
+prekernel and kernel to override the first two blocks, making it so the OS never was able to boot because there was no boot signature, (duh). That was basically all I did
+today. Tomorrow I plan on actually making it so the bootloader, 2nd stage bootloader, and prekernel correctly set things up. Queso Fuego uses ATA PIO for the bootloader,
+and I tried using ATA PIO before, but it just didn't work, and I reaalllyy don't want have to mess with all of that again, so I'll try to just stick to INT 0x13, but this
+time, I'm gonna be using LBA addressing mode instead of CHS, because it seems a lot easier to manage and whatnot. I'll also be stealing Queso Fuego's basic idea, which
+is to load in the 1st block AND 2nd block, (or 15 sectors. It should be 16, but 1st sector = bootloader, so 15 sectors) into memory, thereby loading the 2nd stage 
+bootloader and superblock into memory at starting at 0x7E00. After that, loading the prekernel and kernel might be a bit difficult, as I will have to do some inode 
+shenanigans with them, but it should be fine, as I know which inode to look into to find the inode stuff. Actually, while writing this, the format_disk.c file on the
+github still has quite a few issues with it. Here they are:
+1. It doesn't write out the data bitmap
+2. It doesn't write out the inode table block
+3. It doesn't write out the kernel.bin dir_entry
+Now these are quite severe issues. Thankfully, after literally 3 more hours of slamming my head against the desk and going insane, I figured out that the issue was that
+I was overriding it because my superblock sucks... And also because I made some stupid mistakes in the function, but those were minor and I fixed those one quickly.
+I made quite a few typos in the superblock, and I believe I've fixed everything? There are still a few quirks, I think? For one, I cannot decipher the inode table 
+block at all, I genuinely have no idea if it works or not, guess I'll have to test it and see. Two, in the inode table block, it randomly skips 00004140. Not sure what
+that's about. Hope it wasn't something important. And finally, the boot.bin file, inside the dir_entry thing is called boot.bin.n.bin, which is definitely not the right
+name. This one should be easy to fix, though, I am pretty sure that this is only occuring because of strcpy and not wiping the buffer clean after each use, which I should
+do. Everything else looks correct based on the hexdump? Like, obviously I cannot decipher everything, but it seems the string literals in the hexdump for the kernel and
+prekernel look correct, and their sizes look correct too: kernel is 4 blocks, (so around 32 sectors, which makes sense, I believe the kernel is 27 sectors, and prekernel
+is 10 sectors, and its correctly allocated 2 blocks. Sooo, everything seems normal). 
+Anyway, that's all for today. Adios.
