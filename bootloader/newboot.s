@@ -65,7 +65,7 @@ inode_table:
     PUSHA
     MOV AX, [FIRST_INODE_BLOCK]
     MOV BX, 8
-    MUL BX
+    MUL BX              ; for this, the result is stored in AX:DX, and since DWORD is 32-bits, we can use AX and DX to store a DWORD into d_lba
     MOV [d_lba], AX     ; 8 sectors per block, first_inode_block contains block #, so block # * 8 = LBA
     MOV [d_lba+2], DX
     MOV WORD [db_add], 0xB000
