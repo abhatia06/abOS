@@ -15,10 +15,11 @@ This 32-bit OS has, as of writing this:
 5. Partially implements various parts of the C standard library, like malloc. (Also has other stuff, like partially implemented stdio with custom printf)
 6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
 7. Sets up a Virtual Memory Manager & enables paging
+8. Formats the disk and mounts a file system (vsfs, from OSSTEP book)
 9. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
 10. Enters user mode
 
-TODO & AMBITIONS:
+GOALS: 
 1. Implement and mount a file system 
 2. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
 3. Implement various "programs" the user can run in user mode
