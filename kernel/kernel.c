@@ -11,22 +11,6 @@
 #include "fs/fs.h"
 #include "fs/fs_commands.h"
 
-/*
-void memorysetup() {
-        initialize_pmm();
-        //deinit_memory_region(0x0, 0x12000);
-        deinit_memory_region(0x100000, 81920);  // Reserve 20 blocks of physical memory for the kernel
-        deinit_memory_region(0x7EE0000, 20480);
-        //initialize_memory_region(0x100000, 4096);
-        //int32_t checker = find_free_blocks(1);
-        //kprintf("bit address: %d\r\n", checker);
-        // Add this to inspect the stack
-        unsigned long esp;
-        __asm__ volatile ("mov %%esp, %0" : "=r"(esp));
-        kprintf("ESP: 0x%x\r\n", esp);
-
-}
-*/
 
 void user_mode_entry_point();
 
@@ -49,13 +33,11 @@ void main() {
         kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
 
         pic_disable();
-        //memorysetup();
 
         kprintf("\n");
         print_memmap_command();
         kprintf("\n");
-        //initialize_vmm();
-
+        
         initIDT();
 
         // TODO: swap out magic hexadecimal numbers (0x8E and 0xEE) for actual macros that define what the flags are
