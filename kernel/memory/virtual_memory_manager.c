@@ -5,13 +5,6 @@
 #include "../util/string.h"
 #include "../global_addresses.h"
 
-#define EnablePaging()              \
-    asm volatile (                  \
-        "mov %%cr0, %%eax\n\t"      \
-        "or $0x80000000, %%eax\n\t" \
-        "mov %%eax, %%cr0"          \
-        ::: "eax")
-
 pdirectory* directory = 0;	// also managed to get rid of the other two global variables, because I realized they were actually kinda useless lol
 
 bool alloc_page(pt_entry* e) {
