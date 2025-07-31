@@ -18,10 +18,12 @@
 
 FILE* disk_ptr = 0;
 
-superblock_t superblock = (superblock_t){0};
+superblock_t superblock = {0};
 uint32_t disk_size = 512*2880;  // keeping it to be 1.44MB for right now
 uint32_t num_files = 0;
 uint32_t file_blocks = 0;
+uint32_t first_block = 0;
+uint32_t next_inode_id = 4;     // 0 for invalid, 1 for root dir, 2 for prekernel, 3 for kernel
 
 uint32_t bytes_to_blocks(uint32_t bytes) {
         uint32_t file_size_bytes = bytes;
@@ -191,7 +193,7 @@ bool write_inode_bitmap() {
         uint32_t size = superblock.num_inode_bitmap * FS_BLOCK;
         size = size/4;          // right now it's in bytes, we divide by 4 to make it in 32-bit chunks
 
-        chunk = 0xFFFFFFF8;     // reserve inode 0 for invalid inode, inode 1 for root dir, inode 2 for prekernel
+        chunk = 0xFFFFFFF0;     // reserve inode 0 for invalid inode, inode 1 for root dir, inode 2 for prekernel, 3 for kernel
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
                 printf("error setting first chunk to be 1\n");
@@ -319,7 +321,10 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
 
                 if(strncmp(dir_ent->d_name, "prekernel.bin", 13) == 0) {
                         dir_entry.i_number = 2; // look at write_inode_bitmap, we reserve inode 2 for prekernel
-                } else {
+                } else if(strncmp(dir_ent->d_name, "kernel.bin", 11) == 0) {
+                        dir_entry.i_number = 3;
+                }
+                else {
                         dir_entry.i_number = next_inode_id;
                         next_inode_id++;
                 }
