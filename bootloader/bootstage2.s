@@ -188,11 +188,11 @@ PModeMain:
     CLD
     REP MOVSB
 
-    MOV ESI, 0x20000
-    MOV EDI, 0x50000
-    MOV ECX, 10000
-    CLD
-    REP MOVSB
+    ;MOV ESI, 0x20000
+    ;MOV EDI, 0x50000
+    ;MOV ECX, 10000
+    ;CLD
+    ;REP MOVSB
 
     JMP 0x08: 0x50000
     HLT
