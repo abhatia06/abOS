@@ -159,5 +159,5 @@ __attribute__((interrupt)) void page_fault_handler(int_frame_32_t *frame, uint32
         kprintf("RESOLVED PAGE FAULT. NEW PHYS ADDRESS: 0x%x, NEW VIRT ADDRESS: 0x%x\n", (uint32_t)phys_address, bad_address);
         
         // flush tlb
-         __asm__ __volatile__ ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
+         __asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
 }
