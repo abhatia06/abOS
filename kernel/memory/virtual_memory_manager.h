@@ -29,6 +29,21 @@
 #define SET_ATTRIBUTE(entry, attr) (*entry |= attr)
 #define CLEAR_ATTRIBUTE(entry, attr) (*entry &= ~attr)
 
+#define EnablePaging()              \
+    asm volatile (                  \
+        "mov %%cr0, %%eax\n\t"      \
+        "or $0x80000000, %%eax\n\t" \
+        "mov %%eax, %%cr0"          \
+        ::: "eax")
+
+#define DisablePaging()              \
+    asm volatile(                    \
+        "mov %%cr0, %%eax\n\t"       \
+        "and $0x7FFFFFFF, %%eax\n\t" \
+        "mov %%eax, %%cr0"           \
+        ::: "eax")
+
+
 // Clear old frame address, and then put in the new frame addresss (making sure to NOT touch the flags/attributes)
 #define SET_FRAME(entry, address) (*entry = (*entry & ~0x7FFFF000) | address)
 
