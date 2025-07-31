@@ -4,7 +4,7 @@ ORG 0x7C00
 SUPERBLOCK equ 0x8C00   ; superblock starts 4096 bytes after bootloader, which is 0x1000 extra, so 0x8C00
 FIRST_INODE_BLOCK equ SUPERBLOCK + 40   ; first_inode_block is 40 bytes after
 PREKERNEL_INODE equ 0xB000 + 128        ; we place first_inode_block into memory at 0xB000
-KERNEL_INODE equ PREKERNEL_INODE + 128
+KERNEL_INODE equ PREKERNEL_INODE + 64    ; inode 3 
 
 main:
 
