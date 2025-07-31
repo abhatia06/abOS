@@ -2733,3 +2733,34 @@ do. Everything else looks correct based on the hexdump? Like, obviously I cannot
 prekernel look correct, and their sizes look correct too: kernel is 4 blocks, (so around 32 sectors, which makes sense, I believe the kernel is 27 sectors, and prekernel
 is 10 sectors, and its correctly allocated 2 blocks. Sooo, everything seems normal). 
 Anyway, that's all for today. Adios.
+
+----------------------------------
+DAY 48
+
+Hello,
+I have managed to actually mount the file system fully. I did a bit of bug fixing today and managed to fix the issues that were plaguing the disk, (except the 
+boot.bin.n.bin one, but that's a pretty minor issue). I found out why it was skipping 00004140, and why the inode table was next to impossible to read. It was because
+my inode_t and fs_date_t or whatever it was called, were not actually their right size! I forgot that the compiler likes to pad out bytes to keep them 4-byte aligned, 
+hence why if you look at the structs now, they'll have __attribute__((packed)), as that tells the compiler to NOT pad out the bytes and make them 4-byte aligned, and 
+allows us to achieve whatever byte number we wanted. Now, the inode_t struct is actually 64 bytes, and the fs_date_t struct is actually 8 bytes, and the inode array in
+the the disk image is much more readable and understandable. Now, I think we have actually mounted the fs. After doing that, I started work on a new bootloader. I was
+tempted to retry ATA PIO, but decided against it, and just went with the classic INT 0x13, because I don't really care about efficiency and nice-ness in this OS. All
+I care about is if it works. Originally my plan was to NOT load in the kernel immediately, as it is quite a large file (4 blocks almost), and instead I'll load the kernel
+straight from disk in the prekernel, like Queso Fuego. After 3 hours of trying to figure out how I'll do this, I decided against it for several reasons.
+1. If I do decide to load from prekernel, I'll need to link fs.o into the prekernel linker, along with stdio.o, exceptions, idt, among other things, and that'll make
+the prekernel absolutely gigantic.
+2. I have 0 hindsight apparently, and I didn't seem to catch that: if I made bytes_to_blocks in fs.h, and fs.c includes fs.h, and prekernel.c will also include fs.h,
+then there will be multiple versions of bytes_to_blocks. Granted, this is not an issue unique to the prekernel, and it is something I'll have to fix regardless of if I
+include it in the prekernel or kernel, but still. 
+3. On top of the fact that it'll make the prekernel absolutely gigantic, it'll also force me to deal with global variables shenanigans. (Not really, as I can just NOT 
+touch the global variables for those files, but I will have to deal with global variables shenanigans for the fs.c, which is not very fun.)
+With these three reasons combined, I just decided "who cares", and I decided to just load the kernel from the bootloader and 2ndstage bootloader. Then, I can just have
+the kernel have access to fs.o, which will remove the worry and headaches of multiple bin files with linker scripts that link together the same file. Great. Then, I can
+just fix the one problem which is the bytes_to_blocks thing, and I'll be good to go to test out my filesystem implementation. I'll also have to go to format_disk.c and
+reserve the inode for the kernel to be locked to 5, or maybe 3 I dunno, so that I can always load the kernel from the bootloader, even if we add more files and whatnot.
+I'll also also have to change the inode bitmap and data bitmaps in format_disk.c so that they reserve the inodes for the kernel and whatnot and the data blocks for the
+kernel and whatnot. I imagine other file systems do this too, as it would be a pretty big security risk if the user could just, y'know, override the kernels inode and
+data blocks. Anyway, yeah, if my file system implementation turns out to work relatively well without any MAJOR issues, then cool, we can move on to user land and start
+making programs for it, and start making us actually be able to do stuff in user land, (all we do right now is enter user mode, and immediately trigger a user-allowed
+interrupt, and then a user-banned interrupt, causing everything to halt). 
+That's all for today, adios.
