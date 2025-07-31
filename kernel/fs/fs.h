@@ -61,7 +61,7 @@ typedef struct super_block {
         uint32_t first_free_data_bit;
         uint32_t device_number;        // for a future device manager (https://wiki.osdev.org/Device_Management)
         uint8_t padding[52];
-} superblock_t;         // 128 bytes. Hopefully. I hope I don't suck at my 4's multiplication table.
+} __attribute__((packed)) superblock_t;         // 128 bytes. Hopefully. I hope I don't suck at my 4's multiplication table.
 
 // everything below is for the files & directories
 
@@ -77,7 +77,7 @@ typedef struct dir_entry_t {
         // for the file in the directory
         uint32_t i_number;      
         char name[60];
-} dir_entry_t;        // 64 bytes
+} __attribute__((packed)) dir_entry_t;        // 64 bytes
 
 //TODO: make the inode struct take up a power of 2 space 
 
