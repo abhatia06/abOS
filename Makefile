@@ -36,7 +36,7 @@ $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
 bootloader: $(BUILD_DIR)/boot.bin
 
 $(BUILD_DIR)/boot.bin: always
-        $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
+        $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/newboot.bin
         $(ASM) $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bootstage2.bin
 
 
@@ -72,9 +72,9 @@ $(BUILD_DIR)/kernel.elf: always
 # I didn't have a stack.
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
         @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
-        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
+        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
         @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernel.bin
-        objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/prekernel.bin
+        objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/bin/prekernel.bin
 
 
 #
