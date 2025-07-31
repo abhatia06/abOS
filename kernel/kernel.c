@@ -8,6 +8,8 @@
 #include "memory/virtual_memory_manager.h"
 #include "global_addresses.h"
 #include "interrupts/syscalls.h"
+#include "fs/fs.h"
+#include "fs/fs_commands.h"
 
 /*
 void memorysetup() {
@@ -36,14 +38,13 @@ void main() {
         used_blocks = *(uint32_t *)USED_BLOCKS;
 
         // Even though we're doing this AFTER the vmm has been initialized, it should be fine since the first 4 MB or something is identity-mapped, 
-        // so if we try to access 0x8C00, we should get physical address 0x8C00. 
-        /* 
+        // so if we try to access 0x8C00, we should get physical address 0x8C00. Note, though, that it simply reads from 0x8C00, and doesn't give a power to 0x8C00.
+        
         superblock = *(superblock_t*)0x8C00;
         rw_sectors(1, superblock.first_inode_block*8, (uint32_t)sector_buffer, READ);
         root_inode = *((inode_t*)sector_buffer + 1);
         superblock.root_inode_pointer = (uint32_t)&root_inode;
         current_dir_inode = root_inode;
-        */
 
         kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
 
