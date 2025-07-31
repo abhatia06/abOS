@@ -23,6 +23,21 @@ uint32_t disk_size = 512*2880;  // keeping it to be 1.44MB for right now
 uint32_t num_files = 0;
 uint32_t file_blocks = 0;
 
+uint32_t bytes_to_blocks(uint32_t bytes) {
+        uint32_t file_size_bytes = bytes;
+        uint32_t file_size_sectors = file_size_bytes/FS_SECTOR;
+        if(file_size_bytes%FS_SECTOR > 0) {
+                file_size_sectors++;
+        }
+
+        uint32_t file_size_blocks = file_size_sectors/SECTORS_PER_BLOCK;
+        if(file_size_sectors%SECTORS_PER_BLOCK > 0) {
+                file_size_blocks++;
+        }
+
+        return file_size_blocks;
+}
+
 bool write_boot_block() {
         boot_record_t boot_block = {0};         // check fs.h, boot_record just allocates 4096 bytes (1 block)
 
