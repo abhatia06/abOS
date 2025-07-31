@@ -25,11 +25,12 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
         // DRIVE/HEAD           LBA[27:24]
         outb(0x1F6, (0xE0 | ((starting_sector >> 24) & 0x0F)));
         outb(0x1F2, sectors);
-        outb(0x1F3, ((starting_sector >> 8) & 0xFF));
-        outb(0x1F4, ((starting_sector >> 16) & 0xFF));
+        outb(0x1F3, starting_sector & 0xFF);
+        outb(0x1F4, ((starting_sector >> 8) & 0xFF));
+        outb(0x1F5, ((starting_sector >> 16) & 0xFF));
         outb(0x1F7, readwrite);
 
-        uint16_t* address_ptr = (uint16_t*)address;
+        uint8_t* address_ptr = (uint8_t*)address;
         if(readwrite == READ) {
                 for(uint32_t i = 0; i < sectors; i++) {
                         while(inb(0x1F7) & (1 << 7)) {
