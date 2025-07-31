@@ -108,7 +108,7 @@ load_prekernel:
 .continue:
     MOV WORD [blkcnt], AX
     MOV WORD [db_add], 0x0000
-    MOV WORD [db_add+2], 0x2000 ; load it into 0x20000
+    MOV WORD [db_add+2], 0x5000 ; load it into 0x50000
 
     MOV SI, DAPACK
     MOV AX, 0x0000
@@ -144,7 +144,7 @@ load_kernel:
 .continue:
     MOV WORD [blkcnt], AX
     MOV WORD [db_add], 0x0000
-    MOV WORD [db_add+2], 0x1000
+    MOV WORD [db_add+2], 0x1000     ; load it temporarily onto 0x10000
 
     MOV SI, DAPACK
     MOV AX, 0x0000
