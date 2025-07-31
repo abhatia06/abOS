@@ -4,7 +4,7 @@ ORG 0x7C00
 SUPERBLOCK equ 0x8C00   ; superblock starts 4096 bytes after bootloader, which is 0x1000 extra, so 0x8C00
 FIRST_INODE_BLOCK equ SUPERBLOCK + 40   ; first_inode_block is 40 bytes after
 PREKERNEL_INODE equ 0xB000 + 128        ; we place first_inode_block into memory at 0xB000
-SECONDSTAGE_INODE equ PREKERNEL_INODE + 128
+KERNEL_INODE equ PREKERNEL_INODE + 128
 
 main:
 
@@ -43,6 +43,7 @@ main:
     CALL enable_a20_fast
     CALL inode_table
     CALL load_prekernel
+    CALL load_kernel
 
     MOV DL, [drive_num]
     MOV [0x1500], DL
@@ -108,6 +109,42 @@ load_prekernel:
     MOV WORD [blkcnt], AX
     MOV WORD [db_add], 0x0000
     MOV WORD [db_add+2], 0x2000 ; load it into 0x20000
+
+    MOV SI, DAPACK
+    MOV AX, 0x0000
+    MOV DS, AX
+    MOV DL, [drive_num]
+    MOV AH, 0x42
+    INT 0x13
+    JC SHORT .error
+    POPA
+    RET
+
+.error:
+    CLI
+.hang:
+    HLT
+    JMP .hang
+
+load_kernel:
+    PUSHA
+    MOV AX, [KERNEL_INODE+33]
+    MOV BX, 8
+    MUL BX
+    MOV [d_lba], AX
+    MOV [d_lba+2], DX
+
+    MOV AX, [KERNEL_INODE+5]
+    MOV CX, 512
+    DIV CX
+    CMP DX, 0
+    JE .continue
+    INC AX
+
+.continue:
+    MOV WORD [blkcnt], AX
+    MOV WORD [db_add], 0x0000
+    MOV WORD [db_add+2], 0x1000
 
     MOV SI, DAPACK
     MOV AX, 0x0000
