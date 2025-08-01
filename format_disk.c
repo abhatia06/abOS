@@ -371,11 +371,11 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                                 .year = 2025,
                         };
 
-                        // we preserve blocks 7+ for the kernel (TODO: dont hardcode this)
+                        // we preserve blocks 7+ for the kernel (TODO: dont hardcode this, but how?)
                         uint32_t temp = 0;
-                        if(first_block <= 7+bytes_to_blocks(file_stat.st_size) && first_block >= 7) {
+                        if(first_block <= 11 && first_block >= 7) {
                                 if(strncmp(dir_ent->d_name, "kernel.bin", 11) != 0) {
-                                        first_block+=bytes_to_blocks(file_stat.st_size); // this conditional will first occur when first_block = 7
+                                        first_block+=5; // this conditional will first occur when first_block = 7
                                 }
                         }
                         if(strncmp(dir_ent->d_name, "kernel.bin", 11) == 0) {
