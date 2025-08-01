@@ -371,11 +371,11 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                                 .year = 2025,
                         };
 
-                        // we preserve blocks 7 - 11 for the kernel (TODO: dont hardcode this)
+                        // we preserve blocks 7+ for the kernel (TODO: dont hardcode this)
                         uint32_t temp = 0;
-                        if(first_block <= 11 && first_block >= 7) {
+                        if(first_block <= 7+bytes_to_blocks(file_stat.st_size) && first_block >= 7) {
                                 if(strncmp(dir_ent->d_name, "kernel.bin", 11) != 0) {
-                                        first_block+=5; // this conditional will first occur when first_block = 7
+                                        first_block+=bytes_to_blocks(file_stat.st_size); // this conditional will first occur when first_block = 7
                                 }
                         }
                         if(strncmp(dir_ent->d_name, "kernel.bin", 11) == 0) {
@@ -388,16 +388,16 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
                                 first_block++;
                         }
 
+                        if(temp != 0) {
+                                first_block = temp;
+                                temp = 0;
+                        }
+
                         fseek(disk_ptr, (superblock.first_inode_block + (new_file.i_number / INODES_PER_BLOCK)) * FS_BLOCK, SEEK_SET);
                         fseek(disk_ptr, (new_file.i_number%INODES_PER_BLOCK) * sizeof(inode_t), SEEK_CUR);
                         count = fwrite(&new_file, sizeof(new_file), 1, disk_ptr);
                         if(count != 1) {
                                 return false;
-                        }
-                        
-                        if(temp != 0) {
-                                first_block = temp;
-                                temp = 0;
                         }
 
                         // this is the part where this code differs. We were already editing the data blocks before,
