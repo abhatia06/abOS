@@ -30,15 +30,15 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
         outb(0x1F5, ((starting_sector >> 16) & 0xFF));
         outb(0x1F7, readwrite);
 
-        uint8_t* address_ptr = (uint8_t*)address;
+        uint16_t* address_ptr = (uint16_t*)address;
         if(readwrite == READ) {
                 for(uint32_t i = 0; i < sectors; i++) {
                         while(inb(0x1F7) & (1 << 7)) {
                                 // poll
                         }
 
-                        for(uint32_t j = 0; j < 512; j++) {
-                                *address_ptr++ = inb(0x1F0);
+                        for(uint32_t j = 0; j < 256; j++) {
+                                *address_ptr++ = inw(0x1F0);
                         }
 
                         // 400ns delay. (https://wiki.osdev.org/ATA_PIO_Mode#400ns_delays)
@@ -54,8 +54,8 @@ void rw_sectors(uint32_t sectors, uint32_t starting_sector, uint32_t address, in
                                 // poll
                         }
 
-                        for(uint32_t j = 0; j < 512; j++) {
-                                outb(0x1F0, *address_ptr++);
+                        for(uint32_t j = 0; j < 256; j++) {
+                                outw(0x1F0, *address_ptr++);
                         }
 
                         // 400ns delay
