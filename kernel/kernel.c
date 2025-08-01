@@ -26,7 +26,8 @@ void main() {
         
         superblock = *(superblock_t*)0x8C00;
         rw_sectors(1, superblock.first_inode_block*8, (uint32_t)sector_buffer, READ);
-        root_inode = *((inode_t*)sector_buffer + 1);
+        root_inode = *((inode_t*)((uint8_t*)sector_buffer+64));        // yes i know I can just do *(inode_t*) and then +1, I did it like this because I was going insane
+                                                                       // trying to debug rw_sectors for the past 4 hours
         superblock.root_inode_pointer = (uint32_t)&root_inode;
         current_dir_inode = root_inode;
 
@@ -62,10 +63,13 @@ void main() {
         kprintf("Formatted %d %i %x %p %o %hd %hi %hhu %hhd\r\n", 1234, -5678, 0xdead, 0xbeef, 012345, (short)27, (short)-42, (unsigned char)20, (signed char)-10);
 
         // testing input buffer from keyboard interrupts
-        kprintf("Type your name: ");
-        char* name = readline();
-        kprintf("Hello, %s!\r\n", name);
+        //kprintf("Type your name: ");
+        //char* name = readline();
+        //kprintf("Hello, %s!\r\n", name);
 
+        inode_t test1 = get_inode_in_dir(current_dir_inode, "test.bin");
+        kprintf("test test1 inode: %d\n", test1.i_number);
+        __asm__ volatile ("cli;hlt" :: "r"(0xDEADBEEF));
 
         //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
         //kprintf("boolean: %d\n", tester2);
