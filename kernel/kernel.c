@@ -67,8 +67,11 @@ void main() {
         //char* name = readline();
         //kprintf("Hello, %s!\r\n", name);
 
-        inode_t test1 = get_inode_in_dir(current_dir_inode, "test.bin");
+        inode_t test1 = get_inode_in_dir(current_dir_inode, "test.txt");
         kprintf("test test1 inode: %d\n", test1.i_number);
+        char* tbuffer = (char*)0x500000;         // another test just to make sure our page fault handler works w/ other stuff
+        bool test2 = load_file(&test1, (uint32_t)tbuffer);
+        kprintf("%s\n", tbuffer); 
         __asm__ volatile ("cli;hlt" :: "r"(0xDEADBEEF));
 
         //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
