@@ -200,7 +200,7 @@ bool write_inode_bitmap() {
                 return false;
         }
 
-        for(int i = size + 1; i > 0; i--) {
+        for(int i = size - 1; i > 0; i--) {
                 chunk = 0xFFFFFFFF;
                 count = fwrite(&chunk, 4, 1, disk_ptr);         // write 4 bytes at a time
                 if(count != 1) {
@@ -224,7 +224,7 @@ bool write_data_bitmap() {
                 printf("error setting first chunk to 1 (DATA)\n");
                 return false;
         }
-        for(int i = size + 1; i > 0; i--) {
+        for(int i = size - 1; i > 0; i--) {
                 chunk = 0xFFFFFFFF;
                 count = fwrite(&chunk, 4, 1, disk_ptr);
                 if(count != 1) {
