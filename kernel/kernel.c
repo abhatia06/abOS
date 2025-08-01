@@ -96,12 +96,16 @@ void main() {
         //SET_ATTRIBUTE(stack_page, PTE_USER);
         //SET_ATTRIBUTE(stack_page, PTE_WRITABLE);
 
+        /*
         for(uint32_t i = 0; i < 4; i++) {
                 uint32_t va = USER_STACK - i * 0x1000;
                 map_page((void*)0x600000 - i * 0x1000, (void*)va);
         }
+        */
         //map_page((void*)0x600000, (void*)0xBFFFEFFC);
 
+        //__asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
+        
         __asm__ volatile("cli\n"
                         "mov $0x23, %%eax\n"
                         "mov %%ax, %%ds\n"
