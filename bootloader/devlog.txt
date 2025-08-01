@@ -2764,3 +2764,24 @@ data blocks. Anyway, yeah, if my file system implementation turns out to work re
 making programs for it, and start making us actually be able to do stuff in user land, (all we do right now is enter user mode, and immediately trigger a user-allowed
 interrupt, and then a user-banned interrupt, causing everything to halt). 
 That's all for today, adios.
+
+----------------------------------
+DAY 49
+Hello,
+Today I wanted to really test out my fs, but I had a couple of things to do before I could do that. First and foremost, I just tried to simply compile and link my fs.o
+into the kernel, and also obviously do #include "fs/fs.h", but that... Created issues. For some reason, interrupt handlers that were doing level changes from ring 3 to
+ring 0 were working, but also not working, as my kprintf just stopped working inside these functions, (not fully, but they printed garbage). Now, I have come across this
+a million times already, and I knew this was some memory corruption going on. But, despite this, it still took me forever to realize that this was happening because I
+wasn't initializing the global variables in my fs implementation. Now, why is this an issue? I don't fully know, because uninitialized variables don't exist on the stack,
+they exist in their own separate place known as the bss section, and realistically, the stack should never really be interracting with the bss section, as they both exist
+in separate parts of memory. Matter of fact, global variables should have no INFLUENCE on the stack, as the stack is only for local variables and anything similar, so..
+Why was stdio breaking because of uninitialized global variables? I dunno. But whatever, it fixed itself, hopefully, so that's nice. Anyway, second issue was the
+bytes_to_blocks that I mentioned. For that, I decided to just split the functions/commands of fs from fs.h and put it into a separate header file called fs_commands.h,
+and also made fs.c fs_commands.c instead. Now, fs.h has no bytes_to_blocks function. But wait! format_disk needs it, no? You're right, so to fix that I just put
+bytes_to_blocks inside format_disk.c. Also, since I'm lazy, I decided to also save inode 3 for the kernel, so now the first 4 bits are reserved ( inode 0 = not-existant,
+inode 1 = root dir, inode 2 = prekernel, inode 3 = kernel). Next issue was RW_SECTORS. See, for some reason, I was trying to read/write one byte at a time from the ATA PIO
+data ports, but I'm not supposed to do that, at least I don't think. At least, whenever I was doing it, it wasn't working as expected, so I just moved over to reading/
+writing 1 word at a time, (which is what I was supposed to be doing anyway, because according to OSDev: https://wiki.osdev.org/ATA_PIO_Mode#Registers, the data port is
+16-bits, so I was supposed to be reading 1 word at a time). So I spent another 4 hours trying to debug that before I gave up and decided to read the ATA PIO wiki, found
+out that the data port is 16 bits, realized I was being an idiot, and then started reading 16-bits. Now rw_sectors works, and so does ONE OTHER FUNCTION that I tested out!
+(that function was get_inode_in_dir(), so that's nice. Tomorrow I'll test more functions). Anyway, that's all for today. 
