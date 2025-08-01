@@ -11,7 +11,7 @@ const unsigned VGA_WIDTH = 80;
 const unsigned VGA_HEIGHT = 25;
 const uint8_t DEFAULT_COLOR = 0x07;	// light gray color
 
-uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
+volatile uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
 int g_ScreenX = 0, g_ScreenY = 0;
 
 void putchar(int x, int y, char c) {
