@@ -72,6 +72,19 @@ _x86_inb:
     IN AL, DX
     RET
 
+GLOBAL outw
+outw:
+    MOV DX, [ESP + 4]
+    MOV AX, [ESP + 8]
+    OUT DX, AX
+    RET
+
+GLOBAL inw
+inw:
+    MOV DX, [ESP + 4]
+    IN AX, DX
+    RET
+
 GLOBAL io_wait
 io_wait:
 
