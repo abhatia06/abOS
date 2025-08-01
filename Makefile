@@ -68,8 +68,7 @@ $(BUILD_DIR)/kernel.elf: always
 #
 # The --oformat binary that directly links
 # files together and puts them into binary is not actually good, as it COMPLETELY ignores the .bss sections.
-# my stack is INITIALIZED in the .bss section of the kernel.s code. Therefore, by linking with --oformat meant that
-# I didn't have a stack.
+# I have a lot of global variables, (which I know is bad, but whatever), and they exist in the .bss section initially.
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
         @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
         objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
