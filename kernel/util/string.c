@@ -51,3 +51,17 @@ void* memset(void* ptr, uint8_t value, uint32_t length) {
 	}
         return ptr;
 }
+
+char* strcpy(char* dst, const char* src) {
+        char* temp;
+        temp = dst;
+        while(true) {
+                *dst = *src;
+		if(*src == '\0') {
+			break;
+		}
+		dst++;
+		src++;
+        }
+        return temp;
+}
