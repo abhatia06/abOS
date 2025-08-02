@@ -193,7 +193,7 @@ bool write_inode_bitmap() {
         uint32_t size = superblock.num_inode_bitmap * FS_BLOCK;
         size = size/4;          // right now it's in bytes, we divide by 4 to make it in 32-bit chunks
 
-        chunk = 0x0000000F;     // reserve inode 0 for invalid inode, inode 1 for root dir, inode 2 for prekernel, 3 for kernel
+        chunk = 0x000000FF;     // reserve inode 0 for invalid inode, inode 1 for root dir, inode 2 for prekernel, 3 for kernel
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
                 printf("error setting first chunk to be 1\n");
@@ -218,7 +218,8 @@ bool write_data_bitmap() {
         uint32_t size = superblock.num_data_bitmap * FS_BLOCK;
         size = size/4;
 
-        chunk = 0x000007C1;     // reserve data blocks for prekernel & kernel (hardcoded b/c im a coward)
+        // alternative: 0x000007C1
+        chunk = 0x0001FFFF;     // reserve data blocks for prekernel & kernel (hardcoded b/c im a coward)
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
                 printf("error setting first chunk to 1 (DATA)\n");
