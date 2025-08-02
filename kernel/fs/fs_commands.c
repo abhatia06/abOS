@@ -357,7 +357,7 @@ inode_t create_file(char* path) {
         // next up is linking up the file
         dir_entry_t new_entry = {0};
         new_entry.i_number = new_inode.i_number;
-        strncpy(new_entry.name, get_name_path(path), sizeof(new_entry.name));
+        strcpy(new_entry.name, get_name_path(path));
 
         uint32_t direct_blocks_to_read = bytes_to_blocks(parent_inode.size);
         uint32_t new_direct_blocks_to_read = bytes_to_blocks(parent_inode.size + sizeof(dir_entry_t));
@@ -391,6 +391,24 @@ inode_t create_file(char* path) {
         }
         
         bool done = false;
+        dir_entry_t* dir_entry = 0;
+        for(uint32_t i = 0; i < new_direct_blocks_to_read; i++) {
+                uint32_t direct_blocks = parent_inode.direct_pointers[i];
+                rw_sectors(SECTORS_PER_BLOCK, direct_blocks*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+                dir_entry = (dir_entry_t*)block_buffer;
+                for(uint32_t j = 0; j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
+                        if(dir_entry->i_number == 0) {
+                                *dir_entry = new_entry;
+                                done = true;
+                                rw_sectors(SECTORS_PER_BLOCK, direct_blocks*SECTORS_PER_BLOCK, (uint32_t)block_buffer, WRITE);
+                                break;
+                        }
+                }
+                if(done) {
+                        break;
+                }
+        }
+        /*
         //TODO: redo the for loop below. It doesn't correctly place the newly made dir_entries into the parent directory data blocks
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
                 rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);        // like this doesn't work at all what was I thinking lol
@@ -408,6 +426,7 @@ inode_t create_file(char* path) {
                         break;
                 }
         }
+        */
 
         parent_inode.size += sizeof(dir_entry_t);
         update_inode(parent_inode);
