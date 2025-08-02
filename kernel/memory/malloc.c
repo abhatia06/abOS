@@ -6,7 +6,7 @@
 #include "../util/string.h"
 
 malloc_node_t* malloc_head = 0;
-uint32_t malloc_virt_address = 0x400000;                // start of malloc virtual address space for all processes
+uint32_t malloc_virt_address = 0;                // start of malloc virtual address space for all processes
 uint32_t malloc_phys_address = 0;
 uint32_t total_malloc_pages = 0;
 uint32_t malloc_start = 0;
