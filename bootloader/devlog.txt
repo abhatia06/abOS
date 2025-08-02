@@ -2793,3 +2793,6 @@ This morning my computer was failing to boot and I was experiencing a DPC WATCHD
 freaked out, took my dog on a walk, came back like 2 hours later, tried again, and suddenly it was working. Then, due to lack of sleep, I fell asleep at like 2 PM.
 In the end, I kind of didn't do a whole lot today, BUT, I managed to confirm that my load_file is in fact working as well, along with the get_inode() function, so that's
 nice. Tomorrow I'll probably do a little bit more testing, but that's all for today.
+
+----------------------------------
+DAY 51
