@@ -218,7 +218,7 @@ bool write_data_bitmap() {
         uint32_t size = superblock.num_data_bitmap * FS_BLOCK;
         size = size/4;
 
-        chunk = 0xFFFFFFFE;     // this time just reserve first data chunk for prekernel
+        chunk = 0xFFFFF83E;     // reserve data blocks for prekernel & kernel (hardcoded b/c im a coward)
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
                 printf("error setting first chunk to 1 (DATA)\n");
