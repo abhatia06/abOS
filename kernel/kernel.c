@@ -31,6 +31,19 @@ void main() {
         superblock.root_inode_pointer = (uint32_t)&root_inode;
         current_dir_inode = root_inode;
 
+        malloc_start = 0x400000;
+        malloc_virt_address = malloc_start;
+        malloc_phys_address = (uint32_t)allocate_blocks(1);
+        map_address(directory, malloc_phys_address, malloc_virt_address, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+
+        malloc_head = (malloc_node_t*)malloc_virt_address;
+        malloc_head->size = PAGE_SIZE - sizeof(malloc_node_t);
+        malloc_head->free = true;
+        malloc_head->next = 0;
+        malloc_head->prev = 0;
+
+        total_malloc_pages = 1;
+
         kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
 
         pic_disable();
