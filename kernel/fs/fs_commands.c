@@ -391,8 +391,9 @@ inode_t create_file(char* path) {
         }
         
         bool done = false;
+        //TODO: redo the for loop below. It doesn't correctly place the newly made dir_entries into the parent directory data blocks
         for(uint32_t i = 0; i < direct_blocks_to_read; i++) {
-                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);
+                rw_sectors(SECTORS_PER_BLOCK, i*SECTORS_PER_BLOCK, (uint32_t)block_buffer, READ);        // like this doesn't work at all what was I thinking lol
 
                 dir_entry = (dir_entry_t*)block_buffer;
                 for(uint32_t j = 0; j < DIR_ENTRIES_PER_BLOCK; j++, dir_entry++) {
