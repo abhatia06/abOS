@@ -68,6 +68,17 @@ void main() {
 
         //Set default PIT timer IRQ rate to be about 1 millisecond
         set_PIT(0, 2, 11931);
+
+        // my syscall for malloc wasn't working for some reason. Oh well, I'll fix it later.
+        malloc_init();
+        open_file_t* open_file_table = malloc_next(sizeof(open_file_t) * 256);
+        *open_file_table = (open_file_t){0};
+        kprintf("0x%x\n", open_file_table);
+        inode_t* open_inode_table = malloc_next(sizeof(inode_t) * 256);
+        *open_inode_table = (inode_t){0};
+        kprintf("0x%x\n", open_inode_table);
+        uint32_t current_open_files = 0;
+        uint32_t current_open_inodes = 0;
         // Testing kprintf
         const char* far_str = "far string";
         kprintf("Formatted %% %c %s %s\r\n", 'a', "string", far_str);
@@ -143,14 +154,14 @@ void main() {
                         : "eax"
                 );
 
-        uint32_t address = (uint32_t)malloc_init();
-        kprintf("malloc initialized at address: 0x%x\n", address);
-        address = (uint32_t)malloc_more_pages(4096);
-        kprintf("malloc 1 page: 0x%x\n", address);
-        address = (uint32_t)malloc_next(1000);
-        kprintf("malloc next: 0x%x\n", address);
-        address = (uint32_t)malloc_next(3);
-        kprintf("malloc next2:0x%x\n", address);
+        //uint32_t address = (uint32_t)malloc_init();
+        //kprintf("malloc initialized at address: 0x%x\n", address);
+        //address = (uint32_t)malloc_more_pages(4096);
+        //kprintf("malloc 1 page: 0x%x\n", address);
+        //address = (uint32_t)malloc_next(1000);
+        //kprintf("malloc next: 0x%x\n", address);
+        //address = (uint32_t)malloc_next(3);
+        //kprintf("malloc next2:0x%x\n", address);
 
         while(true) {
                 char* command = readline();
