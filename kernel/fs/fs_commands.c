@@ -449,7 +449,14 @@ bool print_dir(char* path) {
         char* temp = path;
         temp[index] = '\0';
 
-        inode_t dir_inode = get_inode(temp);
+        inode_t dir_inode;
+        if(index == 0) {
+                dir_inode = root_inode;
+        }
+        else {
+                dir_inode = get_inode(temp); 
+        }
+        
         if(dir_inode.file_type != FILE_TYPE_DIR) {
                 return false;
         }
@@ -478,10 +485,10 @@ bool print_dir(char* path) {
                                 //kprintf the stuff out
 
                                 if(inode->file_type == FILE_TYPE_FILE) {
-                                        kprintf("\r\n%s        %s     ", dir_entry->name, "[FILE]");
+                                        kprintf("\r\n%s    %s", dir_entry->name, "[FILE]");
                                 }
                                 else {
-                                        kprintf("\r\n%s        %s     ", dir_entry->name, "[DIR]");
+                                        kprintf("\r\n%s    %s", dir_entry->name, "[DIR]");
                                 }
 
                         }
