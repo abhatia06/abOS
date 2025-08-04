@@ -219,7 +219,10 @@ inode_t get_inode(char* path) {
 
 inode_t get_parent_inode(char* path) {
 
-        char* temp = path;
+        // creates a local variable that does not modify path, (have to do it for the other functions as well, I somehow forgot
+        // about deep copies vs shallow copies idk how
+        char temp[strlen(path)+1];
+        strcpy(temp, path);
         int index = strrchr(path, '/') - path;
 
         if(!strrchr(path, '/')) {
