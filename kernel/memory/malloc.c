@@ -87,7 +87,7 @@ void* calloc_more_pages(uint32_t size) {
 // realloc implementation, (might have to fix in the future)
 void malloc_realloc(void* ptr, uint32_t size) {
         malloc_node_t* temp = malloc_head;
-        while(temp->next != NULL) {
+        while(temp != NULL) {
                 if(temp->address == ptr) {
                         // assume the caller will only want to make it BIGGER not SMALLER
                         uint32_t diff = size - temp->size;
@@ -172,7 +172,7 @@ void* malloc_next(uint32_t size) {
         }
 
         malloc_node_t* temp = malloc_head;
-        while(temp->next != NULL) {
+        while(temp != NULL) {        // NEW
                 if(temp->free && temp->size == size + sizeof(malloc_node_t)) {
                         temp->free = false;
                         return temp->address;
