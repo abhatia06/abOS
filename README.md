@@ -15,15 +15,19 @@ This 32-bit OS has, as of writing this:
 5. Partially implements various parts of the C standard library, like malloc. (Also has other stuff, like partially implemented stdio with custom printf)
 6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
 7. Sets up a Virtual Memory Manager & enables paging
-8. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
-9. Enters user mode
+8. Implements and mounts a very simple file system, (vsfs)
+9. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
+10. Enters user mode
 
 GOALS: 
-1. Implement and mount a file system 
-2. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
-3. Implement various "programs" the user can run in user mode
-4. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
-5. Create a "user mode printf", which is just a syscall that calls kprintf with the values given by user
-6. Change OS to allow multi-threading and various concurrency things, like implementing semaphores, locks, etc.. (WILL NOT BE ANYTIME SOON)
+1. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
+2. Implement various "programs" the user can run in user mode, (will not be using processes or threads just yet, just pre-compiled bin files)
+3. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
+4. Create a "user mode printf", which is just a syscall that calls kprintf with the values given by user (syswrite is supposed to be a generalized syscall that can do this, so I MIGHT make syscall do this?)
+5. Change OS to allow multi-threading and various concurrency things, like implementing semaphores, locks, etc.. (WILL NOT BE ANYTIME SOON)
+6. Implement processes & threads (WILL NOT BE ANYTIME SOON)
 7. Reorganize current Github to be easier to understand
-8. Redo Makefile to be easier to understand & make it generate an actual HDD image (currently makes a 1MB disk or whatever)
+8. Switch to a better file system (create drivers for ext4 or FAT32)
+9. Play around with VGA graphical memory
+10. Refactor to 64-bit UEFI (WILL NOT BE ANYTIME SOON)
+11. Switch to making a GUI (WILL NOT BE ANYTIME SOON)
