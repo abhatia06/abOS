@@ -2796,3 +2796,31 @@ nice. Tomorrow I'll probably do a little bit more testing, but that's all for to
 
 ----------------------------------
 DAY 51
+Hello, 
+I am actually writing this on day 53, because I did some stuff on day 51 that I thought was interesting, or just confused me. Basically, I am relatively confident that
+my FS works, (of course, printdir doesn't work, but I can fix that up later. It's not a huge deal that it doesn't work right now), so I want to move on to the "final"
+stage, which is making user processes and commands, and allowing for the user to do stuff and making my OS look visually appealing. While testing out my syscalls and
+stlib, I found out that... It doesn't work. For some reason, some random interrupts occured, like an interrupt 13 with a random error code that didn't make any sense, 
+(like 0x5AA or something), OR, in other cases, an interrupt 6 happened (interrupt 13 is a GPF, interrupt 6 is invalid opcode). I had no idea why these issues were
+occuring until I decided to go back and initialize the malloc global variables inside the kernel. Then, all of a sudden, the stdlib and syscall stuff started magically
+working! Why wasn't it working beforehand and why does it work now? I have no clue. After that, I got curious, and I decided to go back and update my prekernel to not
+use printlite.c, but instead use my stdio, and would you believe it, there were no issues! So then why were there issues with my stdio before way back when I tried to
+make my trampoline code? Why is it suddenly OK with stdio.c in the prekernel? These are all things that I have no answer for and I really don't understand at all. It's
+definitely related to how compilers treat global variables vs local variables, along with linkers and whatnot, but I'm afraid I don't know enough about programs and
+processes and linkers to actually be able to understand why these were issues, or are no longer issues anymore. BUT, at the very least, I now know that I can SUPPOSEDLY
+link stdio.c with other programs and be able to use it without any real issues, as long as I clear the screen (if I don't clear the screen it just looks ugly. It doesn't
+break anything, it just looks ugly). Soo.. That's nice. Anyway, plan for today (day 53) is to write some more syscalls, primarily the important ones first: sysenter
+and sysexit, as they supposedly enable fast entry/exit into kernel mode/user mode without the interrupt overhead that INT 0x80 provides (according to OSDev at least),
+and then also do some syscalls relating to files. When I read OSTEP and was reading the pillar on persistence, it mentioned that there are 3 important syscalls that an
+OS implements for anything related to files. Those 3 syscalls are: sysopen, sysread, syswrite. If you want to write to a file, what happens is the following:
+sysopen finds the location of the and "opens" it in a certain mode with certain permissions (like O_READ, O_WRITE, etc.), (I heavily simplified what sysopen does here. 
+In reality, sysopen is arguably one of the most intensive syscalls, as it has to read the inode of the root inode, go to the root inode block, read the root inode block
+for the directory entry that contains the i_number for the directory that houses the file we want, go to that inode, go to that directory's data block, read the i_number
+of the file/keep going down directories, go to the files inode, and NOW all we have to do is read the inode into memory, creates a file descriptor, and returns the file 
+descriptor). After performing sysopen, sysread can read from the memory location where sysopen placed the inode, (thanks to the file descriptor) it then goes to read the 
+data blocks the inode is associated with, and then it will update an in memory open file table by updating the file descriptor/creating a file descriptor (I think) for 
+the file by updating the offset, and updating its permissions, (again, I think. It's been a while since I read that chapter in OSTEP). Sysread also does some other things
+too, specifically, it reads from the file and writes to a buffer. We can also give sysread more arguments to specify how many bytes we want to write to the buffer. Then
+syswrite can USE that buffer and write to the appropriate device/file/whatever based on what the user wants. There's also a fourth important syscall, close, which simply
+says "we're done with this file", and removes it from the open file table, allowing us to open other files, (we don't want the user to be able to open an infinite
+number of files at one time, right?). So yeah, that's the plan for today. Do some syscalls and whatnot.
