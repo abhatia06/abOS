@@ -65,6 +65,15 @@ typedef struct super_block {
 
 // everything below is for the files & directories
 
+typedef struct open_file {
+        uint8_t inode_index;            // inode table index
+        uint32_t lseek;                 // offset within file
+        uint32_t* address;              // virtual address file is loaded to
+        uint8_t max_count;
+        uint32_t flags;
+        uint8_t padding;
+} __attribute__((packed)) open_file_t;  // 16 bytes hopefully
+
 /*
  * According to the IBM website for directories (https://www.ibm.com/docs/bg/aix/7.2.0?topic=systems-directories), each directory entry contains a file or
  * subdirectory name, and an i-node number.
