@@ -27,11 +27,12 @@ char* strrchr(char* str, int c)  {
                 if(*temp == (char)c) {
                         p = temp;
                 }
-                if(*temp++ == '\0') {
-                        return (char*)p;
-                }
+		temp++;
         }
-	return 0;
+	if((char)c == '\0') {
+		return str;
+	}
+	return p;
 }
 
 char* strncpy(char* dst, const char* src, uint32_t n) {
