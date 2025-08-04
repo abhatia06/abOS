@@ -32,4 +32,4 @@ GOALS:
 10. Switch to making a GUI (WILL NOT BE ANYTIME SOON)
 11. A proper userspace (with security actually taken into account, like userspace permissions)
 12. further stdlib implementation and some file IO stuff (like f_seek and whatnot)
-13. Networking (WILL NOT BE ANYTIME SOON)
+13. I/O standard streams (stdout, stderr, stdin) and refactoring my printf implementation to use these streams 
