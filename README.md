@@ -20,14 +20,16 @@ This 32-bit OS has, as of writing this:
 10. Enters user mode
 
 GOALS: 
-1. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT)
-2. Implement various "programs" the user can run in user mode, (will not be using processes or threads just yet, just pre-compiled bin files)
+1. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT. This also will require having some process management and thread management stuff)
+2. Implement various "programs" the user can run in user mode, (will not be using processes or threads just yet, processes generally have their own virtual address space, I will likely not do that just yet)
 3. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
 4. Create a "user mode printf", which is just a syscall that calls kprintf with the values given by user (syswrite is supposed to be a generalized syscall that can do this, so I MIGHT make syscall do this?)
 5. Change OS to allow multi-threading and various concurrency things, like implementing semaphores, locks, etc.. (WILL NOT BE ANYTIME SOON)
-6. Implement processes & threads (WILL NOT BE ANYTIME SOON)
-7. Reorganize current Github to be easier to understand
-8. Switch to a better file system (create drivers for ext4 or FAT32)
-9. Play around with VGA graphical memory
-10. Refactor to 64-bit UEFI (WILL NOT BE ANYTIME SOON)
-11. Switch to making a GUI (WILL NOT BE ANYTIME SOON)
+6. Reorganize current Github to be easier to understand
+7. Switch to a better file system (create drivers for ext4 or FAT32)
+8. Play around with VGA graphical memory
+9. Refactor to 64-bit UEFI (WILL NOT BE ANYTIME SOON)
+10. Switch to making a GUI (WILL NOT BE ANYTIME SOON)
+11. A proper userspace (with security actually taken into account, like userspace permissions)
+12. further stdlib implementation and some file IO stuff (like f_seek and whatnot)
+13. Networking (WILL NOT BE ANYTIME SOON)
