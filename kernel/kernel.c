@@ -8,11 +8,21 @@
 #include "memory/virtual_memory_manager.h"
 #include "global_addresses.h"
 #include "interrupts/syscalls.h"
+#include "memory/malloc.h"
 #include "fs/fs.h"
 #include "fs/fs_commands.h"
-
+#include <stdbool.h>
+#include "stdlib.h"
+#include "interrupts/syscall_wrappers.h"
 
 void user_mode_entry_point();
+void tester23();
+void init_malloc();
+uint32_t file_virtual_address;
+open_file_t* open_file_table;
+inode_t* open_inode_table;
+uint32_t current_open_files;
+uint32_t current_open_inodes;
 
 void main() {
         directory = (pdirectory*)*(uint32_t*)CURRENT_PAGE_DIR_ADDRESS;
@@ -71,14 +81,16 @@ void main() {
 
         // my syscall for malloc wasn't working for some reason. Oh well, I'll fix it later.
         malloc_init();
-        open_file_t* open_file_table = malloc_next(sizeof(open_file_t) * 256);
+        open_file_table = malloc_next(sizeof(open_file_t) * 256);
         *open_file_table = (open_file_t){0};
         kprintf("0x%x\n", open_file_table);
-        inode_t* open_inode_table = malloc_next(sizeof(inode_t) * 256);
+        open_inode_table = malloc_next(sizeof(inode_t) * 256);
         *open_inode_table = (inode_t){0};
         kprintf("0x%x\n", open_inode_table);
-        uint32_t current_open_files = 0;
-        uint32_t current_open_inodes = 0;
+        current_open_files = 0;
+        current_open_inodes = 0;
+        file_virtual_address = 0x40000000;
+        
         // Testing kprintf
         const char* far_str = "far string";
         kprintf("Formatted %% %c %s %s\r\n", 'a', "string", far_str);
@@ -96,7 +108,7 @@ void main() {
         char* tbuffer = (char*)0x500000;         // another test just to make sure our page fault handler works w/ other stuff
         bool test2 = load_file(&test1, (uint32_t)tbuffer);
         kprintf("%s\n", tbuffer); 
-        __asm__ volatile ("cli;hlt" :: "r"(0xDEADBEEF));
+        //__asm__ volatile ("cli;hlt" :: "r"(0xDEADBEEF));
 
         //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
         //kprintf("boolean: %d\n", tester2);
