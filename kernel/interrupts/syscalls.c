@@ -101,7 +101,7 @@ void sys_open() {
         // add to open file table, if already in file table, increase max count
         open_file_t* temp_file = open_file_table;
         index = 0;
-        bool skip = false;
+        //bool skip = false;
         //find first free entry
         while(index < 256 && temp_file->address != 0 && temp_file->max_count != 0) {
                 index++;
