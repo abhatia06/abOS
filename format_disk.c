@@ -219,7 +219,7 @@ bool write_data_bitmap() {
         size = size/4;
 
         // alternative: 0x000007C1
-        chunk = 0x0001FFFF;     // reserve data blocks for prekernel & kernel (hardcoded b/c im a coward)
+        chunk = 0x001FFFFF;     // reserve data blocks for prekernel & kernel (hardcoded b/c im a coward)
         count = fwrite(&chunk, 4, 1, disk_ptr);
         if(count != 1) {
                 printf("error setting first chunk to 1 (DATA)\n");
@@ -374,9 +374,9 @@ bool write_file_data(char* dir_path, uint32_t curr_inode, uint32_t parent_inode)
 
                         // we preserve blocks 7+ for the kernel (TODO: dont hardcode this, but how?)
                         uint32_t temp = 0;
-                        if(first_block <= 11 && first_block >= 7) {
+                        if(first_block <= 12 && first_block >= 7) {
                                 if(strncmp(dir_ent->d_name, "kernel.bin", 11) != 0) {
-                                        first_block+=5; // this conditional will first occur when first_block = 7
+                                        first_block+=6; // this conditional will first occur when first_block = 7
                                 }
                         }
                         if(strncmp(dir_ent->d_name, "kernel.bin", 11) == 0) {
