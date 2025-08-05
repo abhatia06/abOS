@@ -119,6 +119,7 @@ void main() {
         kprintf("%s\n", tbuffer);
         int32_t pleasework = close(testing2323);
         kprintf("worked?: %d\n", pleasework);
+        kprintf("inode: %d\n", open_inode_table[open_file_table[testing2323].inode_index].i_number);
         __asm__ volatile("cli;hlt" : : "a"(0xDEADBEEF));
         //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
         //kprintf("boolean: %d\n", tester2);
