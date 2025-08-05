@@ -39,11 +39,21 @@ void sys_free() {
         malloc_free(ptr);
 }
 
+void sys_open() {
+
+}
+
+void sys_close() {
+
+}
+
 void* syscalls[MAX_SYSCALLS] = {
         sys_test1,
         sys_test2,
         sys_malloc,
         sys_free,
+        sys_open,
+        sys_close,
 };
 
 //TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
@@ -52,7 +62,7 @@ void* syscalls[MAX_SYSCALLS] = {
 __attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
 
-                          ".equ MAX_SYSCALLS, 4\n"
+                          ".equ MAX_SYSCALLS, 6\n"
                           "cmp eax, MAX_SYSCALLS-1\n"
                           "ja invalid_syscall\n"
 
