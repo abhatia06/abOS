@@ -40,11 +40,23 @@ void sys_free() {
 }
 
 void sys_open() {
+        int32_t file_descriptor = -1;
+        char* path = 0;
+        __asm__ volatile("mov %%EBX, %0" : "=r"(path));         // arg 1 (EBX) contains path
+        uint32_t flags = 0;
+        __asm__ volatile("mov %%ECX, %0" : "=r"(flags));        // arg 2 (ECX) contains flags
 
+        extern open_file_t* open_file_table;
+        extern inode_t* open_inode_table;
+        extern uint32_t current_open_files;
+        extern uint32_t current_open_inodes;
+
+        __asm__ volatile("mov %0, %%EAX" : : "r"(file_descriptor));     // EAX contains file descriptor
 }
 
 void sys_close() {
-
+        int32_t file_descriptor = -1;
+        __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));      // we just need file descriptor I believe
 }
 
 void* syscalls[MAX_SYSCALLS] = {
