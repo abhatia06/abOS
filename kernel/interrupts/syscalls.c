@@ -121,6 +121,8 @@ void sys_open() {
                 temp_file->max_count = 1;
                 temp_file->flags = flags;
         }
+        current_open_files++;
+        
         uint32_t size = bytes_to_blocks(temp[temp_file->inode_index].size);
         if(size == 0) {
                 size = 1;
