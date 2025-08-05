@@ -2824,3 +2824,42 @@ too, specifically, it reads from the file and writes to a buffer. We can also gi
 syswrite can USE that buffer and write to the appropriate device/file/whatever based on what the user wants. There's also a fourth important syscall, close, which simply
 says "we're done with this file", and removes it from the open file table, allowing us to open other files, (we don't want the user to be able to open an infinite
 number of files at one time, right?). So yeah, that's the plan for today. Do some syscalls and whatnot.
+
+----------------------------------
+DAY 53
+
+Hello,
+today was quite an unproductive day but that was because I was stressing over how I'm going to manage user mode. See, every other project I haven't really stressed over
+because I have had a relatively decent idea of how to start, but for user mode, I have no idea. There are so many subtle and confusing bugs in my code because I'm a bad
+programmer and have no foresight, that they have all accumulated and lead to random mishaps and whatever. Like just today, when I was making the open file table stuff,
+I decided to use my malloc implementation, (because an open inode table is definitely NOT fitting into my stack, that thing is gigantic), and I decided to use the 
+malloc syscall in the kernel and... It didn't work. It didn't like crash or anything, it just didn't work, it never actually managed to do the INT 0x80, which is quite
+confusing. Checking printmem also reveals its allocated one block.. Somehow?? Even though it never actually called malloc?? Another weird thing that happened was the
+shallow vs deep copy stuff. See, a basic principle they teach in like intro CS courses is the idea of shallow vs deep copies. If you just copy an array by making a new
+variable like so:
+char* temp = ptr;
+and ptr is a char* too, then that doesn't actually make a copy of ptr. Temp is just a copy of ptr. Ok, basic CS stuff out of the way, why am I mentioning this now? Well,
+all of my fs and str implementations do shallow copies, which have never really been an issue, so I never really bothered to make them make deep copies. But then randomly
+literally out of nowhere, it suddenly became an issue on a function that was already working beforehand. Why was it an issue now? I dunno, it didn't make any sense, 
+but whatever, I made it use a deep copy instead of a shallow copy and it fixed so. Whatever. Another weird bug was with testing out print_dir. I managed to make it work
+because I sat down and thought for longer than 10 seconds and realized, "oh. It's not actually recognizing the correct inode for the root directory and whatnot", and also
+"my strrchr doesn't actually do anything lol". Fixed those, and now it worked. Out of curiosity, I manually used mkdir and made a directory in build/bin (or where the
+root directory is in my OS) and tested it out there. It didn't work, for some reason format_disk wasn't allocating data blocks for it. I thought, "huh. Weird". Out of 
+more curiosity, I deleted that directory, made a new directory, and then suddenly it was working again?? Again, NO idea why that was happening. Actual voodoo magic 
+going on at this point. This OS has a mind of its own now. 
+As for how I'm going to be approaching user mode: I have a plan, I think. First off, there are going to be basic commands that run and execute in ring 0, or kernel mode. 
+This is because I'm lazy, and I REAALLLYY don't want to refactor my printf implementation to be user-mode friendly, (like it calls a write syscall with the stdout 
+stream), because that is really time consuming, and I am starting to get burnt out, and classes start back up again soon. So anyway, basic commands, like printmem and 
+printregisters, etc. will be run and executed in ring 0. If the user wants to execute a file, then it HAS to be either a .bin file, because I'm again, lazy. Anyway,
+if the user executes a file, they give the file they wish to execute, that file is loaded into memory and all that, and then before we actually "execute" that file, 
+we switch to user mode, and then after we finish executing that file, we go back to kernel mode, and go back to waiting for the user to issue a command. Now, you may
+hear all this and go, "but how will you actually execute the file?" that's where I'm a bit confused. See, my first place was to load the file into memory, and then jump
+to the location in memory that file is at. But there's an issue with that: how do I get back? I THINK we can simply do a "return". See, the way we jump to locations in
+memory and assume there is a function there is with the function caster, which goes like: (return type (*) args) or something like that. In C, the main function generally
+has an int return type more often than not, so I HOPE we can just return a "1" to specify that the file was successfully executed and a "-1" to specify the file was NOT
+successfully executed. Right? I mean, why else would the function caster ask for a return type, right? The other option is with sys_read and sys_write. I know in actual
+OS's like the Linux OS, sys_read is in fact used to read files and whatnot, but I dunno if it has a specific or unique syscall for executing files that can magically
+load a bin file onto memory, jump to it, run it, and return back to where it was. I have no clue. I really gotta do more research. Anyway, that's all for today. Tomorrow
+I hopefully finish sys_open, sys_close, and hopefully start on sys_write, sys_read, and also maybe possibly finish them too. After that, all that's left is to make the
+kernel look nicer and start on the terminal/shell thing, make some commands, and make some really basic "programs". (I could do something like a calculator, but that 
+would mean I need like an stdout and my printf implementation to work with the write syscall). 
