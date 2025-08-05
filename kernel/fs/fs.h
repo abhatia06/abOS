@@ -72,7 +72,7 @@ typedef struct open_file {
         uint32_t* address;              // virtual address file is loaded to
         uint8_t max_count;
         uint32_t flags;
-        uint8_t padding;
+        uint8_t pages_allocated;
 } __attribute__((packed)) open_file_t;  // 16 bytes hopefully
 
 /*
