@@ -102,17 +102,20 @@ void sys_open() {
         open_file_t* temp_file = open_file_table;
         index = 0;
         bool skip = false;
-        while(index < 256 && file_inode.i_number != temp[temp_file->inode_index].i_number) {
+        //find first free entry
+        while(index < 256 && temp_file->address != 0 && temp_file->max_count != 0) {
                 index++;
                 temp_file++;
+                /*
                 if(file_inode.i_number == temp[temp_file->inode_index].i_number) {
                         temp_file->max_count++;
                         skip = true;
                         break;
                 }
+                */
         }
         // im too lazy to remove this conditional and fix the indentations
-        if(!skip) {
+        if(true) {
                 temp_file->inode_index = index;
                 temp_file->lseek = 0;
                 temp_file->address = 0;
