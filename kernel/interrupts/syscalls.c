@@ -145,12 +145,44 @@ void sys_open() {
 void sys_close() {
         int32_t file_descriptor = -1;
         __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));      // we just need file descriptor I believe
-        // close should be similar to sys_open hopefully
-        // find file via open inode table w/ inode_index
-        // if file doesn't exist, do nothing and return
-        // if file does exist, look through open inode table, decrement max count
-        // if file does exist, look through open file table, decrement max count
-        // unload from memory (save file)
+
+        if(file_descriptor < 0) {
+                __asm__ volatile("mov %0, %%EAX" : : "r"(-1));
+                return;
+        }
+        open_file_t* temp_file = &open_file_table[file_descriptor];
+        inode_t* temp = open_inode_table;
+        if(temp[temp_file->inode_index].i_number == 0 || temp_file->max_count == 0) {
+                __asm__ volatile("mov %0, %%EAX" : : "r"(-1));
+                return;
+        }
+
+        temp_file->max_count--;
+        temp[temp_file->inode_index].max_count--;
+
+        // if max count = 0 now, then we wipe that file descriptor from the table
+        if(temp_file->max_count == 0) {
+                uint32_t size = bytes_to_blocks(temp[temp_file->inode_index].size);
+                if(size == 0) {
+                        size = 1;
+                }
+                uint32_t address = (uint32_t)temp_file->address;
+
+                for(uint32_t i = 0; i < size; i++) {
+                        pt_entry* page = get_page(address);
+                        free_page(page);
+                        unmap_page((void*)address);
+                        flush_tlb_entry(address);
+                        address += PAGE_SIZE;
+                }
+
+                // if the open file tables max count is = 0, then its likely that the inodes max count is = 0 too
+                memset(&temp[temp_file->inode_index], 0, sizeof(inode_t));
+                memset(temp_file, 0, sizeof(open_file_t));
+        }
+
+        __asm__ volatile("mov %0, %%EAX" : : "r"(0));
+        return;
 
 }
 
