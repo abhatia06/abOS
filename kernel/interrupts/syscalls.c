@@ -187,6 +187,29 @@ void sys_close() {
 
 }
 
+
+void sys_write() {
+
+}
+
+void sys_read() {
+        int32_t file_descriptor = -1;
+        __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));
+        void* buffer = 0;
+        __asm__ volatile("mov %%ECX, %0" : "=r"(buffer));
+        uint32_t length = 0;
+        __asm__ volatile("mov %%EDX, %0" : "=r"(length));
+
+        open_file_t* temp_file = open_file_table;
+        inode_t* temp = open_inode_table;
+
+        if(file_descriptor < 0) {
+                __asm__ volatile("mov %0, %%EAX" : : "a"(file_descriptor));
+                return;
+        }
+
+}
+
 void* syscalls[MAX_SYSCALLS] = {
         sys_test1,
         sys_test2,
@@ -194,6 +217,8 @@ void* syscalls[MAX_SYSCALLS] = {
         sys_free,
         sys_open,
         sys_close,
+        sys_write,
+        sys_read,
 };
 
 //TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
@@ -202,7 +227,7 @@ void* syscalls[MAX_SYSCALLS] = {
 __attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
 
-                          ".equ MAX_SYSCALLS, 6\n"
+                          ".equ MAX_SYSCALLS, 8\n"
                           "cmp eax, MAX_SYSCALLS-1\n"
                           "ja invalid_syscall\n"
 
