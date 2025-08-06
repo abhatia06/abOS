@@ -170,6 +170,7 @@ inode_t get_inode(char* path) {
 
         char* index = path;
         char str_buffer[60];
+        memset(str_buffer, 0, 60*sizeof(char));        // sometimes its memory gets corrupted
         inode_t current_inode;
 
         // in linux, the path root dir starts with /. In windows, it is C:\.
