@@ -6,3 +6,4 @@ char* strrchr(char* str, int c);
 void* memset(void* ptr, uint8_t value, uint32_t length);
 char* strncpy(char* dst, const char* src, uint32_t n);
 char* strcpy(char* dst, const char* src);
+void* memcpy(void* dst, void* src, uint32_t size);
