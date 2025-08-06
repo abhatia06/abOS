@@ -12,8 +12,7 @@
 void* malloc(uint32_t size) {
 	void* ptr;
 
-	__asm__ volatile("int $0x80" : : "a"(2), "b"(size));
-	__asm__ volatile("movl %%eax, %0" : "=r"(ptr));
+	__asm__ volatile("int $0x80" : "=r"(ptr) : "a"(2), "b"(size)); 
 
 	return ptr;  
 }
