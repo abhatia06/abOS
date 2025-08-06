@@ -192,6 +192,7 @@ void sys_write() {
 
 }
 
+// value returned by sys_read, in linux, is supposedly the number of bytes read
 void sys_read() {
         int32_t file_descriptor = -1;
         __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));
@@ -208,6 +209,31 @@ void sys_read() {
                 return;
         }
 
+        if(temp_file[file_descriptor]->address == 0 || temp_file[file_descriptor]->max_count == 0) {
+                __asm__ volatile("movl $-1, %%EAX");
+                return;
+        }
+
+        if(temp_file[file_descriptor]->flags & O_WRONLY) {
+                __asm__ volatile("movl $-1, %%EAX");
+                return;
+        }
+
+        uint32_t size = temp[temp_file[file_descriptor].inode_index].size;
+        uint32_t address = temp_file[file_descriptor]->address;
+        if(size < temp_file[file_descriptor]->lseek + length) {
+                size = size - temp_file[file_descriptor]->lseek;
+                memcpy(buffer, temp_file[file_descriptor]->address + temp_file[file_descriptor]->lseek, size);
+                temp_file[file_descriptor]->lseek += size;
+                __asm__ volatile("mov %0, %%EAX" : : "r"(size));
+                return;
+        }
+        else {
+                memcpy(buffer, temp_file[file_descriptor]->address + temp_file[file_descriptor]->lseek, length);
+                temp_file[file_descriptor]->lseek += length;
+                __asm__ volatile("mov %0, %%EAX" : : "r"(length));
+                return;
+        }
 }
 
 void* syscalls[MAX_SYSCALLS] = {
