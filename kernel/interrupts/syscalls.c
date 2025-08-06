@@ -188,8 +188,71 @@ void sys_close() {
 }
 
 
+// the basic idea for sys_write is that it takes a file descriptor and a buffer, and writes the contents of
+// the buffer to the file descriptor file (based on # of bytes specified) and then saves it
+// in the future I will rewrite sys_write() to account for stdout, stderr, and stdin, but for now, it just
+// writes to a file
 void sys_write() {
+        int32_t file_descriptor = -1;
+        __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));
+        void* buffer = 0;
+        __asm__ volatile("mov %%ECX, %0" : "=r"(buffer));
+        uint32_t length = 0;
+        __asm__ volatile("mov %%EDX, %0" : "=r"(length));
 
+        if(file_descriptor < 0) {
+                __asm__ volatile("mov %0, %%EAX" : : "r"(file_descriptor));
+                return;
+        }
+
+        open_file_t* temp_file = open_file_table;
+        inode_t* temp = open_inode_table;
+
+        if(!(temp_file[file_descriptor].flags & O_WRONLY || temp_file[file_descriptor].flags & O_RDWR)) {
+                __asm__ volatile("mov %0, %%EAX" : : "r"(-1));
+                return;
+        }
+
+        if(temp_file[file_descriptor].flags & O_APPEND) {
+                temp_file[file_descriptor].lseek = temp[temp_file[file_descriptor].inode_index].size;
+        }
+
+        if(temp_file[file_descriptor].lseek + length > temp_file[file_descriptor].pages_allocated * PAGE_SIZE) {
+                uint32_t bytes_to_allocate = (temp_file[file_descriptor].lseek + length) -
+                        temp[temp_file[file_descriptor].inode_index].size;
+                uint32_t size = bytes_to_blocks(bytes_to_allocate);
+                if(size == 0) {
+                        size++;
+                }
+
+                for(uint32_t i = 0; i < size; i++) {
+                        uint32_t phys_addr = (uint32_t)allocate_blocks(1);
+                        map_address(directory, phys_addr, file_virtual_address, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
+                        file_virtual_address += PAGE_SIZE;
+                        temp_file[file_descriptor].pages_allocated++;
+                }
+
+                memset(temp_file[file_descriptor].address + temp[temp_file[file_descriptor].inode_index].size, 0, bytes_to_allocate);
+
+                // in the event that we need to allocate more data blocks in the disk to save the file, uhhh, just
+                // hope that we don't need to use indirect pointers and that the file is <24KB or something
+
+        }
+
+        // copy the contents inside buffer to the file (based on address + offset into file)
+        memcpy(temp_file[file_descriptor].address + temp_file[file_descriptor].lseek, buffer, length);
+        temp_file[file_descriptor].lseek += length;
+
+        // set length if greater than old size
+        if(temp_file[file_descriptor].lseek > temp[temp_file[file_descriptor].inode_index].size) {
+                temp[temp_file[file_descriptor].inode_index].size = temp_file[file_descriptor].lseek;
+        }
+
+        update_inode(temp[temp_file[file_descriptor].inode_index]);
+        save_file(&temp[temp_file[file_descriptor].inode_index], (uint32_t)temp_file[file_descriptor].address);
+
+        __asm__ volatile("mov %0, %%EAX" : : "r"(length));
+        return;
 }
 
 // value returned by sys_read, in linux, is supposedly the number of bytes read
