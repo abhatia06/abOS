@@ -66,3 +66,15 @@ char* strcpy(char* dst, const char* src) {
         }
         return temp;
 }
+
+// assume dst and src are not null
+void* memcpy(void* dst, void* src, uint32_t size) {
+        char* dest = (char*)dst;
+        char* source = (char*)src;
+
+        for(uint32_t i = 0; i < size; i++) {
+                dest[i] = source[i];
+        }
+
+        return dest;
+}
