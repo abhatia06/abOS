@@ -153,7 +153,11 @@ inode_t get_inode_in_dir(inode_t current_dir, char* file) {
                                 rw_sectors(1, inode_sector(dir_entry->i_number, superblock),
                                                 (uint32_t)sector_buffer, READ);
                                 inode_t* inode_array_in_sector = (inode_t*)sector_buffer;
-                                return inode_array_in_sector[dir_entry->i_number % INODES_PER_SECTOR];
+                                // BUG: I was doing some testing and found an issue with my code here. If the dir_entry is in fact divisible
+                                // by 8, ,or INODES_PER_SECTOR, then some weird funky bugs can happen, (ex: inode 8 should load in sector 2 
+                                // of dir_entry block, I believe, but inode_sector might have some weird algorithm issues as it loads in
+                                // sector 1, I think. Just guessing. Will come back and fix this in a few hours
+                                return inode_array_in_sector[dir_entry->i_number % INODES_PER_SECTOR]; 
                         }
                 }
 
