@@ -8,6 +8,7 @@ typedef enum {
 	O_RDONLY,	// read only
 	O_WRONLY,	// write only
 	O_RDWR,		// read and write
+	O_APPEND,
 } flags_t;
 
 int32_t open(char* path, flags_t);
