@@ -177,7 +177,7 @@ void main() {
         //map_page((void*)0x600000, (void*)0xBFFFEFFC);
 
         //__asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
-        
+        /*
         __asm__ volatile("cli\n"
                         "mov $0x23, %%eax\n"
                         "mov %%ax, %%ds\n"
@@ -207,9 +207,17 @@ void main() {
         //kprintf("malloc next: 0x%x\n", address);
         //address = (uint32_t)malloc_next(3);
         //kprintf("malloc next2:0x%x\n", address);
+        */
 
+        clrscr();
+        kprintf("--------------------------------------------------------------------------------");
+        kprintf("|                               Welcome To FishOS                              |");
+        kprintf("--------------------------------------------------------------------------------");
+                
         while(true) {
+                kprintf(">");
                 char* command = readline();
+                // now all thats left is to make a bunch of commands here
                 if(strcmp((const char*)command, "printmem") == 0) {
                         kprintf("\r\n");
                         print_memmap_command();
