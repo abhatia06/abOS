@@ -129,7 +129,8 @@ void main() {
         int32_t testing2323 = open("/test.txt", O_RDWR);
         kprintf("testing2323 fd: %d\n", testing2323);
         kprintf("inode?: %d\n", open_inode_table[open_file_table[testing2323].inode_index].i_number);
-        char* tbuffer = (char*)open_file_table[testing2323].address;
+        char* tbuffer;
+        read(testing2323, tbuffer, 4096);
         kprintf("%s\n", tbuffer);
         int32_t testing200 = open("/boobootest.txt", O_RDWR);
         kprintf("testing200 fd: %d\n", testing200);
