@@ -132,6 +132,10 @@ void main() {
         char* tbuffer;
         read(testing2323, tbuffer, 4096);
         kprintf("%s\n", tbuffer);
+        char* wahbungusbuffer = "WAHBUNGUS!!!";
+        write(testing2323, wahbungusbuffer, 4096);
+        read(testing2323, tbuffer, 4096);
+        kprintf("%s\n", tbuffer);
         int32_t testing200 = open("/boobootest.txt", O_RDWR);
         kprintf("testing200 fd: %d\n", testing200);
         kprintf("address: 0x%x\n", open_file_table[testing200].address);
