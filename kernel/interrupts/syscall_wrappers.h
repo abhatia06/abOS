@@ -12,3 +12,6 @@ typedef enum {
 
 int32_t open(char* path, flags_t);
 int32_t close(int32_t file_descriptor);
+// might change in the future?
+int32_t write(int32_t file_descriptor, void* buffer, uint32_t length);
+int32_t read(int32_t file_descriptor, void* buffer, uint32_t length);
