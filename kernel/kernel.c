@@ -79,7 +79,20 @@ void main() {
         //Set default PIT timer IRQ rate to be about 1 millisecond
         set_PIT(0, 2, 11931);
 
-        // my syscall for malloc wasn't working for some reason. Oh well, I'll fix it later.
+        // malloc syscall works now, issue is that it doesn't call malloc_init on first try because we are initializing malloc head which
+        // is ughhhh ill figure something out later (ill prob just leave initializing head to malloc_init)
+        malloc_init();
+        open_file_table = malloc(sizeof(open_file_t) * 256);
+        *open_file_table = (open_file_t){0};
+        kprintf("0x%x\n", open_file_table);
+        open_inode_table = malloc(sizeof(inode_t) * 256);
+        *open_inode_table = (inode_t){0};
+        kprintf("0x%x\n", open_inode_table);
+        current_open_files = 0;
+        current_open_inodes = 0;
+        file_virtual_address = 0x40000000;
+        
+        /*
         malloc_init();
         open_file_table = malloc_next(sizeof(open_file_t) * 256);
         *open_file_table = (open_file_t){0};
@@ -90,6 +103,7 @@ void main() {
         current_open_files = 0;
         current_open_inodes = 0;
         file_virtual_address = 0x40000000;
+        */
         
         // Testing kprintf
         const char* far_str = "far string";
