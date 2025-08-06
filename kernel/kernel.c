@@ -117,6 +117,9 @@ void main() {
         kprintf("inode?: %d\n", open_inode_table[open_file_table[testing2323].inode_index].i_number);
         char* tbuffer = (char*)open_file_table[testing2323].address;
         kprintf("%s\n", tbuffer);
+        int32_t testing200 = open("/boobootest.txt", O_RDWR);
+        kprintf("testing200 fd: %d\n", testing200);
+        kprintf("address: 0x%x\n", open_file_table[testing200].address);
         int32_t pleasework = close(testing2323);
         kprintf("worked?: %d\n", pleasework);
         kprintf("inode: %d\n", open_inode_table[open_file_table[testing2323].inode_index].i_number);
