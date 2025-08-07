@@ -177,6 +177,7 @@ void main() {
         //map_page((void*)0x600000, (void*)0xBFFFEFFC);
 
         //__asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
+        /*
         int32_t ihopeitworks = open("/elftesting.bin", O_RDWR);
         kprintf("test: %d\n", ihopeitworks);
         uint32_t* jumpto = open_file_table[ihopeitworks].address;
@@ -201,8 +202,8 @@ void main() {
                         : [stack] "r"(USER_STACK), [entry] "r"(jumpto)
                         : "eax"
                 );        // ok so now we know we can actually run files compiled outside of the kernel, issue is.. How do we get back to the kernel?
-
-        __asm__ volatile("cli;hlt" :: (0xdeadbeef));
+        */
+        
         //uint32_t address = (uint32_t)malloc_init();
         //kprintf("malloc initialized at address: 0x%x\n", address);
         //address = (uint32_t)malloc_more_pages(4096);
@@ -213,39 +214,13 @@ void main() {
         //kprintf("malloc next2:0x%x\n", address);
         
 
-        clrscr();
-        kprintf("--------------------------------------------------------------------------------");
-        kprintf("|                               Welcome To FishOS                              |");
-        kprintf("--------------------------------------------------------------------------------");
-                
-        while(true) {
-                kprintf(">");
-                char* command = readline();
-                // now all thats left is to make a bunch of commands here
-                if(strcmp((const char*)command, "printmem") == 0) {
-                        kprintf("\r\n");
-                        print_memmap_command();
-                        kprintf("\r\n");
-                }
-                else if(strcmp(command, "ls") == 0) {        // yes I know this isn't how ls works
-                        kprintf("Enter directory pathway to read:\n>");
-                        command = readline();
-                        print_dir(command);
-                }
-                else if(strcmp(command, "exit") == 0) {
-                        kprintf("Shutting down...\n");
-
-                        //qemu shut down apparently
-                        __asm__ ("outw %%ax, %%dx" : : "a"(0x2000), "d"(0x604));
-                }
-        }
-
 
 
         //uint32_t check = (uint32_t *)0xC0000000;
         //kprintf("First word printed at 0xC0000000 = 0x%x\n", check);
 
-        //clrscr();
+        clrscr();
+        shell(false);
         //kprintf("reaching here");
         //((void (*)(void))0xC0000000)();
 }
@@ -268,6 +243,85 @@ void user_mode_entry_point() {
 
         __asm__ volatile("cli");        // this is a privilege protected instruction. Using "cli" in user mode SHOULD cause a general protection exception (interrupt 13)
         while(1) {
+
+        }
+}
+
+__attribute__((noreturn)) void shell(bool returning) {
+        if(!returning) {
+                //TODO: in the future, I would like to have the ""terminal"" operating in user space too, but that would
+                //require a LOT of syscalls and I'm not dealing with that right now, (or maybe it won't require a lot of syscalls?
+                //I dunno, I'll see in the future).
+                kprintf("--------------------------------------------------------------------------------");
+                kprintf("|                               Welcome To ABOS                                |");
+                kprintf("--------------------------------------------------------------------------------\n");
+                kprintf("This is currently an unfinished hobby OS. I plan on working on it in the future\n");
+                kprintf("Type \"help\" to get a list of commands.\n");
+        }
+        while(true) {
+                kprintf(">");
+                char* command = readline();
+                if(strcmp((const char*)command, "printmem") == 0) {
+                        print_memmap_command();
+                }
+                else if(strcmp(command, "ls") == 0) {   // yes I know this isn't how ls works
+                        kprintf("Enter directory pathway to read:\n>");
+                        command = readline();
+                        kprintf("command: %s\n", command);
+                        print_dir(command);
+                }
+                else if(strcmp(command, "exit") == 0) {
+                        kprintf("Shutting down...\n");
+
+                        //qemu shut down apparently
+                        __asm__ volatile ("outw %%ax, %%dx" : : "a"(0x2000), "d"(0x604));
+                }
+                else if(strcmp(command, "clear") == 0) {
+                        clrscr();
+                }
+                else if(strcmp(command, "exec") == 0) {
+                        kprintf("Enter the filepath of the file you wish to execute:\n>");
+                        command = readline();
+
+                        // grabs the file from given filepath and puts it into memory (around 0x40000000+)
+                        int32_t fd = open(command, O_RDWR);
+                        uint32_t* jumpto = open_file_table[fd].address;
+                        int32_t stack = 0;
+
+                        // grab stack info for the TSS 
+                        __asm__ volatile("mov %%esp, %0" : "=a"(stack));
+                        uint8_t* gdt = (uint8_t*)*(uint32_t*)GDT_ADDRESS;
+
+                        // updates TSS (b/c the one in the gdt right now is incomplete)
+                        uint32_t tss_addr = *(uint16_t*)(gdt+0x2A);
+                        uint32_t* tss = (uint32_t*)tss_addr;
+                        *(tss+1) = stack;
+
+                        // enters user mode to execute the file
+                        __asm__ volatile("cli\n"
+                                        "mov $0x23, %%eax\n"
+                                        "mov %%ax, %%ds\n"
+                                        "mov %%ax, %%es\n"
+                                        "mov %%ax, %%fs\n"
+                                        "mov %%ax, %%gs\n"
+
+                                        "pushl $0x23\n"
+                                        "pushl %[stack]\n"
+                                        "pushf\n"
+                                        "pop %%eax\n"
+                                        "or $0x200, %%eax\n"
+                                        "push %%eax\n"
+                                        "pushl $0x1B\n"
+                                        "pushl %[entry]\n"
+                                        "iret\n"
+                                        :
+                                        : [stack] "r"(USER_STACK), [entry] "r"(jumpto)
+                                        : "eax"
+                        );
+                }
+                else {
+                        kprintf("Command not found\n");
+                }
 
         }
 }
