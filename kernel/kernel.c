@@ -177,7 +177,10 @@ void main() {
         //map_page((void*)0x600000, (void*)0xBFFFEFFC);
 
         //__asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
-        /*
+        int32_t ihopeitworks = open("/elftesting.bin", O_RDWR);
+        kprintf("test: %d\n", ihopeitworks);
+        uint32_t* jumpto = open_file_table[ihopeitworks].address;
+        kprintf("address: 0x%x\n", jumpto);
         __asm__ volatile("cli\n"
                         "mov $0x23, %%eax\n"
                         "mov %%ax, %%ds\n"
@@ -195,10 +198,11 @@ void main() {
                         "pushl %[entry]\n"
                         "iret\n"
                         :
-                        : [stack] "r"(USER_STACK), [entry] "r"(user_mode_entry_point)
+                        : [stack] "r"(USER_STACK), [entry] "r"(jumpto)
                         : "eax"
-                );
+                );        // ok so now we know we can actually run files compiled outside of the kernel, issue is.. How do we get back to the kernel?
 
+        __asm__ volatile("cli;hlt" :: (0xdeadbeef));
         //uint32_t address = (uint32_t)malloc_init();
         //kprintf("malloc initialized at address: 0x%x\n", address);
         //address = (uint32_t)malloc_more_pages(4096);
@@ -207,7 +211,7 @@ void main() {
         //kprintf("malloc next: 0x%x\n", address);
         //address = (uint32_t)malloc_next(3);
         //kprintf("malloc next2:0x%x\n", address);
-        */
+        
 
         clrscr();
         kprintf("--------------------------------------------------------------------------------");
