@@ -11,7 +11,7 @@
 
 // MACRO FUNCTIONS FOR CALCULATING SECTION & BLOCK OF INODE GIVEN ITS I_NUMBER
 #define inode_block(i_number) ((i_number * sizeof(struct inode)) / FS_BLOCK)    // finds which i-block your inode is in
-#define inode_sector(i_number, superblock) (((inode_block(i_number) * FS_BLOCK) + (superblock.first_inode_block*FS_BLOCK)) / FS_SECTOR)
+#define inode_sector(i_number, superblock) ((((i_number) * sizeof(inode_t)) + (superblock.first_inode_block*FS_BLOCK)) / FS_SECTOR)
 
 typedef struct boot_record {
         uint8_t sector[8][FS_SECTOR];           // 8 sectors, each of 512 bytes, hence 2D array
