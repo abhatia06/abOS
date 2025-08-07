@@ -2863,3 +2863,23 @@ load a bin file onto memory, jump to it, run it, and return back to where it was
 I hopefully finish sys_open, sys_close, and hopefully start on sys_write, sys_read, and also maybe possibly finish them too. After that, all that's left is to make the
 kernel look nicer and start on the terminal/shell thing, make some commands, and make some really basic "programs". (I could do something like a calculator, but that 
 would mean I need like an stdout and my printf implementation to work with the write syscall). 
+----------------------------------
+DAY 54, 55, 56 (today is 56)
+
+Hello,
+I have managed to write out syswrite, sysopen, sysclose, and sysread. I might make a sysseek, or maybe I won't. I'll have to see. Anyway, I am pretty sure they work 
+correctly and thus, the "final" stages of this project can begin: actually putting everything together. I talked about the plan I was going to take on the previous
+devlog entry, but I should clarify some stuff. I didn't actually know how to "execute" a file, and I thought all I needed was a bin file and just simply using my 
+fs's load_file to load the file into memory, and then jumping to the address where the file exists, and executing through it. This isn't actually right, and there are
+quite a few number of issues to this approach. A loonngg while back I talked about how programs are not actually as simple as they are. A long time ago, they used to
+literally just be a bunch of machine code that was simply translated from the C code that the programmer wrote. Nowadays, it is a little bit more complicated, and, as 
+I stated earlier, programs are divided into separate parts (via a linker: .text, .data, .rodata, .bss), and they also have their own stack and allocated heap (if malloc
+was used). Thus, the Linux kernel uses .ELF files, which are a form of executable files similar to .EXE. These .ELF files have a lot of metadata stored in them, including
+the actual machine code for the code itself. This metadata can be used by the OS developer to basically know where to start executing the code, and where the code 
+execution segment ends, and we can return. Thus, if we want to actually be able to create executable programs, we need an ELF loader. So, the plan changes a little bit. 
+The first part stays the same: any commands the user uses that is available in "help" will be executed in the kernel specifically, (in the future, once I have a better
+userspace, I'll switch to having everything really be running in the userspace and switching to kernel mode whenever needed). If the user wishes to execute a file, that
+file must be an elf formatted file. Again, I am not implementing processes and threads just yet, so no directory switching will be ocurring either. Instead, the "process"
+will be loaded into the correct spot in memory via an ELF loader, the entry point to the file will be returned by the ELF loader, and then we jump and execute the 
+"process", then we return, and thats it. In the future, I will implement processes and threads, then a little bit after that, I might try my hand at a scheduler (RR, 
+likely), then locks/semaphores after that. 
