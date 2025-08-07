@@ -35,4 +35,5 @@ GOALS:
 12. further stdlib implementation and some file IO stuff (like f_seek and whatnot)
 13. I/O standard streams (stdout, stderr, stdin)
 14. Rewrite IDT to not use OSDev tutorials so much (same with format_disk.c),
+
 There's more stuff, I just haven't studied enough, I think, to really be able to put down EVERYTHING I want to achieve
