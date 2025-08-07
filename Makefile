@@ -61,19 +61,17 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/printlite.c -o $(BUILD_DIR)/printlite.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/memory/malloc.c -o $(BUILD_DIR)/malloc.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
-        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
+        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/prekernel.bin $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
 
 
 #
-# The --oformat binary that directly links
-# files together and puts them into binary is not actually good, as it COMPLETELY ignores the .bss sections.
-# I have a lot of global variables, (which I know is bad, but whatever), and they exist in the .bss section initially.
+# this is useless as I only recently found out that you can directly link to .bin instead of .elf 
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
-        @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
-        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
-        @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernel.bin
-        objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/bin/prekernel.bin
+#        @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
+#        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
+#        @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernel.bin
+#        objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/bin/prekernel.bin
 
 
 #
