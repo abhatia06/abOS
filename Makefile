@@ -61,12 +61,16 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/printlite.c -o $(BUILD_DIR)/printlite.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/memory/malloc.c -o $(BUILD_DIR)/malloc.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/bin/kernel.bin $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
-        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/bin/prekernel.bin $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
+        $(CCOMP) $(CFLAGS) build/test.c -o build/elftesting.o
+        $(LD) -m elf_i386 -T programlink.ld -o build/bin/elftesting.bin --oformat binary build/elftesting.o build/stdlib.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/bin/kernel.bin --oformat binary $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
+        $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/bin/prekernel.bin --oformat binary $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
 
 
 #
-# this is useless as I only recently found out that you can directly link to .bin instead of .elf 
+# this is useless as I only recently found out that you can directly link to .bin instead of .elf
+# and it'll work just fine (I don't know why I thought it wouldn't work??? Maybe it fixed something
+# randomly in the past?)
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 #        @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
 #        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
