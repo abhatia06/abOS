@@ -223,6 +223,17 @@ void main() {
                         print_memmap_command();
                         kprintf("\r\n");
                 }
+                else if(strcmp(command, "ls") == 0) {        // yes I know this isn't how ls works
+                        kprintf("Enter directory pathway to read:\n>");
+                        command = readline();
+                        print_dir(command);
+                }
+                else if(strcmp(command, "exit") == 0) {
+                        kprintf("Shutting down...\n");
+
+                        //qemu shut down apparently
+                        __asm__ ("outw %%ax, %%dx" : : "a"(0x2000), "d"(0x604));
+                }
         }
 
 
