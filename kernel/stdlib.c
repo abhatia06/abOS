@@ -9,6 +9,10 @@
  * then have sbrk and brk be the only syscalls it executes.
  */
 
+void testertesting123() {
+        __asm__ volatile("int $0x80" : : "a"(1));
+}
+
 void* malloc(uint32_t size) {
 	void* ptr;
 
@@ -22,5 +26,8 @@ void free(void *ptr) {
 	__asm__ volatile("int $0x80" : : "a"(3), "b"(ptr));
 }	
 
+void exit(int32_t fd) {
+        __asm__ volatile("int $0x80" : : "a"(8), "b"(fd));
+}
 
 
