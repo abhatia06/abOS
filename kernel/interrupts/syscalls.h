@@ -3,7 +3,7 @@
 
 #pragma once
 
-#define MAX_SYSCALLS 8
+#define MAX_SYSCALLS 9
 
 void syscall_handler();
 
@@ -15,5 +15,6 @@ void sys_open();
 void sys_close();
 void sys_write();
 void sys_read();
+void sys_close();
 
 extern void* syscalls[MAX_SYSCALLS];
