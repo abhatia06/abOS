@@ -1,39 +1,33 @@
 Hello,
 
-This is my first ever OS, made with a combination of a lot of different tutorials, and code segments written by people 4-10 years ago. I got interested in this project ever
-since I took an Intro to Computer Systems course at my university, which introduced me to low level programming through the LC-3 (Little Computer 3) and the Von Neumann Model. I
-would highly recommend checking out the book Introduction to Computing Systems by Patt and Patel. They do an excellent job of explaining things.
-To learn about stuff, I am using a combination of the OSDev Wiki, Reddit posts (r/osdev), Comet Book (Operating Systems: Three Easy Pieces), Dinosaur Book (Operating Systems
-Concepts 10th Edition), and anything else I can find on Google (the Stanford x86 cheat-sheet was very helpful).  
+This is my first ever OS, made with a combination of a lot of different tutorials, code segments written by other people, and some of my own coding. The goal of this project was to really just to learn about low-level
+stuff, and to build a monolithic kernel (i.e., memory management, interrupts, file system, drivers, etc. all in one kernel.). There are numerous resources I used to learn about OS development and whatnot, some of the
+primary and most used resources include OSTEP, (https://pages.cs.wisc.edu/~remzi/OSTEP/), the OSDev wiki, (https://wiki.osdev.org/Expanded_Main_Page), Stack Overflow, and a bunch of different OS's made by other people. 
 
 
-This 32-bit OS has, as of writing this:
-1. A custom legacy bootloader that switches from real mode to protected mode
-2. Sets up its own Global Descriptor Table
-3. Performs a two-stage boot process to load the kernel into its proper memory position (0x100000) from disk via CHS addressing
-4. Sets up its own Interrupt Descriptor Table, along with the various things that come with interrupt handling, like 8259 PIC 
-5. Partially implements various parts of the C standard library, like malloc. (Also has other stuff, like partially implemented stdio with custom printf)
-6. Sets up a Physical Memory Manager via a bitmap (in the future I might switch to a more optimized version, like a stack pmm, or buddy-buddy allocator)
-7. Sets up a Virtual Memory Manager & enables paging
-8. Implements and mounts a very simple file system, (vsfs)
-9. Allows for usermode-friendly I/O commands (read, write, open, close)
-10. Maps the higher half kernel to 0xC0000000 (3GB), and runs the kernel there via trampoline code
-11. Enters user mode
+As of right now, this OS has:
+1. A multi-stage custom legacy bootloader that uses LBA addressing to load files from disk onto memory
+2. A Global Descriptor Table
+3. An Interrupt Descriptor Table & the 8259 PIC set up
+4. Parts of C libraries implemented, (stdlib, stdio, unistd, stdint, etc..)
+5. A Physical Memory Manager (using the bitmap approach)
+6. A Virtual Memory Manager & paging enabled
+7. A File System (vsfs, check OSTEP chapter 40, "File System Implementation")
+8. Trampoline code to run higher half kernel at 0xC0000000 (3GB)
+9. A shell that allows various commands to be run by the user, and allows the user to run their own raw bin files in user mode
 
-GOALS: 
-1. Implement a basic working scheduler (likely RR, as it seems to be the easiest to implement with a PIT. This also will require having some process management and thread management stuff)
-2. Implement various "programs" the user can run in user mode, (will not be using processes or threads just yet, processes generally have their own virtual address space, I will likely not do that just yet)
-3. Change malloc implementation to be implemented in user-space, (currently implemented in kernel, and the user must perform a syscall to access it. This is wrong)
-4. Rewrite my printf implementation to not directly edit memory, but instead utilize standard streams (particularly stdout), so that user programs can use it
-5. Change OS to allow multi-threading and various concurrency things, like implementing semaphores, locks, etc.. (WILL NOT BE ANYTIME SOON)
-6. Reorganize current Github to be easier to understand
-7. Switch to a better file system (create drivers for ext4 or FAT32)
-8. Play around with VGA graphical memory
-9. Refactor to 64-bit UEFI (WILL NOT BE ANYTIME SOON) <- (if I ever do this, I'll likely work towards networking too)
-10. Switch to making a GUI (WILL NOT BE ANYTIME SOON)
-11. A proper userspace (with security actually taken into account, like userspace permissions)
-12. further stdlib implementation and some file IO stuff (like f_seek and whatnot)
-13. I/O standard streams (stdout, stderr, stdin)
-14. Rewrite IDT to not use OSDev tutorials so much (same with format_disk.c),
-
-There's more stuff, I just haven't studied enough, I think, to really be able to put down EVERYTHING I want to achieve
+GOALS FOR THE FUTURE:
+1. Implement a basic working scheduler (Round-Robin approach likely, check OSTEP chapter 7, section 7)
+2. Rewrite printf entirely (doesn't work with user mode, I need it work with user mode so I can make better programs)
+3. Write better programs for the user to be able to use
+4. Proper userspace management (i.e., creating separate page tables & directory for user processes)
+5. C standard libraries
+6. maybe try to make the OS follow the POSIX standard? Need to do more research on it
+7. Implement threads & processes 
+8. Implement an ELF file loader
+9. Switch to a better file system (create drivers for ext4 or FAT32)
+10. implement I/O standard streams (stdout, stderr, stdin)
+11. Implement concurrency-related things, (like semaphores, locks, conditional variables)
+12. Play around with VGA graphical memory (currently just using text-mode, 0xB800)
+13. Networking (have done 0 research on this)
+14. Refactor to 64-bit and use UEFI (again, 0 research)
