@@ -2863,28 +2863,14 @@ load a bin file onto memory, jump to it, run it, and return back to where it was
 I hopefully finish sys_open, sys_close, and hopefully start on sys_write, sys_read, and also maybe possibly finish them too. After that, all that's left is to make the
 kernel look nicer and start on the terminal/shell thing, make some commands, and make some really basic "programs". (I could do something like a calculator, but that 
 would mean I need like an stdout and my printf implementation to work with the write syscall). 
+
 ----------------------------------
 DAY 54, 55, 56 (today is 56)
 
-Hello,
-I have managed to write out syswrite, sysopen, sysclose, and sysread. I might make a sysseek, or maybe I won't. I'll have to see. Anyway, I am pretty sure they work 
-correctly and thus, the "final" stages of this project can begin: actually putting everything together. I talked about the plan I was going to take on the previous
-devlog entry, but I should clarify some stuff. I didn't actually know how to "execute" a file, and I thought all I needed was a bin file and just simply using my 
-fs's load_file to load the file into memory, and then jumping to the address where the file exists, and executing through it. This isn't actually right, and there are
-quite a few number of issues to this approach. A loonngg while back I talked about how programs are not actually as simple as they are. A long time ago, they used to
-literally just be a bunch of machine code that was simply translated from the C code that the programmer wrote. Nowadays, it is a little bit more complicated, and, as 
-I stated earlier, programs are divided into separate parts (via a linker: .text, .data, .rodata, .bss), and they also have their own stack and allocated heap (if malloc
-was used). Thus, the Linux kernel uses .ELF files, which are a form of executable files similar to .EXE. These .ELF files have a lot of metadata stored in them, including
-the actual machine code for the code itself. This metadata can be used by the OS developer to basically know where to start executing the code, and where the code 
-execution segment ends, and we can return. Thus, if we want to actually be able to create executable programs, we need an ELF loader. So, the plan changes a little bit. 
-The first part stays the same: any commands the user uses that is available in "help" will be executed in the kernel specifically, (in the future, once I have a better
-userspace, I'll switch to having everything really be running in the userspace and switching to kernel mode whenever needed). If the user wishes to execute a file, that
-file must be an elf formatted file. Again, I am not implementing processes and threads just yet, so no directory switching will be ocurring either. Instead, the "process"
-will be loaded into the correct spot in memory via an ELF loader, the entry point to the file will be returned by the ELF loader, and then we jump and execute the 
-"process", then we return, and thats it. In the future, I will implement processes and threads, then a little bit after that, I might try my hand at a scheduler (RR, 
-likely), then locks/semaphores after that. 
 
-FROM FUTURE ME: I decided to actually not go with .ELF files because I sat down and thought for a second and realized: "wait. I can just use a custom linker script 
+Originally I was going to be making an ELF file loader and making files for the user through it, because that's how most files behave in Linux and modern systems. If
+you can run them, they are either a .ELF, or .EXE. Buuutttt...
+I decided to actually not go with .ELF files because I sat down and thought for a second and realized: "wait. I can just use a custom linker script 
 for the raw binary files.. I don't necessarily need a .ELF file, after all, my other files are raw binary files". Uhh so, I decided to put off making an ELF file loader
 for the future. Turns out loading a file is actually quite simple. Just format it based on how the Linux default linker formats it, (text -> data -> rodata -> bss), 
 have an entry for _start, and that's about it. (Also --oformat binary). As for actually loading in the file and executing it, it's also pretty simple, I just added 
@@ -2935,5 +2921,20 @@ dynamically updated, hence why I do it in my code. Though my code seems to be wo
 should have their own address space, (or virtual address space, really), meaning the CR3 register needs to be updated, and then brought back to the "root" page directory
 when going from user->kernel mode, (I guess? I don't know the right term). Furthermore, the user-stack-cheat I am using right now isn't correct either for several reasons.
 It places the user stack specifically around virtual address 0xB0000000, which isn't right. Processes' should have their heap and stack be locally allocated, (well, not
-local, but it should be NEAR them, not in some disjoint part of memory, if that makes any sense). The stack's location should be based around the location of the main
-thread, along with the heap, soooo.. My code for userspace management kinda sucks, but I do manage to enter user mode, so that counts for something, right?
+local, but it should be NEAR them, not in some disjoint part of memory, if that makes any sense). 
+
+----------------------------------
+DAY 57
+
+I've "finished" what I wanted to do for this summer on this OS. There are still quite a few bugs, though. First off, the "cat" command, (or I guess read() function) 
+doesn't work as it should, and it requires me to print something inside the sys_open syscall for it to function properly. Why? I don't know. Another bug is that if you
+execute a bin file, and then keep spamming random commands without clearing the screen, then the system slows down. Again, why? I couldn't tell you. Well, If I had to
+guess, it's likely because of some state switching issues and register preservation issues, but I couldn't notice any issues with the registers, so I don't know.
+Anyway, I'm tired of this project, and I didn't want to spend my entire summer tinkering with this project, so I will be leaving the last two weeks I have left for me to
+do whatever I want basically, (which will probably just be leetcode practice). In the future, (December, likely), I want to come back to this project and give it a
+complete do-over with some of the code (like the IDT and the format_disk.c, which I had to get a lot of help for to make those), and also continue and start working
+on making a scheduler and whatnot.
+Overall though, this project was quite fun to develop. I do plan on actually continuing to research OS stuff even while not explicitly working on this project b/c when
+I do come back, I don't want to have forgotten literally everything I spent the last 2 months workong on (technically 3 if you count the 1 month I took to just read
+about stuff, but I don't count it). Also, though OSTEP does talk about scheduling and stuff that I want to achieve in the future, I've heard there are better books that
+can help me understand this stuff too, like Tanenbaum's Dinosaur Book, which I do need to read. Ok, that is all, bye bye
