@@ -82,6 +82,7 @@ void sys_free() {
 }
 
 void sys_open() {
+        kprintf("SYSOPEN!\n");
         int32_t file_descriptor = -1;
         char* path = 0;
         __asm__ volatile("mov %%EBX, %0" : "=r"(path));         // arg 1 (EBX) contains path
@@ -113,12 +114,12 @@ void sys_open() {
         while(index < 256 && temp->i_number != file_inode.i_number) {
                 index++;
                 temp++;
-                if(file_inode.i_number == temp->i_number) {
-                        temp->max_count++;
-                        break;  // kind of useless, as it'll break automatically, but whatever
-                }
         }
-        if(index == 256) {
+
+        if(file_inode.i_number == temp->i_number) {
+                temp->max_count++;
+        }
+        else {
                 temp = open_inode_table;
                 index = 0;
                 while(index < 256 && temp->i_number != 0) {
@@ -126,17 +127,21 @@ void sys_open() {
                         temp++;
                 }
                 *temp = file_inode;
+                current_open_inodes++;
         }
-        current_open_inodes++;
 
         // add to open file table, if already in file table, increase max count
         open_file_t* temp_file = open_file_table;
-        index = 0;
+        uint32_t file_index = 0;
         //bool skip = false;
-        //find first free entry
+        kprintf("FILE INODE ID: %d\n", file_inode.i_number);
+        kprintf("TEMP FILE INODE: %d\n", temp[temp_file->inode_index].i_number);
         while(index < 256 && temp_file->address != 0 && temp_file->max_count != 0) {
-                index++;
+                kprintf("TEMP FILE ADDRESS: 0x%x\n", temp_file->address);
+                kprintf("TEMP FILE MAX COUNT: %d\n", temp_file->max_count);
+                file_index++;
                 temp_file++;
+
                 /*
                 if(file_inode.i_number == temp[temp_file->inode_index].i_number) {
                         temp_file->max_count++;
@@ -144,17 +149,27 @@ void sys_open() {
                         break;
                 }
                 */
+
         }
-        // im too lazy to remove this conditional and fix the indentations
-        if(true) {
-                temp_file->inode_index = index;
-                temp_file->lseek = 0;
-                temp_file->address = 0;
-                temp_file->max_count = 1;
-                temp_file->flags = flags;
+
+        //temp_file = open_file_table;
+        //index = 0;
+        /*
+        while(index < 256 && temp[temp_file->inode_index].i_number != 0) {
+                //index++;
+                //temp_file++;
         }
+        */
+        memset(temp_file, 0, sizeof(*temp_file));
+        temp_file->inode_index = index;
+        temp_file->lseek = 0;
+        temp_file->address = 0;
+        temp_file->max_count = 1;
+        temp_file->flags = flags;
+
         current_open_files++;
         file_descriptor = index;
+        temp_file->address = (uint32_t*)file_virtual_address;
         uint32_t size = bytes_to_blocks(temp[temp_file->inode_index].size);
         if(size == 0) {
                 size = 1;
@@ -166,7 +181,6 @@ void sys_open() {
                 temp_file->pages_allocated++;
         }
 
-        // load file into memory
         if(!load_file(&temp[temp_file->inode_index], (uint32_t)temp_file->address)) {
                 file_descriptor = -1;
         }
