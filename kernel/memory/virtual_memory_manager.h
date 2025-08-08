@@ -1,5 +1,7 @@
 #pragma once
 
+// Based off brokenthorns guide. In the future, once I feel more confident, I may come back and rewrite this to be custom
+
 #include "../stdint.h"
 #include <stdbool.h>
 
