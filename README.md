@@ -29,5 +29,6 @@ GOALS FOR THE FUTURE:
 10. implement I/O standard streams (stdout, stderr, stdin)
 11. Implement concurrency-related things, (like semaphores, locks, conditional variables)
 12. Play around with VGA graphical memory (currently just using text-mode, 0xB800)
+
 13. Networking (have done 0 research on this)
 14. Refactor to 64-bit and use UEFI (again, 0 research)
