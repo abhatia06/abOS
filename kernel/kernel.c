@@ -339,6 +339,7 @@ __attribute__((noreturn)) void shell(bool returning) {
                         kprintf("\"exit\" - shuts down\n");
                         kprintf("\"cat\" - reads a file (.txt only)\n");
                         kprintf("\"editfile\" - overwrites a files contents\n");
+                        kprintf("\"printregisters\" - prints registers\n");
                 }
                 else if(strcmp(command, "touch") == 0) {
                         kprintf("Enter filepath of new file you wish to make:\n>");
