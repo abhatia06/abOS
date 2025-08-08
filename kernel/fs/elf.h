@@ -15,10 +15,6 @@ typedef int64_t Elf32_Sxword;	// signed 64-bit int
 
 #define ELF_NIDENT 16
 
-// will really only have to deal with program headers & elf headers for loading in files I believe
-
-// ELF elf headers:
-
 typedef struct {
 	uint8_t e_ident[ELF_NIDENT];
 	Elf32_Half e_type;
@@ -35,16 +31,3 @@ typedef struct {
 	Elf32_Half e_shnum;
 	Elf32_Half e_shstrndx;
 } Elf32_Ehdr;
-
-// ELF program header:
-
-typedef struct {
-        Elf32_Word p_type;
-        Elf32_Off p_offset;
-        Elf32_Addr p_vaddr;
-        Elf32_Addr p_paddr;
-        Elf32_Word p_filesz;
-        Elf32_Word p_memsz;
-        Elf32_Word p_flags;
-        Elf32_Word p_align;
-} Elf32_Phdr;
