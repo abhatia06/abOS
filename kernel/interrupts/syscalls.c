@@ -8,7 +8,7 @@
 #include "../memory/virtual_memory_manager.h"
 #include "../memory/physical_memory_manager.h"
 #include "../util/string.h"
-#include "syscall_wrappers.h"
+#include "unistd.h"
 
 extern open_file_t* open_file_table;
 extern inode_t* open_inode_table;
