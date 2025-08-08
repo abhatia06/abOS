@@ -327,6 +327,49 @@ __attribute__((noreturn)) void shell(bool returning) {
                                         : "eax"
                         );
                 }
+                else if(strcmp(command, "help") == 0) {
+                        kprintf("List of commands:\n");
+                        kprintf("\"printmem\" - prints out physical memory map\n");
+                        kprintf("\"ls\" - allows you to look through a directory\n");
+                        kprintf("\"exec\" - allows you to execute a raw bin file (NO .ELF SUPPORT YET)\n");
+                        kprintf("\"touch\" - allows you to create a new file (NOT A DIRECTORY)\n");
+                        kprintf("\"exit\" - shuts down\n");
+                        kprintf("\"cat\" - reads a file (.txt only)\n");
+                        kprintf("\"editfile\" - overwrites a files contents\n");
+                }
+                else if(strcmp(command, "touch") == 0) {
+                        kprintf("Enter filepath of new file you wish to make:\n>");
+                        command = readline();
+                        create_file(command);
+
+                }
+                else if(strcmp(command, "cat") == 0) {
+                        kprintf("Enter filepath of file you wish to read:\n>");
+                        command = readline();
+                        //__asm__ volatile("cli;hlt" :: "0xdeadbeef");
+                        int32_t fd = open(command, O_RDWR);
+                        if(fd < 0) {
+                                kprintf("Invalid filepath\n");
+                                continue;
+                        }
+                        char* buffer = 0;
+                        read(fd, buffer, 4096);
+                        kprintf("%s\n", buffer);
+                        close(fd);
+                }
+                else if(strcmp(command, "editfile") == 0) {
+                        kprintf("Enter filepath of file you wish to edit:\n>");
+                        command = readline();
+                        int32_t fd = open(command, O_RDWR);
+                        if(fd < 0) {
+                                continue;
+                        }
+                        kprintf("Enter what you'd like to edit the file to:\n>");
+                        command = readline();
+                        write(fd, command, 4096);
+                        kprintf("Done\n");
+                        close(fd);
+                }
                 else {
                         kprintf("Command not found\n");
                 }
