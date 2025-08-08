@@ -13,7 +13,7 @@
 #include "fs/fs_commands.h"
 #include <stdbool.h>
 #include "stdlib.h"
-#include "interrupts/syscall_wrappers.h"
+#include "interrupts/unistd.h"
 
 void user_mode_entry_point();
 uint32_t file_virtual_address;
