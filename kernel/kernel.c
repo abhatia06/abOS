@@ -16,8 +16,6 @@
 #include "interrupts/syscall_wrappers.h"
 
 void user_mode_entry_point();
-void tester23();
-void init_malloc();
 uint32_t file_virtual_address;
 open_file_t* open_file_table;
 inode_t* open_inode_table;
@@ -55,7 +53,7 @@ void main() {
 
         total_malloc_pages = 1;
 
-        kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
+        //kprintf("Current page directory address: 0x%x\n", (uint32_t)directory);
 
         pic_disable();
 
@@ -85,10 +83,10 @@ void main() {
         malloc_init();
         open_file_table = malloc(sizeof(open_file_t) * 256);
         *open_file_table = (open_file_t){0};
-        kprintf("0x%x\n", open_file_table);
+        //kprintf("0x%x\n", open_file_table);
         open_inode_table = malloc(sizeof(inode_t) * 256);
         *open_inode_table = (inode_t){0};
-        kprintf("0x%x\n", open_inode_table);
+        //kprintf("0x%x\n", open_inode_table);
         current_open_files = 0;
         current_open_inodes = 0;
         file_virtual_address = 0x40000000;
@@ -107,11 +105,13 @@ void main() {
         */
         
         // Testing kprintf
+        /*
         const char* far_str = "far string";
         kprintf("Formatted %% %c %s %s\r\n", 'a', "string", far_str);
         kprintf("Test: %lld\r\n", 10200300400ll);
         kprintf("Formatted %llx\r\n", 0xdeadbeeffeebdaedull);
         kprintf("Formatted %d %i %x %p %o %hd %hi %hhu %hhd\r\n", 1234, -5678, 0xdead, 0xbeef, 012345, (short)27, (short)-42, (unsigned char)20, (signed char)-10);
+        */
 
         // testing input buffer from keyboard interrupts
         //kprintf("Type your name: ");
@@ -239,6 +239,7 @@ void main() {
  * bit 5: executing instruction that requires memory operands to be aligned (like movaps) without proper alignment
  * realistically, the only ones I will be seeing (for now, I hope) are error codes 0x0, and 0x2.
  */
+/*        // now really only here for the gpf info above 
 void user_mode_entry_point() {
 
         __asm__ volatile("movl $0, %%eax" : : : "eax");        // according to OSDev, most OS's read which syscall to use from the EAX register. We shall do the same
@@ -249,6 +250,7 @@ void user_mode_entry_point() {
 
         }
 }
+*/
 
 __attribute__((noreturn)) void shell(bool returning) {
         if(!returning) {
