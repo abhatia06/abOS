@@ -23,6 +23,7 @@ open_file_t* open_file_table;
 inode_t* open_inode_table;
 uint32_t current_open_files;
 uint32_t current_open_inodes;
+void shell(bool returning); 
 
 void main() {
         directory = (pdirectory*)*(uint32_t*)CURRENT_PAGE_DIR_ADDRESS;
@@ -298,6 +299,10 @@ __attribute__((noreturn)) void shell(bool returning) {
                         uint32_t tss_addr = *(uint16_t*)(gdt+0x2A);
                         uint32_t* tss = (uint32_t*)tss_addr;
                         *(tss+1) = stack;
+
+                        user_stack =  user_stack + PAGE_SIZE;
+                        void* phys_address = allocate_blocks(1);
+                        map_address(directory, (uint32_t)phys_address, (uint32_t)user_stack, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
 
                         // enters user mode to execute the file
                         __asm__ volatile("cli\n"
