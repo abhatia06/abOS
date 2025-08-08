@@ -304,6 +304,7 @@ __attribute__((noreturn)) void shell(bool returning) {
                                         "mov %%ax, %%es\n"
                                         "mov %%ax, %%fs\n"
                                         "mov %%ax, %%gs\n"
+                                        "mov %0, %%EDX\n"
 
                                         "pushl $0x23\n"
                                         "pushl %[stack]\n"
@@ -315,7 +316,7 @@ __attribute__((noreturn)) void shell(bool returning) {
                                         "pushl %[entry]\n"
                                         "iret\n"
                                         :
-                                        : [stack] "r"(USER_STACK), [entry] "r"(jumpto)
+                                        : "r"(fd), [stack] "r"(USER_STACK), [entry] "r"(jumpto)
                                         : "eax"
                         );
                 }
