@@ -354,9 +354,8 @@ __attribute__((noreturn)) void shell(bool returning) {
                                 kprintf("Invalid filepath\n");
                                 continue;
                         }
-                        char* buffer = 0;
-                        read(fd, buffer, 4096);
-                        kprintf("%s\n", buffer);
+                        read(fd, command, 4096);
+                        kprintf("%s\n", command);
                         close(fd);
                 }
                 else if(strcmp(command, "editfile") == 0) {
