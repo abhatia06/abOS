@@ -5,10 +5,10 @@ WHITE_ON_BLACK equ 0x0F ; video memory works as: 0xB8000 = first character, 0xB8
 
 SECTION .text:     
 
+; this code sucks my goodness, I really need to rewrite printf
 GLOBAL _x86_div64_32
 _x86_div64_32:
 
-    ; I realized I wasn't doing a proper 64-bit division, like how Nanobyte waas doing it, leading to stuff like %llx failing. So, I changed it.
      PUSH EBP
      MOV EBP, ESP
      PUSH EBX
