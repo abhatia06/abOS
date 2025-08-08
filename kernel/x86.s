@@ -84,20 +84,3 @@ inw:
     MOV DX, [ESP + 4]
     IN AX, DX
     RET
-
-GLOBAL io_wait
-io_wait:
-
-    PUSH EAX        ; save previous EAX and DX, because these are going to be the registers we'll modify
-    PUSH DX
-
-    MOV AX 0x80    ; we write to port 0x80. Port 0x80 is used for checkpoints during POST, but apparently, linux uses them too, so we should be
-    PUSH 0x0       ; ok? Hopefully? Maybe?
-    PUSH EAX
-    CALL outb      ; write to port 0x80 with value 0x0
-
-    ADD ESP, 8    ; we gotta reset the ESP. Again, stack grows downward, so we have to reset the two pushes that we did with PUSH 0x0 and PUSH EAX
-
-    POP DX        ; return to original values
-    POP EAX
-    RET
