@@ -26,6 +26,37 @@ void sys_test2() {
         kprintf("Test syscall 2\n");
 }
 
+void sys_exit() {
+        int32_t fd = 0;
+        __asm__ volatile("mov %%EDX, %0" : "=r"(fd));
+        //IN THE FUTURE, once I have like threads and whatnot, we would unmap everything from the
+        //process and then do the following:
+
+        if(fd < 0) {
+                // uhh ohh
+        }
+        else {
+                // b/c we have finished processing the process, so we can safely close it 
+                close(fd);
+        }
+        __asm__ volatile("cli\n"
+                        "mov $0x10, %%ax\n"
+                        "mov %%ax, %%ds\n"
+                        "mov %%ax, %%es\n"
+                        "mov %%ax, %%fs\n"
+                        "mov %%ax, %%gs\n"
+                        "sti\n" : : : "ax");
+
+        uint16_t ds;
+        __asm__ volatile("mov %%ds, %0" : "=r"(ds));
+        kprintf("ds after restoring: 0x%x\n", ds);
+        extern void shell(bool returning);
+        shell(true);
+
+        // shouldn't reach here
+        kprintf("Failed to exit...\n");
+}
+
 void sys_malloc() {
         uint32_t bytes;
 
@@ -308,6 +339,7 @@ void* syscalls[MAX_SYSCALLS] = {
         sys_close,
         sys_write,
         sys_read,
+        sys_close,
 };
 
 //TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
@@ -316,7 +348,7 @@ void* syscalls[MAX_SYSCALLS] = {
 __attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
 
-                          ".equ MAX_SYSCALLS, 8\n"
+                          ".equ MAX_SYSCALLS, 9\n"
                           "cmp eax, MAX_SYSCALLS-1\n"
                           "ja invalid_syscall\n"
 
