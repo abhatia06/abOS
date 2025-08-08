@@ -22,6 +22,7 @@ inode_t* open_inode_table;
 uint32_t current_open_files;
 uint32_t current_open_inodes;
 void shell(bool returning); 
+bool print_registers();
 
 void main() {
         directory = (pdirectory*)*(uint32_t*)CURRENT_PAGE_DIR_ADDRESS;
@@ -371,9 +372,43 @@ __attribute__((noreturn)) void shell(bool returning) {
                         kprintf("Done\n");
                         close(fd);
                 }
+                else if(strcmp(command, "printregisters") == 0) {
+                        print_registers();
+                }
                 else {
                         kprintf("Command not found\n");
                 }
 
         }
+}
+
+bool print_registers() {
+        kprintf("REGISTERS      |MEM LOCATION\n");
+        uint32_t num = 0;
+        __asm__ volatile("mov %%EAX, %0" : "=r"(num));
+        kprintf("EAX:           |0x%x\n", num);
+        __asm__ volatile("mov %%EBX, %0" : "=r"(num));
+        kprintf("EBX:           |0x%x\n", num);
+        __asm__ volatile("mov %%ECX, %0" : "=r"(num));
+        kprintf("ECX:           |0x%x\n", num);
+        __asm__ volatile("mov %%EDX, %0" : "=r"(num));
+        kprintf("EDX:           |0x%x\n", num);
+        __asm__ volatile("mov %%ESI, %0" : "=r"(num));
+        kprintf("ESI:           |0x%x\n", num);
+        __asm__ volatile("mov %%EDI, %0" : "=r"(num));
+        kprintf("EDI:           |0x%x\n", num);
+        __asm__ volatile("mov %%CS, %0" : "=r"(num));
+        kprintf("CS:            |0x%x\n", num);
+        __asm__ volatile("mov %%DS, %0" : "=r"(num));
+        kprintf("DS:            |0x%x\n", num);
+        __asm__ volatile("mov %%ES, %0" : "=r"(num));
+        kprintf("ES:            |0x%x\n", num);
+        __asm__ volatile("mov %%SS, %0" : "=r"(num));
+        kprintf("SS:            |0x%x\n", num);
+        __asm__ volatile("mov %%GS, %0" : "=r"(num));
+        kprintf("GS:            |0x%x\n", num);
+        __asm__ volatile("mov %%FS, %0" : "=r"(num));
+        kprintf("FS:            |0x%x\n", num);
+        kprintf("\n");
+        return true;
 }
