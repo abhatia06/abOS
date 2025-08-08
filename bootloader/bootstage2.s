@@ -184,7 +184,7 @@ PModeMain:
 
     MOV ESI, 0x10000
     MOV EDI, 0x100000
-    MOV ECX, 25000
+    MOV ECX, 30000
     CLD
     REP MOVSB
 
