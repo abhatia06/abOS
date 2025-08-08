@@ -125,6 +125,7 @@ void main() {
         kprintf("%s\n", tbuffer); 
         */
 
+        /*
         // should be 0. You should only be getting a fd of >3 IF you have stderr, stdout, and stdin, which we don't
         int32_t testing2323 = open("/test.txt", O_RDWR);
         kprintf("testing2323 fd: %d\n", testing2323);
@@ -143,6 +144,7 @@ void main() {
         kprintf("worked?: %d\n", pleasework);
         kprintf("inode: %d\n", open_inode_table[open_file_table[testing2323].inode_index].i_number);
         __asm__ volatile("cli;hlt" : : "a"(0xDEADBEEF));
+        */
         //bool tester2 = map_page((void*)0x700000, (void*)0xBFFF000);
         //kprintf("boolean: %d\n", tester2);
         //volatile char* vid = (volatile char*)0xC00B8000;      // 0xB8000 should map to 0xC00B8000 now, so writing at
