@@ -7,14 +7,14 @@ primary and most used resources include OSTEP, (https://pages.cs.wisc.edu/~remzi
 
 As of right now, this OS has:
 1. A multi-stage custom legacy bootloader that uses LBA addressing to load files from disk onto memory
-2. A Global Descriptor Table
-3. An Interrupt Descriptor Table & the 8259 PIC set up
-4. Parts of C libraries implemented, (stdlib, stdio, unistd, stdint, etc..)
-5. A Physical Memory Manager (using the bitmap approach)
-6. A Virtual Memory Manager & paging enabled
-7. A File System (vsfs, check OSTEP chapter 40, "File System Implementation")
-8. Trampoline code to run higher half kernel at 0xC0000000 (3GB)
-9. A shell that allows various commands to be run by the user, and allows the user to run their own raw bin files in user mode
+3. A Global Descriptor Table
+4. An Interrupt Descriptor Table & the 8259 PIC set up
+5. Parts of C libraries implemented, (stdlib, stdio, unistd, stdint, etc..)
+6. A Physical Memory Manager (using the bitmap approach)
+7. A Virtual Memory Manager & paging enabled
+8. A File System (vsfs, check OSTEP chapter 40, "File System Implementation")
+9. Trampoline code to run higher half kernel at 0xC0000000 (3GB)
+10. A shell that allows various commands to be run by the user, and allows the user to run their own raw bin files in user mode
 
 GOALS FOR THE FUTURE:
 1. Implement a basic working scheduler (Round-Robin approach likely, check OSTEP chapter 7, section 7)
@@ -29,6 +29,5 @@ GOALS FOR THE FUTURE:
 10. implement I/O standard streams (stdout, stderr, stdin)
 11. Implement concurrency-related things, (like semaphores, locks, conditional variables)
 12. Play around with VGA graphical memory (currently just using text-mode, 0xB800)
-
 13. Networking (have done 0 research on this)
 14. Refactor to 64-bit and use UEFI (again, 0 research)
