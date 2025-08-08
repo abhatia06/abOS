@@ -77,11 +77,7 @@ void free_blocks(uint32_t bit, uint32_t num_blocks) {
 
 // I basically stole this off from Queso Fuego's OS. I also stole some of his planning. Basically, I will initially set
 // every bit on the bitmap to 1, meaning it is being used. Then, we will manually go in and free various memory regions,
-// (like the ones specified by INT 0x15 EAX=E820. Why? Because it's a pain to just use the allocate_blocks by hand.
-// Also, the place where I will likely diverge from Queso Fuego's OS (I dunno, he might do the same), is I will be
-// reserving part of the 0x100000 memory too. This is because that's where my kernel is, so I will likely reserve the
-// first 20 or so KB to be for kernel, then the rest can be for whatever we want. Most textbooks/online sources I've
-// read recommend keeping the maps even higher (like maybe at 2 MB), and I might do that. I dunno, I'll see.
+// like the ones specified by INT 0x15 EAX=E820.
 void initialize_memory_region(uint32_t base_address, uint32_t size) {
 
         int32_t align = base_address/BLOCK_SIZE;
@@ -110,6 +106,5 @@ void deinit_memory_region(uint32_t base_address, uint32_t size) {
 
 void initialize_pmm() {
         // We begin by setting the entire bitmap to be inactive.
-        // Of course, they will still have access
         deinit_memory_region(0x0, 0xFFFFFFFF);
 }
