@@ -81,6 +81,10 @@ typedef struct open_file {
  * Each directory will house, at the very least, two things: one will be a directory entry called ".", this directory entry will simply be the entry
  * that contains the i-node for the directory itself. The second will be an entry called "..", which will be an entry that contains the i-node for
  * the parent directory, or the directory that houses the current ('.') directory.
+ *
+ * I should also say, OSSTEP says that each dir_entry has 4 things: the i_number, the record length (# of bytes for name), strlen (sizeof(name)), and the name itself
+ * I decided to not follow that because... Why do I need to know the record length and length of the string? I can just use the name itself, no? Also, yeah, the IBM
+ * website just said theres a name and number, sooo..
  */
 typedef struct dir_entry_t {
         // each direcotires entry will simply appear as an inode number that points to the actual inode that points to the actual data block
