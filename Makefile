@@ -6,7 +6,8 @@ SRC_DIR4=memory
 BUILD_DIR=build
 CCOMP=gcc
 LD = ld
-CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pic -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel.bin ) + 511 ) / 512 )))
@@ -60,10 +61,17 @@ $(BUILD_DIR)/kernel.elf: always
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/prekernel.c -o $(BUILD_DIR)/prekernel.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/printlite.c -o $(BUILD_DIR)/printlite.o
         $(CCOMP) $(CFLAGS) $(SRC_DIR2)/memory/malloc.c -o $(BUILD_DIR)/malloc.o
-        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/fs/fs_commands.c -o $(BUILD_DIR)/fs.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/stdlib.c -o $(BUILD_DIR)/stdlib.o
+        #
         $(CCOMP) $(CFLAGS) build/test.c -o build/elftesting.o
+        $(CCOMP) $(CFLAGS) build/test2.c -o build/testingtest2.o
+        $(LD) -m elf_i386 -T programlink.ld -o build/bin/testingtest2.bin --oformat binary build/testingtest2.o build/stdlib.o
         $(LD) -m elf_i386 -T programlink.ld -o build/bin/elftesting.bin --oformat binary build/elftesting.o build/stdlib.o
-        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/bin/kernel.bin --oformat binary $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/malloc.o
+        #
+        $(CCOMP) $(CFLAGS) kernel/interrupts/syscall_wrappers.c -o $(BUILD_DIR)/syscall_wrappers.o
+        $(CCOMP) $(CFLAGS) $(SRC_DIR2)/$(SRC_DIR3)/syscalls.c -o $(BUILD_DIR)/syscalls.o
+        $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/bin/kernel.bin --oformat binary $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/stdlib.o $(BUILD_DIR)/malloc.o $(BUILD_DIR)/fs.o $(BUILD_DIR)/syscall_wrappers.o
         $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/bin/prekernel.bin --oformat binary $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
 
 
