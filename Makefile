@@ -1,4 +1,4 @@
-ASM=nasm
+ASM=nasm 
 SRC_DIR=bootloader
 SRC_DIR2=kernel
 SRC_DIR3=interrupts
@@ -6,8 +6,8 @@ SRC_DIR4=memory
 BUILD_DIR=build
 CCOMP=gcc
 LD = ld
-CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
-CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2  -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel.bin ) + 511 ) / 512 )))
@@ -27,8 +27,9 @@ disk: $(BUILD_DIR)/format_disk
 $(BUILD_DIR)/format_disk: format_disk.c
         gcc -std=c17 -Wall -Wextra -Wpedantic -o $(BUILD_DIR)/format_disk format_disk.c
 
+# -w+orphan-labels will give warnings for when no ; (idk why I didnt use this sooner)
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
-        $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
+        $(ASM) -w+orphan-labels $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
 
 
 #
@@ -37,8 +38,8 @@ $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
 bootloader: $(BUILD_DIR)/boot.bin
 
 $(BUILD_DIR)/boot.bin: always
-        $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/newboot.bin
-        $(ASM) $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bootstage2.bin
+        $(ASM) -w+orphan-labels $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/newboot.bin
+        $(ASM) -w+orphan-labels $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bootstage2.bin
 
 
 kernel: $(BUILD_DIR)/kernel.bin
