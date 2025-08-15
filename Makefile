@@ -7,7 +7,7 @@ BUILD_DIR=build
 CCOMP=gcc
 LD = ld
 CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
-CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
 KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
 PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel.bin ) + 511 ) / 512 )))
