@@ -4,7 +4,7 @@
 #define FS_BLOCK        4096
 #define FS_SECTOR       512
 #define SECTORS_PER_BLOCK 8
-#define SUPERBLOCK_DISK_SECTOR 8        // first 8 sectors are for superblock
+#define SUPERBLOCK_DISK_SECTOR 8        // SECOND 8 sectors are for superblock
 
 #define file_type_file 0
 #define file_type_dir 1
