@@ -7,36 +7,41 @@
 #include "interrupts/exceptions.h"
 #include "memory/physical_memory_manager.h"
 
+#define VGA_PTR ((volatile uint8_t*)0xB8000)
+//#define VGA_WIDTH 80;
+//#define VGA_HEIGHT 25;
+//#define DEFAULT_COLOR 0x07;
+
 const unsigned VGA_WIDTH = 80;
 const unsigned VGA_HEIGHT = 25;
-const uint8_t DEFAULT_COLOR = 0x07;	// light gray color
+const uint8_t DEFAULT_COLOR = 0x07;
 
-volatile uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
+//volatile uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
 int g_ScreenX = 0, g_ScreenY = 0;
 
 void putchar(int x, int y, char c) {
-        g_ScreenBuffer[2 * (y * VGA_WIDTH + x)] = c;
+        VGA_PTR[2 * (y * VGA_WIDTH + x)] = c;
 }
 
 void putcolor(int x, int y, uint8_t color) {
-        g_ScreenBuffer[2 * (y * VGA_WIDTH + x) + 1] = color;
+        VGA_PTR[2 * (y * VGA_WIDTH + x) + 1] = color;
 }
 
 int getchr(int x, int y) {
-        return g_ScreenBuffer[2 * (y * VGA_WIDTH + x)];
+        return VGA_PTR[2 * (y * VGA_WIDTH + x)];
 }
 
 uint8_t getcolor(int x, int y) {
-        return g_ScreenBuffer[2 * (y * VGA_WIDTH + x) + 1];
+        return VGA_PTR[2 * (y * VGA_WIDTH + x) + 1];
 }
 
 void setcursor(int x, int y) {
         int pos = y * VGA_WIDTH + x;
 
-        _x86_outb(0x3D4, 0x0F);
-        _x86_outb(0x3D5, (uint8_t)(pos & 0xFF));
-        _x86_outb(0X3D4, 0X0E);
-        _x86_outb(0x3D5, (uint8_t)((pos >> 8) & 0XFF));
+        outb(0x3D4, 0x0F);
+        outb(0x3D5, (uint8_t)(pos & 0xFF));
+        outb(0X3D4, 0X0E);
+        outb(0x3D5, (uint8_t)((pos >> 8) & 0XFF));
 }
 
 void scrollback(int lines) {
@@ -88,17 +93,17 @@ void putc(char c) {
                         g_ScreenX = 0;
                         break;
 
-		case '\b' : // in most printf cases, \b is supposed to be non-destructive, but ours is destructive b/c of our keyboard handler
-                	if(g_ScreenX > 0) {
-                        	g_ScreenX--;
-                	}
-                	else if(g_ScreenY > 0) { // if we're NOT at the first (0th) row, and we're at column 0 of the current row we're at, then go to the previous row
-                        	g_ScreenY--;
-                        	g_ScreenX = VGA_WIDTH - 1; // start at the very last column (might change this, though)
-                	}
-                	putchar(g_ScreenX, g_ScreenY, ' ');
-                	break;
-		
+                case '\b' :
+                        if(g_ScreenX > 0) {
+                                g_ScreenX--;
+                        }
+                        else if(g_ScreenY > 0) {
+                                g_ScreenY--;
+                                g_ScreenX = VGA_WIDTH - 1;
+                        }
+                        putchar(g_ScreenX, g_ScreenY, ' ');
+                        break;
+
                 default :
                         putchar(g_ScreenX, g_ScreenY, c);
                         g_ScreenX++;
@@ -129,8 +134,7 @@ void puts(const char* str) {
  * In the code below I will be implementing printf() according to the format specified by the regular printf()
  * found in the stdio.h library in the actual C language. According to the OSDev wiki, I am basically forced to use
  * the va_list. Thankfully, I don't have to implement va_list, because it can be found in the freestanding
- * <stdarg.h>, so, woohoo! Also I used Nanobyte's implementation, but he doesn't use va_args, and he's in 16 bit mode, so I changed it
- * just a slight to make it work for me.
+ * <stdarg.h>, so, woohoo!
  */
 
 #define PRINTF_STATE_NORMAL 0
@@ -144,6 +148,9 @@ void puts(const char* str) {
 #define PRINTF_LENGTH_SHORT 2
 #define PRINTF_LENGTH_LONG 3
 #define PRINTF_LENGTH_LONG_LONG 4
+
+#define NULL ((void*)0)
+
 
 const char g_HexChars[] = "0123456789abcdef";
 
@@ -172,7 +179,7 @@ void printf_number(va_list* args, int length, bool sign, int base10) {
 
                 case PRINTF_LENGTH_LONG:
                         if(sign) {
-                                long n = va_arg(*args, long);
+                                long int n = va_arg(*args, long);
                                 if(n < 0) {
                                         n = -n;
                                         number_sign = -1;
@@ -186,7 +193,7 @@ void printf_number(va_list* args, int length, bool sign, int base10) {
 
                 case PRINTF_LENGTH_LONG_LONG:
                         if(sign) {
-                                long long n = va_arg(*args, long long);
+                                long long int n = va_arg(*args, long long);
                                 if(n < 0) {
                                         n = -n;
                                         number_sign = -1;
@@ -212,7 +219,9 @@ void printf_number(va_list* args, int length, bool sign, int base10) {
         while(--pos >= 0) {
                 putc(buffer[pos]);
         }
+
 }
+
 
 void kprintf(const char* fmt, ...) {
         va_list args;
@@ -220,7 +229,6 @@ void kprintf(const char* fmt, ...) {
         int state = PRINTF_STATE_NORMAL;
         int length = PRINTF_LENGTH_DEFAULT;
         int base10 = 10;
-
         bool sign = false;
 
         while(*fmt) {
@@ -268,12 +276,13 @@ void kprintf(const char* fmt, ...) {
                                 break;
 
                         case PRINTF_STATE_SPEC:
-			PRINTF_STATE_SPEC_:
+                        PRINTF_STATE_SPEC_:
                                 switch(*fmt) {
                                         case 'c' : putc((char)va_arg(args, int));
                                                    break;
 
-                                        case 's' : puts(va_arg(args, const char*)); break;
+                                        case 's' : puts(va_arg(args, const char*));
+                                                   break;
 
                                         case '%': putc('%');
                                                   break;
@@ -299,18 +308,24 @@ void kprintf(const char* fmt, ...) {
 
                                         default : break;
                                 }
+
                                 state = PRINTF_STATE_NORMAL;
                                 length = PRINTF_LENGTH_DEFAULT;
                                 base10 = 10;
                                 sign = false;
                                 break;
+
+
                 }
                 fmt++;
+
         }
         va_end(args);
+
 }
 
-// EVERYTHING BELOW THIS COMMENT IS TEMPORARY. I WILL LIKELY MOVE IT ALL TO THEIR OWN RESPECTIVE FILES, BUT FOR  NOW, I AM LAZY.
+
+// EVERYTHING BELOW THIS COMMENT IS TEMPORARY. I WILL LIKELY MOVE THEM TO THEIR OWN THINGS LATER
 char* readline() {
         input_pos = 0;
         input_buffer[0] = '\0';
@@ -318,7 +333,12 @@ char* readline() {
 
         while(!input_ready) {
                 // loop here basically and wait (yes, we're basically doing polling lol)
+                //if(ticks == 500) {
+                //      kprintf("Too long!\r\n");
+                //      break;
+                //}
         }
+
         return input_buffer;
 }
 
@@ -329,7 +349,7 @@ typedef struct SMAP_entry {
         uint32_t acpi;
 }__attribute__((packed)) SMAP_entry_t;
 
-// Eventually, once we enter user mode, I might make this a program, because why not?
+
 void print_physical_memory() {
     uint32_t num_entries = *(uint32_t *)0xA000;
     SMAP_entry_t *entry = (SMAP_entry_t *)0xA004;
@@ -348,13 +368,10 @@ void print_physical_memory() {
             case 4: kprintf(" (ACPI NVS Memory)\r\n"); break;
             default: kprintf(" (Reserved)\r\n"); break;
         }
-
-	// Open up the regions that are considered type 1 (or available) by the SMAP
-	if(entry->type == 1) {
-        	initialize_memory_region((uint32_t)entry->base_address, (uint32_t)entry->length);
+        if(entry->type == 1) {
+                initialize_memory_region((uint32_t)entry->base_address, (uint32_t)entry->length);
         }
     }
-     
     kprintf("\r\n");
     kprintf("Total memory in bytes: ");
     entry--;
@@ -362,9 +379,10 @@ void print_physical_memory() {
     // is 4 gigabytes is 0xffffffff, not 0x100000000, so we do length-1.
     uint64_t total_mem = entry->base_address+entry->length-1;
     kprintf("0x%llx\r\n", total_mem);
-    // TODO: Print out memory manager block info (pages and whatnot) ((requires physical memory manager, cuz how tf would I know how many 4kb pages/frames I have lol))
+
     kprintf("Maximum number of blocks: %d\r\n", max_blocks);
     kprintf("Used blocks: %d\r\n", used_blocks);
+    kprintf("Available blocks: %d\r\n", max_blocks - used_blocks);
 }
 
 void print_memmap_command() {
