@@ -1,29 +1,32 @@
 #include "syscalls.h"
 #include "../stdio.h"
 #include "../stdint.h"
-#include "../stdlib.h"
+//#include "../stdlib.h"
 #include "../memory/malloc.h"
 #include "../fs/fs.h"
 #include "../fs/fs_commands.h"
 #include "../memory/virtual_memory_manager.h"
 #include "../memory/physical_memory_manager.h"
 #include "../util/string.h"
-#include "unistd.h"
+#include "syscall_wrappers.h"
+
+// The main system call will be int 0x80
 
 extern open_file_t* open_file_table;
 extern inode_t* open_inode_table;
 extern uint32_t current_open_files;
 extern uint32_t current_open_inodes;
 extern uint32_t file_virtual_address;
-// The main system call will be int 0x80
+extern void* user_stack;
 
 void sys_test1() {
-        kprintf("Test syscall 1\n");
+        kprintf("HELLO EVERYONE!!!!! I AM HERE!!\n");
+        //__asm__ volatile("cli;hlt" : : "r"(0xDEADBEEF));
 }
 
 
 void sys_test2() {
-        kprintf("Test syscall 2\n");
+        kprintf("HELLO USERMODE FROM SEPARATE BIN FILE OUTSIDE OF KERNEL!\n");
 }
 
 void sys_exit() {
@@ -36,8 +39,8 @@ void sys_exit() {
                 // uhh ohh
         }
         else {
-                // b/c we have finished processing the process, so we can safely close it 
                 close(fd);
+                user_stack = user_stack - PAGE_SIZE;
         }
         __asm__ volatile("cli\n"
                         "mov $0x10, %%ax\n"
@@ -58,19 +61,27 @@ void sys_exit() {
 }
 
 void sys_malloc() {
+        //__asm__ volatile("cli;hlt" : : "a"(0xBEEFDEAD));
+        kprintf("MALLOC!!\n");
+        //__asm__ volatile("cli;hlt" : : "a"(0xDEADBEEF));
         uint32_t bytes;
+        void* ptr;
 
-        __asm__ volatile("mov %%EBX, %0" : "=b"(bytes));
+        __asm__ volatile("mov %%EBX, %0" : "=r"(bytes));
 
         if(!malloc_head) {
-                void* ptr1 = malloc_init();
-                __asm__ volatile ("mov %0, %%EAX" : : "r"(ptr1));
+                kprintf("going here");
+                ptr = malloc_init();
+                __asm__ volatile ("mov %0, %%EAX" : : "r"(ptr));
                 return;
         }
 
-        void* ptr = malloc_next(bytes);
+        ptr = malloc_next(bytes);
+        kprintf("bytes: %d\n", bytes);
+        kprintf("pointer location: 0x%x\n", (uint32_t)ptr);
         merge_free_blocks();
-        __asm__ volatile("mov %0, %%EAX" : : "r"(ptr));
+        kprintf("pointer location now: 0x%x\n", (uint32_t)ptr);
+        __asm__ volatile("mov %0, %%EAX" : : "r"((uint32_t)ptr));
 }
 
 void sys_free() {
@@ -80,6 +91,9 @@ void sys_free() {
 
         malloc_free(ptr);
 }
+
+//TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
+
 
 void sys_open() {
         kprintf("SYSOPEN!\n");
@@ -134,11 +148,11 @@ void sys_open() {
         open_file_t* temp_file = open_file_table;
         uint32_t file_index = 0;
         //bool skip = false;
-        kprintf("FILE INODE ID: %d\n", file_inode.i_number);
-        kprintf("TEMP FILE INODE: %d\n", temp[temp_file->inode_index].i_number);
+        //kprintf("FILE INODE ID: %d\n", file_inode.i_number);
+        //kprintf("TEMP FILE INODE: %d\n", temp[temp_file->inode_index].i_number);
         while(index < 256 && temp_file->address != 0 && temp_file->max_count != 0) {
-                kprintf("TEMP FILE ADDRESS: 0x%x\n", temp_file->address);
-                kprintf("TEMP FILE MAX COUNT: %d\n", temp_file->max_count);
+                //kprintf("TEMP FILE ADDRESS: 0x%x\n", temp_file->address);
+                //kprintf("TEMP FILE MAX COUNT: %d\n", temp_file->max_count);
                 file_index++;
                 temp_file++;
 
@@ -189,6 +203,7 @@ void sys_open() {
 }
 
 void sys_close() {
+        //kprintf("SYSCLOSE!\n");
         int32_t file_descriptor = -1;
         __asm__ volatile("mov %%EBX, %0" : "=r"(file_descriptor));      // we just need file descriptor I believe
 
@@ -214,7 +229,7 @@ void sys_close() {
                 }
                 uint32_t address = (uint32_t)temp_file->address;
 
-                for(uint32_t i = 0; i < size; i++) {
+                while(size-- > 0) {
                         pt_entry* page = get_page(address);
                         free_page(page);
                         unmap_page((void*)address);
@@ -222,7 +237,6 @@ void sys_close() {
                         address += PAGE_SIZE;
                 }
 
-                // if the open file tables max count is = 0, then its likely that the inodes max count is = 0 too
                 memset(&temp[temp_file->inode_index], 0, sizeof(inode_t));
                 memset(temp_file, 0, sizeof(open_file_t));
         }
@@ -231,7 +245,6 @@ void sys_close() {
         return;
 
 }
-
 
 // the basic idea for sys_write is that it takes a file descriptor and a buffer, and writes the contents of
 // the buffer to the file descriptor file (based on # of bytes specified) and then saves it
@@ -323,12 +336,11 @@ void sys_read() {
         }
 
         if(temp_file[file_descriptor].flags & O_WRONLY) {
-                __asm__ volatile("mov %0, %%EAX" : : "r"(-1));
+                __asm__ volatile("movl %0, %%EAX" : : "r"(-1));
                 return;
         }
 
         uint32_t size = temp[temp_file[file_descriptor].inode_index].size;
-        uint32_t address = temp_file[file_descriptor].address;
         if(size < temp_file[file_descriptor].lseek + length) {
                 size = size - temp_file[file_descriptor].lseek;
                 memcpy(buffer, temp_file[file_descriptor].address + temp_file[file_descriptor].lseek, size);
@@ -353,13 +365,11 @@ void* syscalls[MAX_SYSCALLS] = {
         sys_close,
         sys_write,
         sys_read,
-        sys_close,
+        sys_exit,
 };
 
-//TODO: once I make a file system, create sys_write(), sys_open(), and sys_read(). (duh)
+__attribute__((naked)) void syscall_handler() {
 
-// This stuff below is defined by the OSDev wiki in their syscall page: https://wiki.osdev.org/System_Calls
-__attribute__((naked))  void syscall_handler() {
         __asm__ volatile (".intel_syntax noprefix\n"
 
                           ".equ MAX_SYSCALLS, 9\n"
@@ -377,7 +387,7 @@ __attribute__((naked))  void syscall_handler() {
                           "push ecx\n"
                           "push ebx\n"
                           "push esp\n"
-                          "call [syscalls+eax*4]\n"        // Each function pointer is 4 bytes, so it's not as simple as just syscalls+eax, (eax holds which syscall)
+                          "call [syscalls+eax*4]\n"
                           "add esp, 4\n"
                           "pop ebx\n"
                           "pop ecx\n"
