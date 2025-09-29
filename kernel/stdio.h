@@ -1,5 +1,9 @@
 #pragma once
 
+#include "stdint.h"
+
+extern volatile uint8_t* g_ScreenBuffer;
+
 void clrscr();
 void putc(char c);
 void puts(const char* str);
