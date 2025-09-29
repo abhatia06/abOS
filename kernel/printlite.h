@@ -1,3 +1,4 @@
+// USELESS NOW
 #pragma once
 
 void printS(const char* str);
