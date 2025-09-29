@@ -1,7 +1,4 @@
-// This is basically a copy of stdio.c and stdio.h, but it is a "lite" version for the prekernel to use. It has very basic and limited
-// functionality, hence why it is called "lite". Is this file needed? Not really.. I could've probably gotten away with recompiling stdio.c, and putting it in 
-// the other linker script. At worse, I would likely have to add macros to global_addresses to save the global variables for the screenbuffer, screex, and screeny, 
-// but whatever. Who cares, this doesn't take up a whole lot space.
+// USELESS NOW
 
 #include "stdint.h"
 #include "printlite.h"
