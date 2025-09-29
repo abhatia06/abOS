@@ -7,6 +7,22 @@
 
 pdirectory* directory = 0;	// also managed to get rid of the other two global variables, because I realized they were actually kinda useless lol
 
+/*
+#define EnablePaging()              \
+    asm volatile (                  \
+        "mov %%cr0, %%eax\n\t"      \
+        "or $0x80000000, %%eax\n\t" \
+        "mov %%eax, %%cr0"          \
+        ::: "eax")
+
+#define DisablePaging()                                 \
+        asm volatile(                                   \
+                        "mov %%cr0, %%eax\n\t"          \
+                        "and $0x7FFFFFFF, %%eax\n\t"    \
+                        "mov %%eax, %%cr0"              \
+                        ::: "eax")
+*/
+
 bool alloc_page(pt_entry* e) {
         void* p = (void*)allocate_blocks(1);
         if(!p) {
@@ -126,6 +142,7 @@ void initialize_vmm() {
                 pt_entry page = 0;
                 SET_ATTRIBUTE(&page, PTE_PRESENT);
                 SET_ATTRIBUTE(&page, PTE_WRITABLE);
+                //SET_ATTRIBUTE(&page, PTE_USER);               // TEMPORARY
                 SET_FRAME(&page, frame);
 
                 table2->m_entries[PT_INDEX(virt)] = page;
@@ -137,7 +154,7 @@ void initialize_vmm() {
                 pt_entry page = 0;
                 SET_ATTRIBUTE(&page, PTE_PRESENT);
                 SET_ATTRIBUTE(&page, PTE_WRITABLE);
-                SET_ATTRIBUTE(&page, PTE_USER);	// THESE ARE JUST TEMPORARY. I AM SETTING IT TO BE ABLE TO BE ACCESSED BY RING 3 FOR TESTING PURPOSES
+                //SET_ATTRIBUTE(&page, PTE_USER);               // TEMPORARY
                 SET_FRAME(&page, frame);
 
                 table->m_entries[PT_INDEX(virt)] = page;
@@ -153,12 +170,13 @@ void initialize_vmm() {
         pd_entry* entry = &dir->m_entries[PD_INDEX(0xC0000000)];
         SET_ATTRIBUTE(entry, PDE_PRESENT);
         SET_ATTRIBUTE(entry, PDE_WRITABLE);
-        SET_ATTRIBUTE(entry, PDE_USER);	// THESE ARE JUST TEMPORARY. I AM SETTING IT TO BE ABLE TO BE ACCESSED BY RING 3 FOR TESTING PURPOSES
+        //SET_ATTRIBUTE(entry, PDE_USER);               // TEMPORARY
         SET_FRAME(entry, (physical_address)table);
 
         pd_entry* entry2 = &dir->m_entries[PD_INDEX(0x00000000)];
         SET_ATTRIBUTE(entry2, PDE_PRESENT);
         SET_ATTRIBUTE(entry2, PDE_WRITABLE);
+        //SET_ATTRIBUTE(entry2, PDE_USER);      // TEMPORARY
         SET_FRAME(entry2, (physical_address)table2);
 
         set_pd(dir);
@@ -166,7 +184,7 @@ void initialize_vmm() {
         EnablePaging();
 }
 
-pt_entry *get_page(virtual_address address) {
+pt_entry* get_page(virtual_address address) {
 
         // Get page directory
         pdirectory *pd = directory;
