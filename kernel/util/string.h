@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../stdint.h"
+
 int strcmp(const char* str1, const char* str2);
 long int strlen(const char* str);
 char* strrchr(char* str, int c);
