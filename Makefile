@@ -1,4 +1,4 @@
-ASM=nasm 
+ASM=nasm
 SRC_DIR=bootloader
 SRC_DIR2=kernel
 SRC_DIR3=interrupts
@@ -6,30 +6,41 @@ SRC_DIR4=memory
 BUILD_DIR=build
 CCOMP=gcc
 LD = ld
-CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2  -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
+CFLAGS=-m32 -march=i386 -mgeneral-regs-only -ffreestanding -fno-pie -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 CFLAGS2= -m32 -march=i386 -mgeneral-regs-only -ffreestanding -fPIE -nostdlib -fno-stack-protector -mpreferred-stack-boundary=2 -fno-omit-frame-pointer -fno-builtin -ffunction-sections -fdata-sections -O0 -Wall -c -g
 
-KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/kernel.bin ) + 511 ) / 512 )))
-PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/prekernel.bin ) + 511 ) / 512 )))
-.PHONY: all disk_image kernel bootloader disk clean always run
+
+KERNEL_SECTORS= $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/bin/kernel.bin ) + 511 ) / 512 )))
+PREKERNEL_SECTORS = $(shell echo $$(( ( $(shell stat -c%s $(BUILD_DIR)/bin/prekernel.bin ) + 511 ) / 512 )))
+.PHONY: all disk_image kernel bootloader clean always run disk
 
 disk_image: $(BUILD_DIR)/os-image.img
 
-# Disk Image 
-# format_disk creates a 1.44MB disk image called os-image.img that is formatted like so:
-# BOOTBLOCK | SUPERBLOCK | INODE BITMAP | DATA BITMAP | INODE TABLE . . . | DATA BLOCKS . . . |
+#
+#Disk Image
+#
+#NOTE: Eventually, when I make my own file system (vsfs or minix fs), or if I cave in and just implement FAT32, (which
+# I think will be easier?), we will no longer be making a floppy image and reading from it. At that point, we will be
+# able to ACTUALLY make a hard disk image, and read from it!
 $(BUILD_DIR)/os-image.img: bootloader kernel disk
+        #dd if=/dev/zero of=$(BUILD_DIR)/os-image.img bs=512 count=2880
         $(BUILD_DIR)/format_disk
-
-
-disk: $(BUILD_DIR)/format_disk
-
-$(BUILD_DIR)/format_disk: format_disk.c
-        gcc -std=c17 -Wall -Wextra -Wpedantic -o $(BUILD_DIR)/format_disk format_disk.c
-
-# -w+orphan-labels will give warnings for when no ; (idk why I didnt use this sooner)
+        rm -rf $(BUILD_DIR)/format_disk
+        @#echo "drive size:" && stat -c%s $(BUILD_DIR)/os-image.img
+        @#Loads the bootloader (boot.bin) into sector 0
+        @#dd if=$(BUILD_DIR)/boot.bin of=$(BUILD_DIR)/os-image.img bs=512 count=1 conv=notrunc
+        @#echo "BOOT1 BIN size:" && stat -c%s $(BUILD_DIR)/boot.bin
+        @#Loads actual 2nd stage bootloader (yeaah my bootloader is getting really messy now)
+        @#dd if=$(BUILD_DIR)/bootstage2.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=1 conv=notrunc
+        @#echo "BOOT STAGE 2 SIZE: " && stat -c%s $(BUILD_DIR)/bootstage2.bin
+        @#Loads the kernel into sector 3 (and prekernel sector 23)
+        @#dd if=$(BUILD_DIR)/kernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=3 count=$(KERNEL_SECTORS) conv=notrunc
+        @#dd if=$(BUILD_DIR)/prekernel.bin of=$(BUILD_DIR)/os-image.img bs=512 seek=30 count=$(PREKERNEL_SECTORS) conv=notrunc
+        @#@echo $(KERNEL_SECTORS)
+        @#@echo $(PREKERNEL_SECTORS)
+        @#$(BUILD_DIR)/format_disk
 $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
-        $(ASM) -w+orphan-labels $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/boot.bin
+        $(ASM) $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/bin/boot.bin
 
 
 #
@@ -38,8 +49,9 @@ $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.s
 bootloader: $(BUILD_DIR)/boot.bin
 
 $(BUILD_DIR)/boot.bin: always
-        $(ASM) -w+orphan-labels $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/newboot.bin
-        $(ASM) -w+orphan-labels $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bootstage2.bin
+        $(ASM) -w+orphan-labels $(SRC_DIR)/boot.s -f bin -o $(BUILD_DIR)/bin/boot.bin
+        $(ASM) -w+orphan-labels $(SRC_DIR)/bootstage2.s -f bin -o $(BUILD_DIR)/bin/bootstage2.bin
+        #$(ASM) $(SRC_DIR)/boottemp.s -f bin -o $(BUILD_DIR)/boot.bin
 
 
 kernel: $(BUILD_DIR)/kernel.bin
@@ -75,17 +87,21 @@ $(BUILD_DIR)/kernel.elf: always
         $(LD) -m elf_i386 -T link.ld -o $(BUILD_DIR)/bin/kernel.bin --oformat binary $(BUILD_DIR)/kernel.o $(BUILD_DIR)/kernelC.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/syscalls.o $(BUILD_DIR)/stdlib.o $(BUILD_DIR)/malloc.o $(BUILD_DIR)/fs.o $(BUILD_DIR)/syscall_wrappers.o
         $(LD) -m elf_i386 -T kernelLink.ld -o $(BUILD_DIR)/bin/prekernel.bin --oformat binary $(BUILD_DIR)/prekernel.o $(BUILD_DIR)/virtual_memory_manager.o $(BUILD_DIR)/physical_memory_manager.o $(BUILD_DIR)/string.o $(BUILD_DIR)/stdio.o $(BUILD_DIR)/x86.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/pic.o $(BUILD_DIR)/exceptions.o $(BUILD_DIR)/idt_stubs.o
 
-
 #
-# this is useless as I only recently found out that you can directly link to .bin instead of .elf
-# and it'll work just fine (I don't know why I thought it wouldn't work??? Maybe it fixed something
-# randomly in the past?)
+# The --oformat binary that directly links
+# files together and puts them into binary is not actually good, as it COMPLETELY ignores the .bss sections.
+# my stack is INITIALIZED in the .bss section of the kernel.s code. Therefore, by linking with --oformat meant that
+# I didn't have a stack.
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
-#        @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/kernel.elf
-#        objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin
-#        @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/kernel.bin
-#        objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/bin/prekernel.bin
+#       @echo "Kernel ELF size:" && stat -c%s $(BUILD_DIR)/bin/kernel.elf
+#       objcopy -O binary $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/bin/kernel.bin#
+#       @echo "Kernel BIN size:" && stat -c%s $(BUILD_DIR)/bin/kernel.bin
+#       objcopy -O binary $(BUILD_DIR)/prekernel.elf $(BUILD_DIR)/bin/prekernel.bin
 
+disk: $(BUILD_DIR)/format_disk
+
+$(BUILD_DIR)/format_disk: format_disk.c
+        gcc -std=c17 -Wall -Wextra -Wpedantic -o $(BUILD_DIR)/format_disk format_disk.c
 
 #
 #always
