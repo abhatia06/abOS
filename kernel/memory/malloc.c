@@ -4,9 +4,11 @@
 #include "virtual_memory_manager.h"
 #include "physical_memory_manager.h"
 #include "../util/string.h"
+#include "../stdio.h"   // for debugging only
+
 
 malloc_node_t* malloc_head = 0;
-uint32_t malloc_virt_address = 0;                // start of malloc virtual address space for all processes
+uint32_t malloc_virt_address = 0;               // start of malloc virtual address space for all processes
 uint32_t malloc_phys_address = 0;
 uint32_t total_malloc_pages = 0;
 uint32_t malloc_start = 0;
@@ -33,11 +35,11 @@ void* malloc_init() {
         malloc_head->size = (total_malloc_pages * PAGE_SIZE) - sizeof(malloc_node_t);   // malloc_block_t is basically header info
                                                                                         // each malloc'd piece of memory
         malloc_head->free = true;
-        malloc_head->next = NULL;
-        malloc_head->prev = NULL;
+        malloc_head->next = NULL0;
+        malloc_head->prev = NULL0;
         malloc_head->address = (void*)((uint32_t)malloc_head + sizeof(malloc_node_t));  // again, might remove later..
 
-        return (void*)malloc_head->address;
+        return (void*)(malloc_head->address);
 }
 
 // This function is effectively an sbrk(). It is only used when we absolutely NEED more memory. This function will likely be the
@@ -53,7 +55,7 @@ void* malloc_more_pages(uint32_t size) {
         heap_end = virt + total_malloc_pages * PAGE_SIZE;       // update heap end to reflect change in memory
 
         malloc_node_t* temp = malloc_head;
-        while(temp->next != NULL) {
+        while(temp->next != NULL0) {
                 temp = temp->next;
         }
 
@@ -66,10 +68,10 @@ void* malloc_more_pages(uint32_t size) {
 
         // initialize the node
         new_node->size = (total_malloc_pages * PAGE_SIZE) - sizeof(malloc_node_t);
-        new_node->free = true;
-        new_node->next = NULL;
+        new_node->free = false;
+        new_node->next = NULL0;
         new_node->prev = temp;
-        new_node->address = (void*)((uint32_t)new_node + sizeof(malloc_node_t));
+        new_node->address = (void*)((uint32_t)new_node);
 
         // Previous element in list should point to new node
         temp->next = new_node;
@@ -77,43 +79,13 @@ void* malloc_more_pages(uint32_t size) {
         return (void*)new_node->address;
 }
 
-// this is technically WRONG.. Syntax for calloc is (int n, int size), so if we have calloc(5, sizeof(int)), it should really give us 5 blocks of 4-byte things, but... I don't care.
 void* calloc_more_pages(uint32_t size) {
         void* ptr = malloc_more_pages(size);
         memset(ptr, 0, total_malloc_pages*PAGE_SIZE);   // calloc is just malloc but we 0 out the region
         return ptr;
 }
 
-// realloc implementation, (might have to fix in the future)
-void malloc_realloc(void* ptr, uint32_t size) {
-        malloc_node_t* temp = malloc_head;
-        while(temp != NULL) {
-                if(temp->address == ptr) {
-                        // assume the caller will only want to make it BIGGER not SMALLER
-                        uint32_t diff = size - temp->size;
-                        total_malloc_pages = diff/PAGE_SIZE;
-                        if(diff % PAGE_SIZE > 0) {
-                                total_malloc_pages++;
-                        }
-                        malloc_phys_address = (uint32_t)allocate_blocks(total_malloc_pages);
-                        uint32_t virt = temp->address + temp->size;
-
-                        // now, here, a lock would be quite nice in the future once we have a scheduler
-                        for(uint32_t i = 0; i < total_malloc_pages; i++) {
-                                map_address(directory,  malloc_phys_address + i*PAGE_SIZE, virt, PTE_PRESENT | PTE_WRITABLE | PTE_USER);
-                                virt+=PAGE_SIZE; 
-                        }
-                        
-                        temp->size = size; 
-                        heap_end += diff; 
-                        return; 
-                }
-                temp = temp->next
-        }
-}
-
 void* split_blocks(malloc_node_t* node, uint32_t size) {
-
         // Originally, I tried to use the approach that the last block will always be free, which is true, but I didn't take
         // into account that fragmentation could occur, sooo...
         malloc_node_t* temp = node;
@@ -126,17 +98,14 @@ void* split_blocks(malloc_node_t* node, uint32_t size) {
                         malloc_node_t* new_node = temp;
                         malloc_node_t* old_node = (malloc_node_t*)((char*)new_node + size + sizeof(malloc_node_t));
 
-                         /*
-                         * There is likely to be a logical bug here. Basically, what I'm trying to achieve is that each node will 
-                         * be a certain size and include header information that can be used to identify each node. This splitting
-                         * removes the amount of bytes we want out of the bigger, free node, allocates it to be used, and returns
-                         * the address of the start of the available user data block (it skips the metadata header). 
-                         */
-                        old_node->next = NULL;
+                        old_node->next = temp->next;
                         old_node->prev = new_node;
                         old_node->size = temp->size - size - sizeof(malloc_node_t);
                         old_node->free = true;
                         old_node->address = (void*)((uint32_t)old_node + sizeof(malloc_node_t));
+
+                        kprintf("OLD NODE SIZE: %d\n", old_node->size);
+                        kprintf("OLD NODE ADDRESS: 0x%x\n", old_node->address);
 
                         new_node->next = old_node;
                         new_node->prev = temp->prev;
@@ -144,15 +113,18 @@ void* split_blocks(malloc_node_t* node, uint32_t size) {
                         new_node->free = false;
                         new_node->address = (void*)((uint32_t)new_node + sizeof(malloc_node_t));
 
-                        node = new_node;         // We have to actually reflect the changes in the list too
-                        
-                        return (void*)(new_node->address);
+                        node = new_node;
+
+                        kprintf("NEW NODE SIZE: %d\n", new_node->size);
+                        kprintf("NEW NODE ADDRESS: 0x%x\n", new_node->address);
+
+                        return (new_node->address);
                 }
                 else {
                         return malloc_more_pages(size);
                 }
         }
-        return NULL;
+        return NULL0;
 }
 
 void merge_free_blocks() {
@@ -166,18 +138,22 @@ void merge_free_blocks() {
         }
 }
 
+
 void* malloc_next(uint32_t size) {
         if(size == 0) {
-                return NULL;
+                return NULL0;
         }
 
         malloc_node_t* temp = malloc_head;
-        while(temp != NULL) {        // NEW
+        while(temp != NULL0) {
+                kprintf("STEPPED THRU\n");
                 if(temp->free && temp->size == size + sizeof(malloc_node_t)) {
+                        kprintf("NOT SPLIT\n");
                         temp->free = false;
-                        return temp->address;
+                        return (void*)(temp + 1);
                 }
                 else if(temp->free && temp->size > size + sizeof(malloc_node_t)) {
+                        kprintf("SPLIT\n");
                         return split_blocks(temp, size);
                 }
                 temp = temp->next;
@@ -185,24 +161,24 @@ void* malloc_next(uint32_t size) {
 
         // Otherwise, we assume that there is not enough memory
         void* ptr = malloc_more_pages(size);
+        kprintf("malloc_more_pages returned: 0x%x\n", (uint32_t)ptr);
 
         // this if statement doesn't avoid internal fragmentation, but I don't care for right now
         if(size < PAGE_SIZE) {
                 malloc_node_t* cur = malloc_head;
-                while(cur->next != NULL) {
+                while(cur->next != NULL0) {
                         if(cur->address == ptr) {
                                 return split_blocks(cur, size);
                         }
                         cur = cur->next;
                 }
         }
-
         return ptr;
 }
 
 void malloc_free(void* ptr) {
         malloc_node_t* temp = malloc_head;
-        while(temp->next != NULL) {
+        while(temp->next != NULL0) {
                 if(temp->address == ptr) {
                         temp->free = true;
                         merge_free_blocks();
