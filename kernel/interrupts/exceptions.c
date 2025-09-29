@@ -6,6 +6,8 @@
 #include "pic.h"
 #include "../x86.h"
 #include "keyboard.h"
+#include "../memory/virtual_memory_manager.h"
+#include "../memory/physical_memory_manager.h"
 
 // input stuff for keyboard
 char input_buffer[INPUT_BUFFER_SIZE] = {0};
@@ -25,13 +27,7 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
         uint8_t key = inb(0x60);
         static key_info_t key_info = {0};
         static bool e0 = false; // honestly not really used at all. I don't think I'll have to worry about it JUST YET
-        if(true) {        // I develop my stuff on Vim, and previously I had an if statement here that I later removed. I didn't want to fix the 
-                          // indents, so I just decided to put a if(true) here because im lazy
-                if(key == ENTER) {
-                        // we do nothing for now, but eventually, we'll want to save whatever the user types
-                        // idk how to do that just yet, but we'll probably need to use a global buffer of some
-                        // sort        this is me from the future. We did figure it out. This if statement is utterly useless now
-                }
+        if(true) {
                 if(key) {
 
                         if(key == LSHIFT_MAKE || key == RSHIFT_MAKE) {
@@ -53,8 +49,7 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                 key_info.caps = true;
                         }
                         else if(key == 0xE0) {
-                                e0 = true;        // E0 is for when stuff like the arrow keys are pressed. We don't actually handle these keys just yet, but we will
-                                                  // eventually, I hope.
+                                e0 = true;
                         }
 
                         if(!(key & 0x80)) {
@@ -80,23 +75,10 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                         if(keypressed == '/') {
                                                                 keypressed = '?';
                                                         }
-                                                        if(keypressed == '\'') {
-                                                                keypressed = '"';
-                                                        }
-                                                        if(keypressed == ';') {
-                                                                keypressed = ':';
-                                                        }
-                                                        if(keypressed == '-') {
-                                                                keypressed = '_';
-                                                        }
                                                         // add more shifted keys (booorrrinngg)
                                                 }
                                         }
-                                        if(keypressed != 0) {   // so we don't create spaces whenever we press shift
-                                                // Another case of incorrect if statement that I was too lazy to fix the indentations for so I just used if(true).
-                                                // The reasoning for this change is because the previous one, if the if condition wasn't satisfied, didn't allow the
-                                                // user to do anything at all, (couldn't even press enter), so I just decided to use this. It still works just fine,
-                                                // but we can only accept 256 characters the user types, but we can allow the user to type an infinite number of characters
+                                        if(keypressed != 0) {
                                                 if(true) {
                                                         if(keypressed == '\b') {
                                                                 // We only allow the user to delete what they've typed
@@ -114,7 +96,7 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                                 // complete, and we can process it now
                                                                 input_ready = true;
                                                                 kprintf("\n");
-                                                                input_pos = 0;      // We need to reset the buffer to allow for more messages.
+                                                                input_pos = 0;
                                                         }
                                                         else {
                                                                 //input_pos always points to the sentinel, so we just
@@ -129,15 +111,14 @@ __attribute__((interrupt)) void keyboard_handler(int_frame_32_t *frame) {
                                                 }
                                         }
                                 }
-                                if(e0) {
-                                        e0 = false;
-                                }
+                        }
+                        if(e0) {
+                                e0 = false;
                         }
                 }
         }
         PIC_sendEOI(1);
-}
-
+}        
 __attribute__((interrupt)) void PIT_handler(int_frame_32_t *frame) {
         (void)frame;
         ticks++;
@@ -160,4 +141,9 @@ __attribute__((interrupt)) void page_fault_handler(int_frame_32_t *frame, uint32
         
         // flush tlb
          __asm__ volatile ("movl %%cr3, %%ecx; movl %%ecx, %%cr3" ::: "ecx");
+}
+
+__attribute__((interrupt)) void gpf_handler(int_frame_32_t* frame, uint32_t error_code) {
+        kprintf("GENERAL PROTECTION FAULT. Error Code: 0x%x\n", error_code);
+        __asm__ volatile("cli;hlt");
 }
