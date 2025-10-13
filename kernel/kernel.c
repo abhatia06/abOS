@@ -375,7 +375,7 @@ __attribute__((noreturn)) void shell(bool returning) {
         while(true) {
                 kprintf(">");
                 char* command = readline();
-                if(strcmp((const char*)command, "printmem") == 0) {
+                if(strcmp(command, "printmem") == 0) {
                         print_memmap_command();
                 }
                 else if(strcmp(command, "ls") == 0) {   // yes I know this isn't how ls works
