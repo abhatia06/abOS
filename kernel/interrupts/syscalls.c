@@ -96,6 +96,9 @@ void sys_free() {
 
 
 void sys_open() {
+        // Possibly one of the most confusing bugs I have ever dealt with and will continue to deal with because I don't know
+        // how to fix it. Basically, this kprintf you see below is NECESSARY for the code to work. If I remove the print, 
+        // the sys_open() we perform in the shell stops working. Why does it stop working? I don't know. I don't get it at all
         kprintf("SYSOPEN!\n");
         int32_t file_descriptor = -1;
         char* path = 0;
