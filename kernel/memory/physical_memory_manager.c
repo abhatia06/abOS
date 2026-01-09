@@ -62,7 +62,16 @@ int32_t find_free_blocks(uint32_t num_blocks) {
         uint32_t holder = 0;
         for(uint32_t i = 0; i < max_blocks; i++) {
                 holder = memory_map[i/32];      // Holds the 32-bit integer inside index i/32
-                if(!(holder & (1 << (i%32)))) { // Check to see if the current bit is 0
+
+                // we don't want to go 1-by-1 or words that are entirely allocated. This saves a BIT of time during launch
+                if(holder == 0xFFFFFFFF) {
+                        count = 0;
+                        i = (((i/32) + 1) * 32) - 1;         // fancy math that basically skips this word. We take i, divide by 32 to get the word, go to the next word, put it back
+                        // to being a multiple of 32, and then subtract 1 because when we do continue below, the for loop will add 1 to i.
+                        continue;
+                }
+                
+                if(!(holder & (1u << (i%32)))) { // Check to see if the current bit is 0
                         count++;
                         if(count == num_blocks) {
                                 return (i-num_blocks+1);        // Return starting address of available memory
